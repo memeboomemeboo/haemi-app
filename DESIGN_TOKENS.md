@@ -6,10 +6,20 @@ Design tokens are centralized, reusable values for colors, typography, spacing, 
 
 ## Quick Start
 
-### Import Tokens
+### Import Individual Token Types
 
 ```typescript
+// Import specific token categories
+import { colors, typography, spacing, borderRadius } from '@/shared/constants';
+
+// Or import all tokens
 import { tokens } from '@/shared/constants';
+```
+
+### Import Token Types
+
+```typescript
+import type { Colors, Typography, Spacing, BorderRadius, Tokens } from '@/shared/constants';
 ```
 
 ### Use with Theme Hook
