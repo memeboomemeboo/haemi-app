@@ -2,13 +2,23 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@/assets/*": [
-        "./assets/*"
-      ]
+      "@/*": ["./src/*"],
+      "@/app/*": ["./src/app/*"],
+      "@/pages/*": ["./src/pages/*"],
+      "@/widgets/*": ["./src/widgets/*"],
+      "@/features/*": ["./src/features/*"],
+      "@/entities/*": ["./src/entities/*"],
+      "@/shared/*": ["./src/shared/*"],
+      "@/shared/ui/*": ["./src/shared/ui/*"],
+      "@/shared/hooks/*": ["./src/shared/hooks/*"],
+      "@/shared/constants/*": ["./src/shared/constants/*"],
+      "@/shared/lib/*": ["./src/shared/lib/*"],
+      "@/shared/types/*": ["./src/shared/types/*"],
+      "@/assets/*": ["./assets/*"]
     }
   },
   "include": [
