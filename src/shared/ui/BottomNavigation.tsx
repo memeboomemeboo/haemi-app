@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Pressable, Text, StyleSheet, Image } from 'react-native';
+import { View, Pressable, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/shared/hooks';
 
 export type NavigationTab = 'Home' | 'Album' | 'Memory' | 'Report' | 'Quiz';
@@ -17,20 +17,16 @@ const TAB_LABELS: Record<NavigationTab, string> = {
   Quiz: '퀴즈',
 };
 
-const ICON_NAMES: Record<NavigationTab, string> = {
-  Home: 'home',
-  Album: 'album',
-  Memory: 'heart',
-  Report: 'report',
-  Quiz: 'quiz',
-};
-
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   activeTab,
   onTabChange,
 }) => {
   const { colors, typography, spacing, borderRadius } = useTheme();
   const tabs: NavigationTab[] = ['Home', 'Album', 'Memory', 'Report', 'Quiz'];
+
+  // Icon size from spacing tokens
+  const ICON_CONTAINER_SIZE = spacing['3xl'];
+  const ICON_SIZE = spacing.xl;
 
   const styles = StyleSheet.create({
     container: {
@@ -40,7 +36,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
       borderTopRightRadius: borderRadius.lg,
       shadowColor: '#000',
       shadowOpacity: 0.03,
-      shadowRadius: 2,
+      shadowRadius: spacing.xs,
       elevation: 3,
     },
     content: {
@@ -48,14 +44,15 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
       justifyContent: 'space-around',
       alignItems: 'center',
       paddingHorizontal: spacing.lg,
+      gap: spacing.xl,
     },
     tabButton: {
       alignItems: 'center',
       gap: spacing.xs,
     },
     tabIcon: {
-      width: 34,
-      height: 34,
+      width: ICON_CONTAINER_SIZE,
+      height: ICON_CONTAINER_SIZE,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -70,37 +67,42 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        {tabs.map((tab) => (
-          <Pressable
-            key={tab}
-            style={styles.tabButton}
-            onPress={() => onTabChange(tab)}
-            disabled={activeTab === tab}
-          >
-            <View style={styles.tabIcon}>
-              {/* Icon would be rendered here */}
-              <View
-                style={{
-                  width: 20,
-                  height: 20,
-                  backgroundColor:
-                    activeTab === tab ? colors.primary : colors.line.neutral,
-                  borderRadius: borderRadius.xs,
-                }}
-              />
-            </View>
-            <Text
-              style={[
-                styles.tabLabel,
-                {
-                  color: activeTab === tab ? colors.primary : colors.line.neutral,
-                },
-              ]}
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab;
+          const tabColor = isActive ? colors.primary : colors.line.neutral;
+
+          return (
+            <Pressable
+              key={tab}
+              style={styles.tabButton}
+              onPress={() => onTabChange(tab)}
+              disabled={isActive}
             >
-              {TAB_LABELS[tab]}
-            </Text>
-          </Pressable>
-        ))}
+              <View style={styles.tabIcon}>
+                {/* Icon placeholder - SVG icons should be imported and rendered here */}
+                <View
+                  style={{
+                    width: ICON_SIZE,
+                    height: ICON_SIZE,
+                    backgroundColor: tabColor,
+                    borderRadius: borderRadius.xs,
+                    opacity: 0.5,
+                  }}
+                />
+              </View>
+              <Text
+                style={[
+                  styles.tabLabel,
+                  {
+                    color: tabColor,
+                  },
+                ]}
+              >
+                {TAB_LABELS[tab]}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );
