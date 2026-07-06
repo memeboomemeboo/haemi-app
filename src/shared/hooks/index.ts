@@ -1,2 +1,2 @@
 // Export custom hooks from shared
-export {};
+export { useTheme } from './useTheme';
