@@ -1,34 +1,37 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { Picture } from '@/shared/ui/Icon';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import { Illustration } from '@/shared/ui/Icon';
+
+const logoSource = require('../../../assets/images/haemi-logo.png');
+const familySource = require('../../../assets/images/haemi-family.png');
 
 export const HaemiSection = () => {
   return (
     <View style={styles.haemiSection}>
+      {/* 왼쪽: 해미로 소개 카드 */}
       <View style={styles.haemiLeft}>
         <View style={styles.haemiHeader}>
-          <Text style={styles.haemiHeaderText}>해미</Text>
+          <Image source={logoSource} style={styles.haemiLogo} resizeMode="contain" />
           <Text style={styles.haemiSubText}>로</Text>
         </View>
-        <Text style={styles.haemiDesc}>가족과의 추억을{'\n'}다시 떠올려보세요</Text>
-        <View style={styles.illustrationPlaceholder}>
-          <Picture size={48} color="#c5d3e0" />
-        </View>
+        <Text style={styles.haemiDesc}>가족과의 추억을 다시 떠올려보세요</Text>
+        <Image source={familySource} style={styles.familyImage} resizeMode="contain" />
       </View>
 
+      {/* 오른쪽: 액션 카드 2개 */}
       <View style={styles.haemiRight}>
         <View style={styles.haemiCard}>
           <View style={styles.cardTextContent}>
             <Text style={styles.cardSubtitle}>추억을 돌아보며</Text>
             <Text style={styles.cardTitle}>사진 추가하기</Text>
           </View>
-          <Picture size={34} color="#fd8768" style={styles.cardIcon} />
+          <Illustration name="photoAdd" width={49} height={38} style={styles.cardIcon} />
         </View>
         <View style={styles.haemiCard}>
           <View style={styles.cardTextContent}>
             <Text style={styles.cardSubtitle}>다시 회상하며</Text>
             <Text style={styles.cardTitle}>추억 남기기</Text>
           </View>
-          <Picture size={34} color="#fd8768" style={styles.cardIcon} />
+          <Illustration name="memoWrite" width={45} height={45} style={styles.cardIcon} />
         </View>
       </View>
     </View>
@@ -46,9 +49,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f2f2f2',
     borderRadius: 10,
-    padding: 15,
-    gap: 8,
-    justifyContent: 'space-between',
+    paddingTop: 15,
+    paddingHorizontal: 18,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.08,
@@ -57,31 +60,35 @@ const styles = StyleSheet.create({
   },
   haemiHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
+    alignItems: 'flex-end',
+    gap: 1,
   },
-  haemiHeaderText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#76787a',
+  haemiLogo: {
+    width: 62,
+    height: 24,
   },
   haemiSubText: {
     fontSize: 16,
     fontWeight: '500',
     color: '#76787a',
+    letterSpacing: -0.32,
+    lineHeight: 21,
   },
   haemiDesc: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: '#76787a',
-    lineHeight: 18,
+    letterSpacing: -0.32,
+    lineHeight: 21,
+    marginTop: 8,
+    maxWidth: 130,
   },
-  illustrationPlaceholder: {
-    flex: 1,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+  familyImage: {
+    width: 135,
+    height: 89,
+    alignSelf: 'center',
+    marginTop: 'auto',
+    marginBottom: 15,
   },
   haemiRight: {
     flex: 1,
@@ -91,24 +98,30 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fed7cd',
     borderRadius: 10,
-    padding: 12,
-    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    overflow: 'hidden',
   },
   cardTextContent: {
-    gap: 2,
+    gap: 0,
   },
   cardSubtitle: {
     fontSize: 12,
     fontWeight: '400',
     color: '#fd6035',
+    letterSpacing: -0.24,
+    lineHeight: 16,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: '500',
     color: '#5a5c5d',
-    lineHeight: 22,
+    letterSpacing: -0.36,
+    lineHeight: 23,
   },
   cardIcon: {
-    alignSelf: 'flex-end',
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
   },
 });
