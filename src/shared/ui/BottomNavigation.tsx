@@ -25,56 +25,21 @@ const ICON_COMPONENTS: Record<NavigationTab, React.ComponentType<{ size?: number
   Quiz,
 };
 
+const TABS: NavigationTab[] = ['Home', 'Album', 'Memory', 'Report', 'Quiz'];
+
+const ACTIVE_COLOR = '#fd6941';
+const INACTIVE_COLOR = '#dadbdc';
+
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   activeTab,
   onTabChange,
 }) => {
-  const tabs: NavigationTab[] = ['Home', 'Album', 'Memory', 'Report', 'Quiz'];
-
-  const styles = StyleSheet.create({
-    container: {
-      backgroundColor: '#ffffff',
-      height: 73,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: 0.03,
-      shadowRadius: 2,
-      elevation: 3,
-    },
-    content: {
-      flex: 1,
-      flexDirection: 'row',
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: 32,
-      paddingHorizontal: 20,
-    },
-    tabButton: {
-      alignItems: 'center',
-      gap: 4,
-    },
-    tabIcon: {
-      width: 34,
-      height: 34,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    tabLabel: {
-      fontSize: 16,
-      fontWeight: '500',
-      lineHeight: 20.8,
-      letterSpacing: -0.32,
-    },
-  });
-
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        {tabs.map((tab) => {
+        {TABS.map((tab) => {
           const isActive = activeTab === tab;
-          const tabColor = isActive ? '#fd6941' : '#dadbdc';
+          const tabColor = isActive ? ACTIVE_COLOR : INACTIVE_COLOR;
           const IconComponent = ICON_COMPONENTS[tab];
 
           return (
@@ -85,16 +50,9 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
               disabled={isActive}
             >
               <View style={styles.tabIcon}>
-                <IconComponent size={20} color={tabColor} />
+                <IconComponent size={22} color={tabColor} />
               </View>
-              <Text
-                style={[
-                  styles.tabLabel,
-                  {
-                    color: tabColor,
-                  },
-                ]}
-              >
+              <Text style={[styles.tabLabel, { color: tabColor }]}>
                 {TAB_LABELS[tab]}
               </Text>
             </Pressable>
@@ -104,3 +62,41 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: '#ffffff',
+    height: 73,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  content: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 32,
+    paddingHorizontal: 20,
+  },
+  tabButton: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  tabIcon: {
+    width: 34,
+    height: 34,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tabLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 20.8,
+    letterSpacing: -0.32,
+  },
+});

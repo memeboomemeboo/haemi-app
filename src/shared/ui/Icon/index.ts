@@ -1,4 +1,5 @@
 export { Icon, ICON_SIZES, ICON_SVG_MAP } from './Icon';
+export { Illustration, type IllustrationName } from './Illustration';
 export type { IconName, IconProps } from './types';
 export {
   Home,

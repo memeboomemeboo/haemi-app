@@ -1,12 +1,15 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { Alarm, Setting } from '@/shared/ui/Icon';
 
 export const HomeHeader = () => {
   return (
     <View style={styles.header}>
-      <Text style={styles.logo}>해미</Text>
+      <View style={styles.logoContainer}>
+        <Text style={styles.logo}>해미</Text>
+      </View>
       <View style={styles.headerIcons}>
-        <View style={styles.iconPlaceholder} />
-        <View style={styles.iconPlaceholder} />
+        <Alarm size={22} color="#dadbdc" />
+        <Setting size={24} color="#dadbdc" />
       </View>
     </View>
   );
@@ -18,6 +21,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 31,
+    paddingHorizontal: 0,
+  },
+  logoContainer: {
+    flex: 1,
   },
   logo: {
     fontSize: 24,
@@ -26,12 +33,7 @@ const styles = StyleSheet.create({
   },
   headerIcons: {
     flexDirection: 'row',
-    gap: 17,
-  },
-  iconPlaceholder: {
-    width: 20,
-    height: 20,
-    backgroundColor: '#d1d5db',
-    borderRadius: 4,
+    gap: 15,
+    alignItems: 'center',
   },
 });

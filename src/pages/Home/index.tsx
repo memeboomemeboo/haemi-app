@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, Platform } from 'react-native';
 
 import { BottomNavigation, type NavigationTab } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
@@ -12,7 +12,11 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentInset={{ bottom: 20 }}
+      >
         <HomeHeader />
         <UserCard />
         <HaemiSection />
@@ -32,8 +36,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 18,
-    paddingTop: 20,
+    paddingHorizontal: 26,
+    paddingTop: 60,
   },
   spacer: {
     height: 20,
