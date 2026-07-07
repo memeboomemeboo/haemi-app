@@ -1,3 +1,29 @@
 // Export UI components from shared
 export { BottomNavigation, type NavigationTab } from './BottomNavigation';
-export { Icon, ICON_SIZES, type IconName } from './Icon';
+export {
+  Icon,
+  ICON_SIZES,
+  ICON_SVG_MAP,
+  Home,
+  Album,
+  Report,
+  Setting,
+  Alarm,
+  Profile,
+  Arrow,
+  Check,
+  Graph,
+  Plus,
+  Picture,
+  Calendar,
+  Map,
+  People,
+  Heart,
+  Comment,
+  More,
+  Sent,
+  Quiz,
+  Circle,
+  type IconName,
+  type IconProps,
+} from './Icon';

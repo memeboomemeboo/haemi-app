@@ -33,7 +33,7 @@ export const MyApp = () => {
 
 ### Icon
 
-Icon component for displaying icons.
+Icon component system for displaying icons. Supports both generic `Icon` component and individual icon imports.
 
 **Available Icons:**
 
@@ -42,7 +42,7 @@ Icon component for displaying icons.
 - Content: Profile, Graph, Picture, Calendar, Map, People
 - Others: Heart, More, Sent, Quiz
 
-**Usage:**
+**Usage - Generic Component:**
 
 ```typescript
 import { Icon, ICON_SIZES } from '@/shared/ui';
@@ -61,20 +61,37 @@ export const MyIcon = () => {
 };
 ```
 
+**Usage - Individual Icon Components:**
+
+```typescript
+import { Home, Album, Report, useTheme } from '@/shared/ui';
+
+export const MyIcons = () => {
+  const { palette } = useTheme();
+
+  return (
+    <>
+      <Home size={20} color={palette.blue[50]} />
+      <Album size={20} color={palette.green[50]} />
+      <Report size={20} color={palette.red[50]} />
+    </>
+  );
+};
+```
+
 **Props:**
 
-- `name: IconName` - Icon name (required)
-- `size?: number` - Icon size (default: 24)
+- `size?: number` - Icon size (default: 20)
 - `color?: string` - Icon color (default: '#0c0c0d')
 - `style?: ViewStyle` - Additional styles
 
-**Icon Size Presets:**
+**Icon Size Presets (in pixels):**
 
 ```typescript
-ICON_SIZES.xs   // 16
-ICON_SIZES.sm   // 20
-ICON_SIZES.md   // 24 (default)
-ICON_SIZES.lg   // 32
+ICON_SIZES.xs   // 8
+ICON_SIZES.sm   // 16
+ICON_SIZES.md   // 20 (default)
+ICON_SIZES.lg   // 40
 ICON_SIZES.xl   // 48
 ```
 
