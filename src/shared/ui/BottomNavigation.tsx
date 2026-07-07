@@ -1,6 +1,9 @@
 import React from 'react';
 import { View, Pressable, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/shared/hooks';
+import { Icon } from './Icon';
+
+import type { IconName } from './Icon';
 
 export type NavigationTab = 'Home' | 'Album' | 'Memory' | 'Report' | 'Quiz';
 
@@ -15,6 +18,14 @@ const TAB_LABELS: Record<NavigationTab, string> = {
   Memory: '추억',
   Report: '리포트',
   Quiz: '퀴즈',
+};
+
+const TAB_ICONS: Record<NavigationTab, IconName> = {
+  Home: 'Home',
+  Album: 'Album',
+  Memory: 'Comment',
+  Report: 'Report',
+  Quiz: 'Quiz',
 };
 
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({
@@ -79,15 +90,10 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
               disabled={isActive}
             >
               <View style={styles.tabIcon}>
-                {/* Icon placeholder - SVG icons should be imported and rendered here */}
-                <View
-                  style={{
-                    width: ICON_SIZE,
-                    height: ICON_SIZE,
-                    backgroundColor: tabColor,
-                    borderRadius: borderRadius.xs,
-                    opacity: 0.5,
-                  }}
+                <Icon
+                  name={TAB_ICONS[tab]}
+                  size={ICON_SIZE}
+                  color={tabColor}
                 />
               </View>
               <Text

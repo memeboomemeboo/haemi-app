@@ -1,14 +1,6 @@
 /**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
+ * Legacy hook re-export - import from here for backwards compatibility
+ * New code should use useTheme() from @/shared/hooks instead
  */
 
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export function useTheme() {
-  const scheme = useColorScheme();
-  const theme = scheme === 'unspecified' ? 'light' : scheme;
-
-  return Colors[theme];
-}
+export { useLegacyTheme as useTheme } from '@/shared/hooks/useLegacyTheme';
