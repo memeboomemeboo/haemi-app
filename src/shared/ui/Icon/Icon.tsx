@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
-import { spacing, borderRadius } from '@/shared/constants';
+import React, { useMemo } from 'react';
+import { SvgXml } from 'react-native-svg';
+import { spacing } from '@/shared/constants';
 import { IconName, IconProps } from './types';
 import { ICON_SVG_MAP } from './icons';
 
@@ -18,48 +18,12 @@ const IconComponent: React.FC<IconProps> = ({
   color = '#0c0c0d',
   style,
 }) => {
-  const svgContent = ICON_SVG_MAP[name];
-
-  const styles = StyleSheet.create({
-    container: {
-      width: size,
-      height: size,
-      justifyContent: 'center',
-      alignItems: 'center',
-      overflow: 'hidden',
-    },
-  });
-
-  if (Platform.OS === 'web') {
-    const svgWithColor = svgContent.replace(/currentColor/g, color);
-    return (
-      <View style={[styles.container, style]}>
-        <div
-          style={{
-            width: size,
-            height: size,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          dangerouslySetInnerHTML={{ __html: svgWithColor }}
-        />
-      </View>
-    );
-  }
-
-  return (
-    <View style={[styles.container, style]}>
-      <View
-        style={{
-          width: size,
-          height: size,
-          backgroundColor: color,
-          borderRadius: borderRadius.xs,
-        }}
-      />
-    </View>
+  const xml = useMemo(
+    () => ICON_SVG_MAP[name].replace(/currentColor/g, color),
+    [name, color],
   );
+
+  return <SvgXml xml={xml} width={size} height={size} style={style} />;
 };
 
 export { IconComponent as Icon };
