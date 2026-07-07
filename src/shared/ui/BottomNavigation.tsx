@@ -1,9 +1,6 @@
 import React from 'react';
 import { View, Pressable, Text, StyleSheet } from 'react-native';
-import { useTheme } from '@/shared/hooks';
-import { Icon } from './Icon';
-
-import type { IconName } from './Icon';
+import { Home, Album, Heart, Report, Quiz } from './Icon';
 
 export type NavigationTab = 'Home' | 'Album' | 'Memory' | 'Report' | 'Quiz';
 
@@ -20,58 +17,55 @@ const TAB_LABELS: Record<NavigationTab, string> = {
   Quiz: '퀴즈',
 };
 
-const TAB_ICONS: Record<NavigationTab, IconName> = {
-  Home: 'Home',
-  Album: 'Album',
-  Memory: 'Comment',
-  Report: 'Report',
-  Quiz: 'Quiz',
+const ICON_COMPONENTS: Record<NavigationTab, React.ComponentType<{ size?: number; color?: string }>> = {
+  Home,
+  Album,
+  Memory: Heart,
+  Report,
+  Quiz,
 };
 
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   activeTab,
   onTabChange,
 }) => {
-  const { colors, typography, spacing, borderRadius } = useTheme();
   const tabs: NavigationTab[] = ['Home', 'Album', 'Memory', 'Report', 'Quiz'];
-
-  // Icon size from spacing tokens
-  const ICON_CONTAINER_SIZE = spacing['3xl'];
-  const ICON_SIZE = spacing.xl;
 
   const styles = StyleSheet.create({
     container: {
-      backgroundColor: colors.background.normal,
-      paddingVertical: spacing.md,
-      borderTopLeftRadius: borderRadius.lg,
-      borderTopRightRadius: borderRadius.lg,
+      backgroundColor: '#ffffff',
+      height: 73,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
       shadowColor: '#000',
+      shadowOffset: { width: 0, height: -2 },
       shadowOpacity: 0.03,
-      shadowRadius: spacing.xs,
+      shadowRadius: 2,
       elevation: 3,
     },
     content: {
+      flex: 1,
       flexDirection: 'row',
-      justifyContent: 'space-around',
+      justifyContent: 'center',
       alignItems: 'center',
-      paddingHorizontal: spacing.lg,
-      gap: spacing.xl,
+      gap: 32,
+      paddingHorizontal: 20,
     },
     tabButton: {
       alignItems: 'center',
-      gap: spacing.xs,
+      gap: 4,
     },
     tabIcon: {
-      width: ICON_CONTAINER_SIZE,
-      height: ICON_CONTAINER_SIZE,
+      width: 34,
+      height: 34,
       justifyContent: 'center',
       alignItems: 'center',
     },
     tabLabel: {
-      fontSize: typography.body.medium.fontSize,
-      fontWeight: typography.body.medium.fontWeight,
-      lineHeight: typography.body.medium.lineHeight,
-      letterSpacing: typography.body.medium.letterSpacing,
+      fontSize: 16,
+      fontWeight: '500',
+      lineHeight: 20.8,
+      letterSpacing: -0.32,
     },
   });
 
@@ -80,7 +74,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
       <View style={styles.content}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab;
-          const tabColor = isActive ? colors.primary : colors.line.neutral;
+          const tabColor = isActive ? '#fd6941' : '#dadbdc';
+          const IconComponent = ICON_COMPONENTS[tab];
 
           return (
             <Pressable
@@ -90,11 +85,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
               disabled={isActive}
             >
               <View style={styles.tabIcon}>
-                <Icon
-                  name={TAB_ICONS[tab]}
-                  size={ICON_SIZE}
-                  color={tabColor}
-                />
+                <IconComponent size={20} color={tabColor} />
               </View>
               <Text
                 style={[
