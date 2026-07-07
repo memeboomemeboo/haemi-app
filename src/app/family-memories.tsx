@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HaemiHeader } from '@/components/haemi-header';
 import { HaemiIcon } from '@/components/haemi-icons';
 import {
   createFamilyMemoryPost,
@@ -26,6 +25,8 @@ import type { FamilyMemoryPhotoUpload, FamilyMemoryPost } from '@/shared/types/f
 type MemoryMode = 'feed' | 'compose' | 'composeAlbum';
 
 const PHOTO_URL = 'https://www.figma.com/api/mcp/asset/2722f17b-68ff-447f-b601-5b19f87fa5be';
+const LOGO_URL = 'https://www.figma.com/api/mcp/asset/5300de0b-0352-4b87-afed-9e109f965b6e';
+
 const ORANGE = '#fd6941';
 const ORANGE_SOFT = '#fed7cd';
 const TEXT = '#3c3e3f';
@@ -68,8 +69,6 @@ export default function FamilyMemoriesScreen() {
   const [isFeedLoading, setIsFeedLoading] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
   const [feedError, setFeedError] = useState<string | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const screenWidth = Math.min(width, 393);
@@ -182,24 +181,10 @@ export default function FamilyMemoriesScreen() {
     setMode('feed');
   };
 
-  const handleLogout = () => {
-    setLogoutConfirmOpen(false);
-    Alert.alert('로그아웃', '로그아웃되었습니다.');
-  };
-
   return (
     <View style={styles.outer}>
       <SafeAreaView edges={['top']} style={[styles.phone, { width: screenWidth }]}>
-        <HaemiHeader
-          settingsOpen={settingsOpen}
-          logoutConfirmOpen={logoutConfirmOpen}
-          userLabel={currentMember.memberName}
-          onToggleSettings={() => setSettingsOpen((current) => !current)}
-          onCloseSettings={() => setSettingsOpen(false)}
-          onOpenLogoutConfirm={() => setLogoutConfirmOpen(true)}
-          onCloseLogoutConfirm={() => setLogoutConfirmOpen(false)}
-          onConfirmLogout={handleLogout}
-        />
+        <Header />
 
         {isCompose ? (
           <ComposeScreen
@@ -257,6 +242,18 @@ function decodeJwtPayload(token: string): { sub?: string; name?: string } | unde
   } catch {
     return undefined;
   }
+}
+
+function Header() {
+  return (
+    <View style={styles.header}>
+      <Image source={LOGO_URL} style={styles.logo} contentFit="contain" />
+      <View style={styles.headerActions}>
+        <HaemiIcon name="alarm" color={LINE} size={30} />
+        <HaemiIcon name="gear" color={LINE} size={28} />
+      </View>
+    </View>
+  );
 }
 
 function FeedScreen({
