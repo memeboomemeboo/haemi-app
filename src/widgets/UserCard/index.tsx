@@ -1,7 +1,13 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import type { SeniorProfile } from '@/entities/user';
 import { Arrow, Profile } from '@/shared/ui/Icon';
 
-export const UserCard = () => {
+interface UserCardProps {
+  profile: SeniorProfile | null;
+  onDetailPress?: () => void;
+}
+
+export const UserCard = ({ profile, onDetailPress }: UserCardProps) => {
   return (
     <View style={styles.userCard}>
       {/* Profile icon (left) */}
@@ -14,19 +20,21 @@ export const UserCard = () => {
         {/* Row 1: name + age badge | detail button */}
         <View style={styles.topRow}>
           <View style={styles.nameGroup}>
-            <Text style={styles.userName}>어머니</Text>
-            <View style={styles.ageBadge}>
-              <Text style={styles.ageBadgeText}>70세</Text>
-            </View>
+            <Text style={styles.userName}>{profile?.name ?? ''}</Text>
+            {profile && (
+              <View style={styles.ageBadge}>
+                <Text style={styles.ageBadgeText}>{profile.age}세</Text>
+              </View>
+            )}
           </View>
-          <Pressable style={styles.detailButton}>
+          <Pressable style={styles.detailButton} onPress={onDetailPress}>
             <Text style={styles.detailButtonText}>상세보기</Text>
             <Arrow size={13} color="#fd6941" />
           </Pressable>
         </View>
 
         {/* Row 2: status text */}
-        <Text style={styles.userStatus}>오늘도 건강하게 활동 중이에요</Text>
+        <Text style={styles.userStatus}>{profile?.statusMessage ?? ''}</Text>
       </View>
     </View>
   );

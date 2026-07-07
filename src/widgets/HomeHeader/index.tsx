@@ -1,15 +1,24 @@
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Alarm, Setting } from '@/shared/ui/Icon';
 
 const logoSource = require('../../../assets/images/haemi-logo.png');
 
-export const HomeHeader = () => {
+interface HomeHeaderProps {
+  onAlarmPress?: () => void;
+  onSettingPress?: () => void;
+}
+
+export const HomeHeader = ({ onAlarmPress, onSettingPress }: HomeHeaderProps) => {
   return (
     <View style={styles.header}>
       <Image source={logoSource} style={styles.logo} resizeMode="contain" />
       <View style={styles.headerIcons}>
-        <Alarm size={22} color="#dadbdc" />
-        <Setting size={24} color="#dadbdc" />
+        <Pressable onPress={onAlarmPress} hitSlop={8}>
+          <Alarm size={22} color="#dadbdc" />
+        </Pressable>
+        <Pressable onPress={onSettingPress} hitSlop={8}>
+          <Setting size={24} color="#dadbdc" />
+        </Pressable>
       </View>
     </View>
   );

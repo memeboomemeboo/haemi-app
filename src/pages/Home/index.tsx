@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { useSeniorProfile } from '@/entities/user';
+import { useTodayActivities } from '@/entities/activity';
 import { BottomNavigation, type NavigationTab } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 import { UserCard } from '@/widgets/UserCard';
@@ -9,6 +11,8 @@ import { TodayActivities } from '@/widgets/TodayActivities';
 
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<NavigationTab>('Home');
+  const { profile } = useSeniorProfile();
+  const { activities } = useTodayActivities();
 
   return (
     <View style={styles.container}>
@@ -18,9 +22,9 @@ export default function HomeScreen() {
         contentInset={{ bottom: 20 }}
       >
         <HomeHeader />
-        <UserCard />
+        <UserCard profile={profile} />
         <HaemiSection />
-        <TodayActivities />
+        <TodayActivities activities={activities} />
         <View style={styles.spacer} />
       </ScrollView>
 
