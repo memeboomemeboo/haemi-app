@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Pressable, Text, StyleSheet } from 'react-native';
+import { useRouter, type Href } from 'expo-router';
 import { Home, Album, Heart, Report, Quiz } from './Icon';
 
 export type NavigationTab = 'Home' | 'Album' | 'Memory' | 'Report' | 'Quiz';
 
 interface BottomNavigationProps {
   activeTab: NavigationTab;
-  onTabChange: (tab: NavigationTab) => void;
 }
 
 const TAB_LABELS: Record<NavigationTab, string> = {
@@ -25,15 +25,20 @@ const ICON_COMPONENTS: Record<NavigationTab, React.ComponentType<{ size?: number
   Quiz,
 };
 
+/** 구현된 화면만 라우트를 가진다 — 나머지 탭은 눌러도 이동하지 않는다 */
+const TAB_ROUTES: Partial<Record<NavigationTab, Href>> = {
+  Home: '/',
+  Album: '/album',
+};
+
 const TABS: NavigationTab[] = ['Home', 'Album', 'Memory', 'Report', 'Quiz'];
 
 const ACTIVE_COLOR = '#fd6941';
 const INACTIVE_COLOR = '#dadbdc';
 
-export const BottomNavigation: React.FC<BottomNavigationProps> = ({
-  activeTab,
-  onTabChange,
-}) => {
+export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
+  const router = useRouter();
+
   return (
     <View style={styles.container}>
       <View style={styles.content}>
@@ -41,13 +46,14 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
           const isActive = activeTab === tab;
           const tabColor = isActive ? ACTIVE_COLOR : INACTIVE_COLOR;
           const IconComponent = ICON_COMPONENTS[tab];
+          const route = TAB_ROUTES[tab];
 
           return (
             <Pressable
               key={tab}
               style={styles.tabButton}
-              onPress={() => onTabChange(tab)}
-              disabled={isActive}
+              onPress={() => route && router.replace(route)}
+              disabled={isActive || !route}
             >
               <View style={styles.tabIcon}>
                 <IconComponent size={22} color={tabColor} />

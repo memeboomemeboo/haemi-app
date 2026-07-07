@@ -1,10 +1,9 @@
-import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useSeniorProfile } from '@/entities/user';
 import { useTodayActivities } from '@/entities/activity';
-import { BottomNavigation, type NavigationTab } from '@/shared/ui';
+import { BottomNavigation } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 import { UserCard } from '@/widgets/UserCard';
 import { HaemiSection } from '@/widgets/HaemiSection';
@@ -12,7 +11,6 @@ import { TodayActivities } from '@/widgets/TodayActivities';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<NavigationTab>('Home');
   const { profile } = useSeniorProfile();
   const { activities } = useTodayActivities();
 
@@ -29,7 +27,7 @@ export default function HomeScreen() {
         <TodayActivities activities={activities} />
       </ScrollView>
 
-      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomNavigation activeTab="Home" />
     </View>
   );
 }
