@@ -1,2 +1,1 @@
-// Export pages
-export {};
+export { default as Home } from './Home';
