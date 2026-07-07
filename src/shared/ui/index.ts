@@ -14,6 +14,7 @@ export {
   Profile,
   Arrow,
   Check,
+  Plus,
   type IconName,
   type IconProps,
   type IllustrationName,

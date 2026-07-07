@@ -12,4 +12,5 @@ export {
   Profile,
   Arrow,
   Check,
+  Plus,
 } from './icons-components';
