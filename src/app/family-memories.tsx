@@ -1,5 +1,4 @@
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
 import { useMemo, useState } from 'react';
 import {
   Alert,
@@ -13,7 +12,9 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-type MemoryMode = 'feed' | 'detail' | 'compose' | 'composeAlbum';
+import { HaemiIcon } from '@/components/haemi-icons';
+
+type MemoryMode = 'feed' | 'compose' | 'composeAlbum';
 
 const PHOTO_URL = 'https://www.figma.com/api/mcp/asset/2722f17b-68ff-447f-b601-5b19f87fa5be';
 const LOGO_URL = 'https://www.figma.com/api/mcp/asset/5300de0b-0352-4b87-afed-9e109f965b6e';
@@ -80,7 +81,7 @@ export default function FamilyMemoriesScreen() {
             onCancel={() => setMode('feed')}
           />
         ) : (
-          <FeedScreen expanded={mode === 'detail'} onExpand={() => setMode('detail')} />
+          <FeedScreen />
         )}
 
         {!isCompose && (
@@ -89,11 +90,9 @@ export default function FamilyMemoriesScreen() {
             accessibilityLabel="추억 등록"
             style={({ pressed }) => [styles.fab, { bottom: 83 + insets.bottom }, pressed && styles.pressed]}
             onPress={() => setMode('compose')}>
-            <SymbolView name="plus" tintColor="#ffffff" size={36} />
+            <HaemiIcon name="plus" color="#ffffff" size={38} />
           </Pressable>
         )}
-
-        <BottomNav bottomInset={insets.bottom} />
       </SafeAreaView>
 
       {mode === 'composeAlbum' && (
@@ -115,52 +114,64 @@ function Header() {
     <View style={styles.header}>
       <Image source={LOGO_URL} style={styles.logo} contentFit="contain" />
       <View style={styles.headerActions}>
-        <SymbolView name="bell.fill" tintColor={LINE} size={26} />
-        <SymbolView name="gearshape.fill" tintColor={LINE} size={26} />
+        <HaemiIcon name="alarm" color={LINE} size={30} />
+        <HaemiIcon name="gear" color={LINE} size={28} />
       </View>
     </View>
   );
 }
 
-function FeedScreen({ expanded, onExpand }: { expanded: boolean; onExpand: () => void }) {
+function FeedScreen() {
+  const [likedById, setLikedById] = useState(() =>
+    Object.fromEntries(feedItems.map((item) => [item.id, item.liked]))
+  );
+  const [commentOpenById, setCommentOpenById] = useState<Record<string, boolean>>({});
+
+  const toggleLike = (id: string) => {
+    setLikedById((current) => ({ ...current, [id]: !current[id] }));
+  };
+
+  const toggleComments = (id: string) => {
+    setCommentOpenById((current) => ({ ...current, [id]: !current[id] }));
+  };
+
   return (
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={styles.feedContent}
       showsVerticalScrollIndicator={false}>
       <Text style={styles.title}>가족 추억</Text>
-      {expanded ? (
-        <MemoryCard expanded onPress={onExpand} liked comments={1} />
-      ) : (
-        feedItems.map((item) => (
-          <MemoryCard
-            key={item.id}
-            liked={item.liked}
-            comments={item.comments}
-            onPress={item.id === 'first' ? onExpand : undefined}
-          />
-        ))
-      )}
+      {feedItems.map((item) => (
+        <MemoryCard
+          key={item.id}
+          liked={likedById[item.id]}
+          comments={item.comments}
+          commentsOpen={commentOpenById[item.id] ?? false}
+          onToggleLike={() => toggleLike(item.id)}
+          onToggleComments={() => toggleComments(item.id)}
+        />
+      ))}
     </ScrollView>
   );
 }
 
 function MemoryCard({
-  expanded = false,
   liked,
   comments,
-  onPress,
+  commentsOpen,
+  onToggleLike,
+  onToggleComments,
 }: {
-  expanded?: boolean;
   liked: boolean;
   comments: number;
-  onPress?: () => void;
+  commentsOpen: boolean;
+  onToggleLike: () => void;
+  onToggleComments: () => void;
 }) {
+  const likeCount = liked ? 12 : 11;
+
   return (
-    <Pressable
-      accessibilityRole={onPress ? 'button' : undefined}
-      style={({ pressed }) => [styles.memoryCard, expanded && styles.memoryCardExpanded, pressed && styles.pressed]}
-      onPress={onPress}>
+    <View style={[styles.memoryCard, commentsOpen && styles.memoryCardExpanded]}>
       <View style={styles.cardHeader}>
         <View style={styles.author}>
           <Avatar />
@@ -176,11 +187,23 @@ function MemoryCard({
       <Image source={PHOTO_URL} style={styles.feedPhoto} contentFit="cover" />
 
       <View style={styles.reactionRow}>
-        <Reaction icon="heart" label="좋아요" count={12} active={liked} />
-        <Reaction icon="comment" label="댓글" count={comments} />
+        <Reaction
+          icon="heart"
+          label="좋아요"
+          count={likeCount}
+          active={liked}
+          onPress={onToggleLike}
+        />
+        <Reaction
+          icon="comment"
+          label="댓글"
+          count={comments}
+          active={commentsOpen}
+          onPress={onToggleComments}
+        />
       </View>
 
-      {expanded && (
+      {commentsOpen && (
         <>
           <View style={styles.divider} />
           <Text style={styles.commentTitle}>1개의 댓글</Text>
@@ -192,16 +215,16 @@ function MemoryCard({
                 <Text style={styles.commentDate}>06.10</Text>
               </View>
             </View>
-            <SymbolView name="ellipsis" tintColor={LINE_NORMAL} size={24} />
+            <HaemiIcon name="more" color={LINE_NORMAL} size={24} />
           </View>
           <Text style={styles.bodyText}>그때 너무 예뻤는데~~ 나도 기억이 떠오르네!</Text>
           <View style={styles.commentInput}>
             <Text style={styles.placeholderText}>댓글을 작성해 보세요.</Text>
-            <SymbolView name="paperplane" tintColor={ORANGE} size={22} />
+            <HaemiIcon name="send" color={ORANGE} size={22} />
           </View>
         </>
       )}
-    </Pressable>
+    </View>
   );
 }
 
@@ -219,20 +242,32 @@ function Reaction({
   label,
   count,
   active = false,
+  onPress,
 }: {
   icon: 'heart' | 'comment';
   label: string;
   count: number;
   active?: boolean;
+  onPress: () => void;
 }) {
-  const name = icon === 'heart' ? (active ? 'heart.fill' : 'heart') : 'text.bubble';
+  const color = icon === 'heart' && active ? '#ff0000' : active ? ORANGE : LINE;
 
   return (
-    <View style={styles.reaction}>
-      <SymbolView name={name} tintColor={active ? '#ff0000' : LINE} size={23} />
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${label} ${active ? '끄기' : '켜기'}`}
+      hitSlop={8}
+      style={({ pressed }) => [styles.reaction, pressed && styles.pressed]}
+      onPress={onPress}>
+      <HaemiIcon
+        name={icon}
+        color={color}
+        filled={icon === 'heart' && active}
+        size={23}
+      />
       <Text style={styles.reactionText}>{label}</Text>
       <Text style={styles.reactionText}>{count}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -259,7 +294,7 @@ function ComposeScreen({
     <View style={styles.compose}>
       <View style={styles.backTitle}>
         <Pressable accessibilityRole="button" accessibilityLabel="뒤로" onPress={onBack} hitSlop={8}>
-          <SymbolView name="chevron.left" tintColor={TEXT} size={26} />
+          <HaemiIcon name="arrowLeft" color={TEXT} size={30} />
         </Pressable>
         <Text style={styles.title}>추억 등록</Text>
       </View>
@@ -316,7 +351,7 @@ function PhotoTile() {
 function UploadTile({ onPress }: { onPress: () => void }) {
   return (
     <Pressable style={({ pressed }) => [styles.uploadTile, pressed && styles.pressed]} onPress={onPress}>
-      <SymbolView name="photo" tintColor={LINE_NORMAL} size={40} />
+      <HaemiIcon name="photo" color={LINE_NORMAL} size={40} />
       <Text style={styles.uploadText}>이미지를 업로드하세요</Text>
     </Pressable>
   );
@@ -347,27 +382,6 @@ function AlbumSheet({ width, onSelect, onClose }: { width: number; onSelect: () 
           ))}
         </ScrollView>
       </View>
-    </View>
-  );
-}
-
-function BottomNav({ bottomInset }: { bottomInset: number }) {
-  const items = [
-    { label: '홈', icon: 'house.fill', active: false },
-    { label: '앨범', icon: 'photo.on.rectangle', active: false },
-    { label: '추억', icon: 'heart.fill', active: true },
-    { label: '리포트', icon: 'chart.bar.fill', active: false },
-    { label: '퀴즈', icon: 'questionmark.square.fill', active: false },
-  ] as const;
-
-  return (
-    <View style={[styles.bottomNav, { paddingBottom: Math.max(bottomInset, 8) }]}>
-      {items.map((item) => (
-        <View key={item.label} style={styles.navItem}>
-          <SymbolView name={item.icon} tintColor={item.active ? ORANGE : LINE} size={26} />
-          <Text style={[styles.navLabel, item.active && styles.navLabelActive]}>{item.label}</Text>
-        </View>
-      ))}
     </View>
   );
 }
@@ -488,11 +502,13 @@ const styles = StyleSheet.create({
   reactionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 17,
+    gap: 6,
   },
   reaction: {
+    minHeight: 36,
+    paddingRight: 12,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     gap: 3,
   },
   reactionText: {
@@ -643,7 +659,7 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     flex: 1,
-    height: 35,
+    height: 44,
     borderRadius: 5,
     backgroundColor: ORANGE_SOFT,
     alignItems: 'center',
@@ -651,7 +667,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     flex: 1,
-    height: 35,
+    height: 44,
     borderRadius: 5,
     backgroundColor: ORANGE,
     alignItems: 'center',
@@ -660,14 +676,16 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: ORANGE,
     fontSize: 20,
-    lineHeight: 26,
+    lineHeight: 28,
     fontWeight: '500',
+    includeFontPadding: false,
   },
   primaryButtonText: {
     color: ORANGE_SOFT,
     fontSize: 20,
-    lineHeight: 26,
+    lineHeight: 28,
     fontWeight: '500',
+    includeFontPadding: false,
   },
   scrim: {
     position: 'absolute',
@@ -740,40 +758,6 @@ const styles = StyleSheet.create({
   albumThumbImage: {
     width: '100%',
     height: '100%',
-  },
-  bottomNav: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    minHeight: 73,
-    paddingTop: 10,
-    paddingHorizontal: 30,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    backgroundColor: '#ffffff',
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    shadowColor: '#000000',
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: -2 },
-    elevation: 4,
-  },
-  navItem: {
-    width: 44,
-    alignItems: 'center',
-    gap: 4,
-  },
-  navLabel: {
-    color: LINE,
-    fontSize: 16,
-    lineHeight: 21,
-    fontWeight: '500',
-  },
-  navLabelActive: {
-    color: ORANGE,
   },
   pressed: {
     opacity: 0.72,
