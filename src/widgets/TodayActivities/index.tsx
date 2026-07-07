@@ -1,63 +1,58 @@
 import { StyleSheet, Text, View } from 'react-native';
+import type { Activity, ActivityType } from '@/entities/activity';
 import { Check, Illustration, type IllustrationName } from '@/shared/ui/Icon';
 
-interface Activity {
-  illustration: IllustrationName;
-  illustrationSize: { width: number; height: number };
-  name: string;
-  status: string;
-  backgroundColor: string;
-  done?: boolean;
+interface TodayActivitiesProps {
+  activities: Activity[] | null;
 }
 
-const ACTIVITIES: Activity[] = [
-  {
-    illustration: 'recall',
-    illustrationSize: { width: 53, height: 44 },
-    name: '오늘의 회상',
-    status: '완료',
-    backgroundColor: '#fff3f0',
-    done: true,
-  },
-  {
-    illustration: 'quiz',
-    illustrationSize: { width: 60, height: 60 },
-    name: '인지 훈련',
-    status: '진행 중',
-    backgroundColor: '#fef8cd',
-  },
-  {
-    illustration: 'letter',
-    illustrationSize: { width: 56, height: 36 },
-    name: '새 추억 답장',
-    status: '1개 도착',
-    backgroundColor: '#cdeafe',
-  },
-];
+/** 활동 종류별 디자인 매핑 (일러스트/배경색) — 표현 관심사는 위젯이 가진다 */
+const ACTIVITY_DESIGN: Record<
+  ActivityType,
+  { illustration: IllustrationName; width: number; height: number; backgroundColor: string }
+> = {
+  recall: { illustration: 'recall', width: 53, height: 44, backgroundColor: '#fff3f0' },
+  quiz: { illustration: 'quiz', width: 60, height: 60, backgroundColor: '#fef8cd' },
+  letter: { illustration: 'letter', width: 56, height: 36, backgroundColor: '#cdeafe' },
+};
 
-export const TodayActivities = () => {
+function statusLabel(activity: Activity): string {
+  switch (activity.status) {
+    case 'completed':
+      return '완료';
+    case 'inProgress':
+      return '진행 중';
+    case 'arrived':
+      return `${activity.arrivedCount ?? 0}개 도착`;
+  }
+}
+
+export const TodayActivities = ({ activities }: TodayActivitiesProps) => {
   return (
     <View style={styles.section}>
       <Text style={styles.title}>오늘의 활동</Text>
       <View style={styles.grid}>
-        {ACTIVITIES.map((activity) => (
-          <View key={activity.name} style={styles.column}>
-            <View style={[styles.card, { backgroundColor: activity.backgroundColor }]}>
-              <View style={styles.illustrationBox}>
-                <Illustration
-                  name={activity.illustration}
-                  width={activity.illustrationSize.width}
-                  height={activity.illustrationSize.height}
-                />
+        {(activities ?? []).map((activity) => {
+          const design = ACTIVITY_DESIGN[activity.type];
+          return (
+            <View key={activity.id} style={styles.column}>
+              <View style={[styles.card, { backgroundColor: design.backgroundColor }]}>
+                <View style={styles.illustrationBox}>
+                  <Illustration
+                    name={design.illustration}
+                    width={design.width}
+                    height={design.height}
+                  />
+                </View>
+                <Text style={styles.cardLabel}>{activity.title}</Text>
               </View>
-              <Text style={styles.cardLabel}>{activity.name}</Text>
+              <View style={styles.statusRow}>
+                <Text style={styles.statusText}>{statusLabel(activity)}</Text>
+                {activity.status === 'completed' && <Check size={17} color="#fd6941" />}
+              </View>
             </View>
-            <View style={styles.statusRow}>
-              <Text style={styles.statusText}>{activity.status}</Text>
-              {activity.done && <Check size={17} color="#fd6941" />}
-            </View>
-          </View>
-        ))}
+          );
+        })}
       </View>
     </View>
   );

@@ -1,13 +1,18 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Illustration } from '@/shared/ui/Icon';
 
 const logoSource = require('../../../assets/images/haemi-logo.png');
 const familySource = require('../../../assets/images/haemi-family.png');
 
-export const HaemiSection = () => {
+interface HaemiSectionProps {
+  onAddPhotoPress?: () => void;
+  onLeaveMemoryPress?: () => void;
+}
+
+export const HaemiSection = ({ onAddPhotoPress, onLeaveMemoryPress }: HaemiSectionProps) => {
   return (
     <View style={styles.haemiSection}>
-      {/* 왼쪽: 해미로 소개 카드 */}
+      {/* 왼쪽: 해미 소개 카드 */}
       <View style={styles.haemiLeft}>
         <View style={styles.haemiHeader}>
           <Image source={logoSource} style={styles.haemiLogo} resizeMode="contain" />
@@ -19,20 +24,20 @@ export const HaemiSection = () => {
 
       {/* 오른쪽: 액션 카드 2개 */}
       <View style={styles.haemiRight}>
-        <View style={styles.haemiCard}>
+        <Pressable style={styles.haemiCard} onPress={onAddPhotoPress}>
           <View style={styles.cardTextContent}>
             <Text style={styles.cardSubtitle}>추억을 돌아보며</Text>
             <Text style={styles.cardTitle}>사진 추가하기</Text>
           </View>
           <Illustration name="photoAdd" width={49} height={38} style={styles.cardIcon} />
-        </View>
-        <View style={styles.haemiCard}>
+        </Pressable>
+        <Pressable style={styles.haemiCard} onPress={onLeaveMemoryPress}>
           <View style={styles.cardTextContent}>
             <Text style={styles.cardSubtitle}>다시 회상하며</Text>
             <Text style={styles.cardTitle}>추억 남기기</Text>
           </View>
           <Illustration name="memoWrite" width={45} height={45} style={styles.cardIcon} />
-        </View>
+        </Pressable>
       </View>
     </View>
   );
