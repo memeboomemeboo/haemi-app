@@ -12,6 +12,7 @@ export type HaemiIconName =
   | 'photo'
   | 'plus'
   | 'quiz'
+  | 'refresh'
   | 'report'
   | 'send';
 
@@ -45,6 +46,10 @@ export function HaemiIcon({ name, color, size = 24, filled = false }: HaemiIconP
 
   if (name === 'more') {
     return <Text style={[styles.symbol, { color, fontSize: size, lineHeight: size }]}>⋮</Text>;
+  }
+
+  if (name === 'refresh') {
+    return <Text style={[styles.symbol, { color, fontSize: size * 0.88, lineHeight: size }]}>↻</Text>;
   }
 
   if (name === 'quiz') {
