@@ -1,7 +1,6 @@
 /**
- * 아이콘 SVG 맵
- * - Figma 디자인(해미, node 52-2367)에서 추출한 원본 벡터를 사용한다.
- * - 단색 아이콘은 fill/stroke에 currentColor를 사용해 color prop으로 동적 색상을 적용한다.
+ * 아이콘 SVG 맵 — Figma 디자인(해미)에서 추출한 원본 벡터.
+ * 단색 아이콘은 fill/stroke에 currentColor를 사용해 color prop으로 동적 색상을 적용한다.
  */
 export const ICON_SVG_MAP = {
   Home: `<svg viewBox="0 0 22.6667 24.7917" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M0 21.9583V9.20833C0 8.75972 0.100583 8.33472 0.30175 7.93333C0.502916 7.53194 0.780111 7.20139 1.13333 6.94167L9.63333 0.566667C10.1292 0.188889 10.6958 0 11.3333 0C11.9708 0 12.5375 0.188889 13.0333 0.566667L21.5333 6.94167C21.8875 7.20139 22.1652 7.53194 22.3663 7.93333C22.5675 8.33472 22.6676 8.75972 22.6667 9.20833V21.9583C22.6667 22.7375 22.389 23.4047 21.8337 23.9601C21.2783 24.5154 20.6116 24.7926 19.8333 24.7917H15.5833C15.1819 24.7917 14.8457 24.6557 14.5747 24.3837C14.3036 24.1117 14.1676 23.7754 14.1667 23.375V16.2917C14.1667 15.8903 14.0307 15.5541 13.7587 15.283C13.4867 15.0119 13.1504 14.8759 12.75 14.875H9.91667C9.51528 14.875 9.17906 15.011 8.908 15.283C8.63694 15.555 8.50094 15.8912 8.5 16.2917V23.375C8.5 23.7764 8.364 24.1131 8.092 24.3851C7.82 24.6571 7.48378 24.7926 7.08333 24.7917H2.83333C2.05417 24.7917 1.38739 24.5145 0.833 23.9601C0.278611 23.4057 0.000944444 22.7384 0 21.9583Z" fill="currentColor"/> </svg>`,
@@ -23,26 +22,6 @@ export const ICON_SVG_MAP = {
   Arrow: `<svg viewBox="0 0 7.00652 13.3412" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="scale(-1,1) translate(-7.00652,0)"><path d="M6.81823 1.12483C6.87837 1.06119 6.92539 0.986315 6.9566 0.904496C6.98781 0.822677 7.0026 0.735511 7.00013 0.647977C6.99765 0.560442 6.97796 0.474252 6.94217 0.394328C6.90639 0.314404 6.85521 0.242311 6.79156 0.182166C6.72791 0.122021 6.65304 0.0750005 6.57122 0.0437901C6.48941 0.0125798 6.40224 -0.00220956 6.31471 0.000266668C6.22717 0.0027429 6.14098 0.0224361 6.06106 0.0582219C5.98113 0.0940078 5.90904 0.145185 5.84889 0.208833L0.182228 6.20883C0.0652042 6.33261 0 6.49649 0 6.66683C0 6.83717 0.0652042 7.00105 0.182228 7.12483L5.84889 13.1255C5.90864 13.1905 5.98072 13.2431 6.06094 13.28C6.14116 13.317 6.22792 13.3376 6.31618 13.3407C6.40444 13.3439 6.49245 13.3294 6.57509 13.2983C6.65772 13.2671 6.73335 13.2198 6.79756 13.1592C6.86177 13.0986 6.9133 13.0258 6.94914 12.9451C6.98499 12.8643 7.00444 12.7773 7.00636 12.689C7.00828 12.6007 6.99264 12.5129 6.96035 12.4307C6.92805 12.3485 6.87974 12.2735 6.81823 12.2102L1.58356 6.66683L6.81823 1.12483Z" fill="currentColor"/></g></svg>`,
 
   Check: `<svg viewBox="0 0 15.5833 15.5833" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.79167 14.875C8.72204 14.8762 9.64346 14.6935 10.503 14.3374C11.3625 13.9814 12.1433 13.459 12.8003 12.8003C13.459 12.1433 13.9814 11.3625 14.3374 10.503C14.6935 9.64346 14.8762 8.72204 14.875 7.79167C14.8762 6.86131 14.6935 5.93989 14.3374 5.08035C13.9814 4.2208 13.459 3.44009 12.8003 2.78305C12.1433 2.12435 11.3625 1.60198 10.503 1.24593C9.64346 0.889889 8.72204 0.707191 7.79167 0.708339C6.86131 0.707191 5.93989 0.889889 5.08035 1.24593C4.2208 1.60198 3.44009 2.12435 2.78305 2.78305C2.12435 3.44009 1.60198 4.2208 1.24593 5.08035C0.889889 5.93989 0.707191 6.86131 0.708339 7.79167C0.707191 8.72204 0.889889 9.64346 1.24593 10.503C1.60198 11.3625 2.12435 12.1433 2.78305 12.8003C3.44009 13.459 4.2208 13.9814 5.08035 14.3374C5.93989 14.6935 6.86131 14.8762 7.79167 14.875Z" fill="currentColor" stroke="currentColor" stroke-width="1.41667" stroke-linejoin="round"/><path d="M4.95834 7.79167L7.08334 9.91667L11.3333 5.66667" stroke="#ffffff" stroke-width="1.41667" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-
-  Graph: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 21H21V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 15L8 10L13 14L21 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`,
-
-  Plus: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
-
-  Picture: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><path d="M3 17L9 11L21 23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`,
-
-  Calendar: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M16 2V6M8 2V6M3 10H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-
-  Map: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="currentColor"/></svg>`,
-
-  People: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="2" fill="none"/><path d="M2 20C2 16.134 5.134 13 8 13C10.866 13 14 16.134 14 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="16" cy="8" r="3" stroke="currentColor" stroke-width="2" fill="none"/><path d="M10 20C10 16.686 12.686 14 16 14C19.314 14 22 16.686 22 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`,
-
-  Comment: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`,
-
-  More: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="6" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="18" cy="12" r="2" fill="currentColor"/></svg>`,
-
-  Sent: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 8L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`,
-
-  Circle: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/></svg>`,
 
 } as const;
 

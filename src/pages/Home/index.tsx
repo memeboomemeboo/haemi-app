@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useSeniorProfile } from '@/entities/user';
 import { useTodayActivities } from '@/entities/activity';
@@ -10,6 +11,7 @@ import { HaemiSection } from '@/widgets/HaemiSection';
 import { TodayActivities } from '@/widgets/TodayActivities';
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<NavigationTab>('Home');
   const { profile } = useSeniorProfile();
   const { activities } = useTodayActivities();
@@ -18,14 +20,13 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <ScrollView
         style={styles.content}
+        contentContainerStyle={[styles.contentContainer, { paddingTop: Math.max(insets.top, 20) }]}
         showsVerticalScrollIndicator={false}
-        contentInset={{ bottom: 20 }}
       >
         <HomeHeader />
         <UserCard profile={profile} />
         <HaemiSection />
         <TodayActivities activities={activities} />
-        <View style={styles.spacer} />
       </ScrollView>
 
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
@@ -40,10 +41,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 26,
-    paddingTop: 60,
   },
-  spacer: {
-    height: 20,
+  contentContainer: {
+    paddingHorizontal: 26,
+    paddingBottom: 20,
   },
 });
