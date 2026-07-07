@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,8 +12,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HaemiIcon } from '@/components/haemi-icons';
+import { generateReport, getReportMetrics, markReportViewed, ReportApiError } from '@/shared/api/report';
+import type { CognitiveMetricResult, CognitiveReportResult } from '@/shared/types/report';
 
 const LOGO_URL = 'https://www.figma.com/api/mcp/asset/3340f72f-9dcc-4a58-a4f2-84f75e3cfb54';
+const DEFAULT_ELDER_ID = process.env.EXPO_PUBLIC_HAEMI_ELDER_ID ?? 'elder-001';
+const DEFAULT_ALBUM_ID = process.env.EXPO_PUBLIC_HAEMI_ALBUM_ID;
 
 const ORANGE = '#fd6941';
 const ORANGE_DEEP = '#fd6035';
@@ -30,18 +35,79 @@ const YELLOW_SOFT = '#fef8cd';
 const BLUE = '#0694f9';
 const BLUE_SOFT = '#cdeafe';
 
-type ReportMode = 'ready' | 'insufficient' | 'pdfError';
+type ReportMode = 'ready' | 'insufficient';
 
-const days = ['6/15', '6/16', '6/17', '6/18', '6/19', '6/20', '6/21', '6/22'];
-const correctRates = [60, 25, 35, 90, 65, 65, 50, 75];
-const participationCounts = [4, 8, 6, 7, 1, 3, 5, 6];
+const FALLBACK_METRICS: CognitiveMetricResult[] = [
+  { metricDate: '2026-06-15', trainingSessionCount: 4, trainingAccuracyRate: 60, averageResponseSeconds: 11 },
+  { metricDate: '2026-06-16', trainingSessionCount: 8, trainingAccuracyRate: 25, averageResponseSeconds: 14 },
+  { metricDate: '2026-06-17', trainingSessionCount: 6, trainingAccuracyRate: 35, averageResponseSeconds: 12 },
+  { metricDate: '2026-06-18', trainingSessionCount: 7, trainingAccuracyRate: 90, averageResponseSeconds: 9 },
+  { metricDate: '2026-06-19', trainingSessionCount: 1, trainingAccuracyRate: 65, averageResponseSeconds: 12 },
+  { metricDate: '2026-06-20', trainingSessionCount: 3, trainingAccuracyRate: 65, averageResponseSeconds: 12 },
+  { metricDate: '2026-06-21', trainingSessionCount: 5, trainingAccuracyRate: 50, averageResponseSeconds: 13 },
+  { metricDate: '2026-06-22', trainingSessionCount: 6, trainingAccuracyRate: 75, averageResponseSeconds: 10 },
+];
+
+const FALLBACK_REPORT: CognitiveReportResult = {
+  periodStart: '2026-06-15',
+  periodEnd: '2026-06-22',
+  participationCount: 5,
+  averageAccuracyRate: 78,
+  averageResponseSeconds: 12,
+  changeSummary: '지난주보다 반응 시간이 조금 늘었어요. 가족과 함께 쉬운 회상 활동을 해보는 것을 추천해요.',
+};
 
 export default function ReportScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
-  const [reportMode] = useState<ReportMode>('ready');
+  const [rangeEnd, setRangeEnd] = useState(() => new Date('2026-06-22T00:00:00'));
+  const [reportMode, setReportMode] = useState<ReportMode>('ready');
+  const [metrics, setMetrics] = useState<CognitiveMetricResult[]>(FALLBACK_METRICS);
+  const [report, setReport] = useState<CognitiveReportResult>(FALLBACK_REPORT);
   const { width } = useWindowDimensions();
   const screenWidth = Math.min(width, 393);
+
+  const dateRange = useMemo(() => getWeeklyDateRange(rangeEnd), [rangeEnd]);
+  const reportData = useMemo(() => buildReportData(metrics, report, dateRange), [metrics, report, dateRange]);
+
+  const loadReport = useCallback(async () => {
+    try {
+      const [metricResult, reportResult] = await Promise.all([
+        getReportMetrics({ elderId: DEFAULT_ELDER_ID, from: dateRange.from, to: dateRange.to }),
+        generateReport({
+          elderId: DEFAULT_ELDER_ID,
+          albumId: DEFAULT_ALBUM_ID,
+          period: 'WEEKLY',
+          deliveryMethod: 'IN_APP',
+        }),
+      ]);
+
+      setMetrics(metricResult ?? []);
+      setReport(reportResult ?? {});
+      setReportMode((metricResult?.length ?? 0) < 7 ? 'insufficient' : 'ready');
+
+      if (reportResult?.reportId) {
+        markReportViewed({ reportId: reportResult.reportId }).catch(() => undefined);
+      }
+    } catch (error) {
+      if (isInsufficientDataError(error)) {
+        setReportMode('insufficient');
+        return;
+      }
+
+      setReportMode('ready');
+      setMetrics(FALLBACK_METRICS);
+      setReport(FALLBACK_REPORT);
+    }
+  }, [dateRange.from, dateRange.to]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadReport();
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [loadReport]);
 
   return (
     <View style={styles.outer}>
@@ -53,19 +119,25 @@ export default function ReportScreen() {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
           <Text style={styles.title}>인지 리포트</Text>
-          <PeriodControl />
+
+          <PeriodControl
+            from={reportData.periodStart}
+            to={reportData.periodEnd}
+            onPrevious={() => setRangeEnd((value) => shiftWeek(value, -1))}
+            onNext={() => setRangeEnd((value) => shiftWeek(value, 1))}
+          />
 
           {reportMode === 'ready' ? (
             <>
-              <SummaryCards />
+              <SummaryCards data={reportData} />
               <View style={styles.chartSection}>
-                <LineChart title="정답률 변화" values={correctRates} />
-                <BarChart title="참여 횟수 변화" values={participationCounts} />
+                <LineChart title="정답률 변화" labels={reportData.labels} values={reportData.accuracyRates} />
+                <BarChart title="참여 횟수 변화" labels={reportData.labels} values={reportData.participationCounts} />
               </View>
-              <ReportTip />
+              <ReportTip summary={reportData.changeSummary} />
             </>
           ) : (
-            <ReportState mode={reportMode} />
+            <ReportState />
           )}
         </ScrollView>
 
@@ -78,9 +150,9 @@ export default function ReportScreen() {
             }}
           />
         )}
-
-        {logoutOpen && <LogoutDialog onCancel={() => setLogoutOpen(false)} onConfirm={() => setLogoutOpen(false)} />}
       </SafeAreaView>
+
+      <LogoutDialog visible={logoutOpen} onCancel={() => setLogoutOpen(false)} onConfirm={() => setLogoutOpen(false)} />
     </View>
   );
 }
@@ -99,28 +171,38 @@ function Header({ onToggleMenu }: { onToggleMenu: () => void }) {
   );
 }
 
-function PeriodControl() {
+function PeriodControl({
+  from,
+  to,
+  onPrevious,
+  onNext,
+}: {
+  from: string;
+  to: string;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
   return (
     <View style={styles.periodRow}>
-      <Pressable accessibilityRole="button" accessibilityLabel="이전 리포트 기간" hitSlop={8}>
+      <Pressable accessibilityRole="button" accessibilityLabel="이전 리포트 기간" hitSlop={8} onPress={onPrevious}>
         <Text style={[styles.periodArrow, styles.periodArrowDisabled]}>‹</Text>
       </Pressable>
-      <Text style={styles.periodText}>2026.06.15</Text>
+      <Text style={styles.periodText}>{formatDisplayDate(from)}</Text>
       <Text style={styles.periodText}>~</Text>
-      <Text style={styles.periodText}>2026.06.22</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="다음 리포트 기간" hitSlop={8}>
+      <Text style={styles.periodText}>{formatDisplayDate(to)}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel="다음 리포트 기간" hitSlop={8} onPress={onNext}>
         <Text style={styles.periodArrow}>›</Text>
       </Pressable>
     </View>
   );
 }
 
-function SummaryCards() {
+function SummaryCards({ data }: { data: ReportDisplayData }) {
   return (
     <View style={styles.summaryRow}>
-      <SummaryCard value="5회" label="훈련 참여" color={ORANGE_DEEP} backgroundColor={ORANGE_SOFT} />
-      <SummaryCard value="78%" label="평균 정답률" color={YELLOW} backgroundColor={YELLOW_SOFT} />
-      <SummaryCard value="12초" label="평균 반응 시간" color={BLUE} backgroundColor={BLUE_SOFT} />
+      <SummaryCard value={`${data.participationCount}회`} label="훈련 참여" color={ORANGE_DEEP} backgroundColor={ORANGE_SOFT} />
+      <SummaryCard value={`${Math.round(data.averageAccuracyRate)}%`} label="평균 반응 시간" color={YELLOW} backgroundColor={YELLOW_SOFT} />
+      <SummaryCard value={`${Math.round(data.averageResponseSeconds)}초`} label="평균 정답률" color={BLUE} backgroundColor={BLUE_SOFT} />
     </View>
   );
 }
@@ -144,7 +226,7 @@ function SummaryCard({
   );
 }
 
-function LineChart({ title, values }: { title: string; values: number[] }) {
+function LineChart({ title, labels, values }: { title: string; labels: string[]; values: number[] }) {
   const points = useMemo(() => getChartPoints(values, 100), [values]);
 
   return (
@@ -157,32 +239,34 @@ function LineChart({ title, values }: { title: string; values: number[] }) {
           {points.slice(0, -1).map((point, index) => (
             <LineSegment key={`${point.x}-${index}`} from={point} to={points[index + 1]} />
           ))}
-          {points.map((point, index) => (
+          {points.map((point) => (
             <View key={`${point.x}-${point.y}`} style={[styles.dot, { left: point.x - 3, top: point.y - 3 }]} />
           ))}
-          <XLabels labels={days} />
+          <XLabels labels={labels} />
         </View>
       </View>
     </View>
   );
 }
 
-function BarChart({ title, values }: { title: string; values: number[] }) {
+function BarChart({ title, labels, values }: { title: string; labels: string[]; values: number[] }) {
+  const maxValue = Math.max(8, ...values);
+
   return (
     <View style={styles.chartBlock}>
       <Text style={styles.sectionTitle}>{title}</Text>
       <View style={styles.chartRow}>
-        <YAxis labels={['8', '6', '4', '2', '0']} />
+        <YAxis labels={[String(maxValue), String(Math.round(maxValue * 0.75)), String(Math.round(maxValue * 0.5)), String(Math.round(maxValue * 0.25)), '0']} />
         <View style={styles.plotWrap}>
           <GridLines />
           <View style={styles.barLayer}>
             {values.map((value, index) => (
-              <View key={`${days[index]}-${value}`} style={styles.barSlot}>
-                <View style={[styles.bar, { height: `${(value / 8) * 100}%` }]} />
+              <View key={`${labels[index]}-${value}`} style={styles.barSlot}>
+                <View style={[styles.bar, { height: `${(value / maxValue) * 100}%` }]} />
               </View>
             ))}
           </View>
-          <XLabels labels={days} />
+          <XLabels labels={labels} />
         </View>
       </View>
     </View>
@@ -247,7 +331,7 @@ function LineSegment({ from, to }: { from: { x: number; y: number }; to: { x: nu
 function getChartPoints(values: number[], max: number) {
   const plotWidth = 294;
   const plotHeight = 96;
-  const step = plotWidth / (values.length - 1);
+  const step = values.length > 1 ? plotWidth / (values.length - 1) : 0;
 
   return values.map((value, index) => ({
     x: index * step,
@@ -255,29 +339,26 @@ function getChartPoints(values: number[], max: number) {
   }));
 }
 
-function ReportTip() {
+function ReportTip({ summary }: { summary: string }) {
+  const [firstLine, secondLine] = splitSummary(summary);
+
   return (
     <View style={styles.tipCard}>
       <Text style={styles.tipIcon}>👏</Text>
       <Text style={styles.tipText}>
-        지난주보다 반응 시간이 조금 늘었어요.{'\n'}가족과 함께 쉬운 회상 활동을 해보는 것을 추천해요.
+        {firstLine}
+        {secondLine ? `\n${secondLine}` : ''}
       </Text>
     </View>
   );
 }
 
-function ReportState({ mode }: { mode: ReportMode }) {
-  const isInsufficient = mode === 'insufficient';
-
+function ReportState() {
   return (
     <View style={styles.stateCard}>
-      <HaemiIcon name="report" color={isInsufficient ? LINE_NORMAL : ERROR} size={44} />
-      <Text style={styles.stateTitle}>{isInsufficient ? '아직 리포트가 준비되지 않았어요' : 'PDF 생성 실패'}</Text>
-      <Text style={styles.stateDescription}>
-        {isInsufficient
-          ? '데이터가 충분히 쌓이면 리포트가 제공됩니다'
-          : 'PDF 생성 중 오류가 발생했습니다. 잠시 후 재시도해주세요'}
-      </Text>
+      <HaemiIcon name="report" color={LINE_NORMAL} size={44} />
+      <Text style={styles.stateTitle}>아직 리포트가 준비되지 않았어요</Text>
+      <Text style={styles.stateDescription}>데이터가 충분히 쌓이면 리포트가 제공됩니다(7일 이상 필요)</Text>
     </View>
   );
 }
@@ -296,25 +377,146 @@ function ProfileMenu({ onEdit, onLogout }: { onEdit: () => void; onLogout: () =>
   );
 }
 
-function LogoutDialog({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: () => void }) {
+function LogoutDialog({
+  visible,
+  onCancel,
+  onConfirm,
+}: {
+  visible: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
   return (
-    <View style={styles.modalScrim}>
-      <View style={styles.dialog}>
-        <Text style={styles.dialogTitle}>로그아웃</Text>
-        <Text style={styles.dialogText}>
-          정말 <Text style={styles.dialogUser}>박승아(seunga418)</Text> 의 계정에서{'\n'}로그아웃하시겠습니까?
-        </Text>
-        <View style={styles.dialogActions}>
-          <Pressable style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]} onPress={onCancel}>
-            <Text style={styles.cancelText}>취소</Text>
-          </Pressable>
-          <Pressable style={({ pressed }) => [styles.logoutButton, pressed && styles.pressed]} onPress={onConfirm}>
-            <Text style={styles.logoutText}>로그아웃</Text>
-          </Pressable>
+    <Modal animationType="fade" transparent visible={visible} onRequestClose={onCancel}>
+      <View style={styles.modalScrim}>
+        <View style={styles.dialog}>
+          <Text style={styles.dialogTitle}>로그아웃</Text>
+          <Text style={styles.dialogText}>
+            정말 <Text style={styles.dialogUser}>박승아(seunga418)</Text> 의 계정에서{'\n'}로그아웃하시겠습니까?
+          </Text>
+          <View style={styles.dialogActions}>
+            <Pressable style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]} onPress={onCancel}>
+              <Text style={styles.cancelText}>취소</Text>
+            </Pressable>
+            <Pressable style={({ pressed }) => [styles.logoutButton, pressed && styles.pressed]} onPress={onConfirm}>
+              <Text style={styles.logoutText}>로그아웃</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
-    </View>
+    </Modal>
   );
+}
+
+type ReportDisplayData = {
+  periodStart: string;
+  periodEnd: string;
+  labels: string[];
+  accuracyRates: number[];
+  participationCounts: number[];
+  participationCount: number;
+  averageAccuracyRate: number;
+  averageResponseSeconds: number;
+  changeSummary: string;
+};
+
+function buildReportData(
+  metrics: CognitiveMetricResult[],
+  report: CognitiveReportResult,
+  fallbackRange: { from: string; to: string }
+): ReportDisplayData {
+  const sortedMetrics = [...metrics].sort((a, b) => (a.metricDate ?? '').localeCompare(b.metricDate ?? ''));
+  const trend = report.accuracyTrend?.length
+    ? report.accuracyTrend.map((point) => ({
+        metricDate: point.date,
+        trainingAccuracyRate: point.accuracyRate,
+      }))
+    : sortedMetrics;
+  const labels = trend.map((item) => formatShortDate(item.metricDate)).filter(Boolean);
+  const accuracyRates = trend.map((item) => clampNumber(item.trainingAccuracyRate ?? 0, 0, 100));
+  const participationCounts = sortedMetrics.map((item) => item.trainingSessionCount ?? 0);
+  const averageAccuracyRate = report.averageAccuracyRate ?? average(accuracyRates);
+  const averageResponseSeconds =
+    report.averageResponseSeconds ?? average(sortedMetrics.map((item) => item.averageResponseSeconds ?? 0));
+  const participationCount = report.participationCount ?? Math.round(average(participationCounts));
+
+  return {
+    periodStart: report.periodStart ?? fallbackRange.from,
+    periodEnd: report.periodEnd ?? fallbackRange.to,
+    labels: labels.length ? labels : FALLBACK_METRICS.map((item) => formatShortDate(item.metricDate)),
+    accuracyRates: accuracyRates.length ? accuracyRates : FALLBACK_METRICS.map((item) => item.trainingAccuracyRate ?? 0),
+    participationCounts: participationCounts.length
+      ? participationCounts
+      : FALLBACK_METRICS.map((item) => item.trainingSessionCount ?? 0),
+    participationCount,
+    averageAccuracyRate,
+    averageResponseSeconds,
+    changeSummary:
+      report.changeSummary ??
+      '지난주보다 반응 시간이 조금 늘었어요. 가족과 함께 쉬운 회상 활동을 해보는 것을 추천해요.',
+  };
+}
+
+function getWeeklyDateRange(endDate: Date) {
+  const start = new Date(endDate);
+  start.setDate(start.getDate() - 7);
+
+  return { from: formatIsoDate(start), to: formatIsoDate(endDate) };
+}
+
+function shiftWeek(value: Date, direction: -1 | 1) {
+  const next = new Date(value);
+  next.setDate(next.getDate() + direction * 7);
+  return next;
+}
+
+function formatIsoDate(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function formatDisplayDate(value?: string) {
+  return value ? value.replaceAll('-', '.') : '';
+}
+
+function formatShortDate(value?: string) {
+  if (!value) {
+    return '';
+  }
+
+  const [, month, day] = value.split('-');
+  return `${Number(month)}/${Number(day)}`;
+}
+
+function average(values: number[]) {
+  const validValues = values.filter((value) => Number.isFinite(value));
+  if (validValues.length === 0) {
+    return 0;
+  }
+
+  return validValues.reduce((sum, value) => sum + value, 0) / validValues.length;
+}
+
+function clampNumber(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function splitSummary(summary: string) {
+  const normalized = summary.trim();
+  const periodIndex = normalized.indexOf('. ');
+
+  if (periodIndex === -1) {
+    return [normalized, ''];
+  }
+
+  return [normalized.slice(0, periodIndex + 1), normalized.slice(periodIndex + 2)];
+}
+
+function isInsufficientDataError(error: unknown) {
+  if (!(error instanceof ReportApiError)) {
+    return false;
+  }
+
+  return error.status === 400 || error.status === 409 || error.message.includes('7일') || error.message.includes('데이터');
 }
 
 const styles = StyleSheet.create({
@@ -353,11 +555,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 128,
     alignItems: 'center',
-    gap: 28,
+    gap: 32,
   },
   title: {
-    alignSelf: 'flex-start',
-    marginLeft: 5,
+    width: '100%',
+    maxWidth: 334,
     color: TEXT,
     fontSize: 24,
     lineHeight: 31,
@@ -368,7 +570,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 14,
+    gap: 12,
   },
   periodArrow: {
     color: ORANGE,
@@ -407,8 +609,8 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     color: TEXT_MUTED,
-    fontSize: 16,
-    lineHeight: 21,
+    fontSize: 15,
+    lineHeight: 20,
     fontWeight: '500',
   },
   chartSection: {
@@ -600,12 +802,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   modalScrim: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    zIndex: 20,
+    flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
