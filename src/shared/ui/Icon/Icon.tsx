@@ -31,18 +31,18 @@ const IconComponent: React.FC<IconProps> = ({
   });
 
   if (Platform.OS === 'web') {
+    const svgWithColor = svgContent.replace(/currentColor/g, color);
     return (
       <View style={[styles.container, style]}>
         <div
           style={{
             width: size,
             height: size,
-            color: color,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
-          dangerouslySetInnerHTML={{ __html: svgContent }}
+          dangerouslySetInnerHTML={{ __html: svgWithColor }}
         />
       </View>
     );
@@ -56,7 +56,6 @@ const IconComponent: React.FC<IconProps> = ({
           height: size,
           backgroundColor: color,
           borderRadius: borderRadius.xs,
-          opacity: 0.3,
         }}
       />
     </View>
