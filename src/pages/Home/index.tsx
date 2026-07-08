@@ -21,7 +21,7 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.contentContainer, { paddingTop: Math.max(insets.top, 20) }]}
         showsVerticalScrollIndicator={false}
       >
-        <HomeHeader />
+        <HomeHeader style={styles.header} />
         <UserCard profile={profile} />
         <HaemiSection />
         <TodayActivities activities={activities} />
@@ -43,5 +43,8 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingHorizontal: 26,
     paddingBottom: 20,
+  },
+  header: {
+    marginBottom: 31,
   },
 });
