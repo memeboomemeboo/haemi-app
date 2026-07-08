@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,11 +8,16 @@ import { BottomNavigation, Fab } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 import { AlbumFilterTabs, type AlbumFilter } from '@/widgets/AlbumFilterTabs';
 import { AlbumGrid } from '@/widgets/AlbumGrid';
+import { AlbumEmptyState } from '@/widgets/AlbumEmptyState';
 
 export default function AlbumScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<AlbumFilter>('all');
-  const { items } = useAlbumItems();
+  const { items, isLoading } = useAlbumItems();
+
+  // API 연결 후에도 그대로 동작: 로딩이 끝났는데 사진이 없으면 빈 화면 표시
+  const isEmpty = !isLoading && (items?.length ?? 0) === 0;
 
   return (
     <View style={styles.container}>
@@ -22,15 +28,25 @@ export default function AlbumScreen() {
         <AlbumFilterTabs value={filter} onChange={setFilter} />
       </View>
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.gridContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <AlbumGrid items={items} />
-      </ScrollView>
+      {isEmpty ? (
+        <View style={styles.emptyWrapper}>
+          <AlbumEmptyState />
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.gridContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <AlbumGrid items={items} />
+        </ScrollView>
+      )}
 
-      <Fab accessibilityLabel="앨범 추가" style={styles.fab} />
+      <Fab
+        accessibilityLabel="앨범 추가"
+        style={styles.fab}
+        onPress={() => router.push('/album-register')}
+      />
 
       <BottomNavigation activeTab="Album" />
     </View>
@@ -62,6 +78,11 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
+  },
+  emptyWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   gridContent: {
     // Figma: 필터 탭(bottom 152)에서 그리드(top 195)까지 43, 그리드 폭 364(좌우 여백 14.5)
