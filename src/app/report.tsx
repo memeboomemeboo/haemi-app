@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HaemiIcon } from '@/components/haemi-icons';
 import { generateReport, getReportMetrics, markReportViewed, ReportApiError } from '@/shared/api/report';
+import { BottomNavigation } from '@/shared/ui';
 import type { CognitiveMetricResult, CognitiveReportResult } from '@/shared/types/report';
 
 const LOGO_URL = 'https://www.figma.com/api/mcp/asset/3340f72f-9dcc-4a58-a4f2-84f75e3cfb54';
@@ -149,6 +150,8 @@ export default function ReportScreen() {
             }}
           />
         )}
+
+        <BottomNavigation activeTab="Report" />
       </SafeAreaView>
 
       <LogoutDialog visible={logoutOpen} onCancel={() => setLogoutOpen(false)} onConfirm={() => setLogoutOpen(false)} />

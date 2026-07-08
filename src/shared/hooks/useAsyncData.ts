@@ -30,7 +30,8 @@ export function useAsyncData<T>(fetcher: () => Promise<T>): AsyncDataState<T> {
   }, [fetcher]);
 
   useEffect(() => {
-    load();
+    const timeoutId = setTimeout(load, 0);
+    return () => clearTimeout(timeoutId);
   }, [load]);
 
   return { data, isLoading, error, refetch: load };

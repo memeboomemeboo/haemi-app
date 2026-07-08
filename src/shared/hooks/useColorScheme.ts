@@ -1,10 +1,5 @@
-<<<<<<< HEAD:src/hooks/use-color-scheme.web.ts
-import { useSyncExternalStore } from 'react';
-import { useColorScheme as useRNColorScheme } from 'react-native';
-=======
-import { useEffect, useState } from 'react';
-import { useColorScheme as useRNColorScheme, Platform } from 'react-native';
->>>>>>> ad83550 (feat: 아이콘 분류):src/shared/hooks/useColorScheme.ts
+
+import { useSyncExternalStore } from 'react';import { useColorScheme as useRNColorScheme, Platform } from 'react-native';
 
 export function useColorScheme() {
   const hasHydrated = useSyncExternalStore(

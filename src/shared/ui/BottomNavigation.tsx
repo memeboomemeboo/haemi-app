@@ -25,10 +25,12 @@ const ICON_COMPONENTS: Record<NavigationTab, React.ComponentType<{ size?: number
   Quiz,
 };
 
-/** 구현된 화면만 라우트를 가진다 — 나머지 탭은 눌러도 이동하지 않는다 */
-const TAB_ROUTES: Partial<Record<NavigationTab, Href>> = {
+const TAB_ROUTES: Record<NavigationTab, Href> = {
   Home: '/',
   Album: '/album',
+  Memory: '/family-memories',
+  Report: '/report',
+  Quiz: '/quiz',
 };
 
 const TABS: NavigationTab[] = ['Home', 'Album', 'Memory', 'Report', 'Quiz'];
@@ -52,8 +54,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab })
             <Pressable
               key={tab}
               style={styles.tabButton}
-              onPress={() => route && router.replace(route)}
-              disabled={isActive || !route}
+              onPress={() => router.replace(route)}
+              disabled={isActive}
             >
               <View style={styles.tabIcon}>
                 <IconComponent size={22} color={tabColor} />

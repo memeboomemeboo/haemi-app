@@ -21,6 +21,7 @@ import {
   getFamilyMemoryFeed,
   toggleFamilyMemoryLike,
 } from '@/shared/api/family-memories';
+import { BottomNavigation } from '@/shared/ui';
 import type { FamilyMemoryPhotoUpload, FamilyMemoryPost } from '@/shared/types/family-memories';
 
 type MemoryMode = 'feed' | 'compose' | 'composeAlbum';
@@ -67,7 +68,6 @@ export default function FamilyMemoriesScreen() {
   const [likedById, setLikedById] = useState<Record<string, boolean>>({});
   const [isFeedLoading, setIsFeedLoading] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
-  const [feedError, setFeedError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const insets = useSafeAreaInsets();
@@ -81,12 +81,10 @@ export default function FamilyMemoriesScreen() {
 
   const refreshFeed = useCallback(async () => {
     setIsFeedLoading(true);
-    setFeedError(null);
     try {
       const feed = await getFamilyMemoryFeed({ albumId, sortBy: 'LATEST', period: 'ALL' });
       setFeedPosts(feed.posts);
-    } catch (error) {
-      setFeedError(error instanceof Error ? error.message : '피드를 불러오지 못했습니다.');
+    } catch {
       setFeedPosts((current) => (current.length > 0 ? current : fallbackFeedItems));
     } finally {
       setIsFeedLoading(false);
@@ -217,7 +215,6 @@ export default function FamilyMemoriesScreen() {
             posts={feedPosts.length > 0 ? feedPosts : fallbackFeedItems}
             likedById={likedById}
             isLoading={isFeedLoading}
-            errorMessage={feedError}
             onRefresh={refreshFeed}
             onToggleLike={handleToggleLike}
           />
@@ -232,6 +229,8 @@ export default function FamilyMemoriesScreen() {
             <HaemiIcon name="plus" color="#ffffff" size={38} />
           </Pressable>
         )}
+
+        {!isCompose && <BottomNavigation activeTab="Memory" />}
       </SafeAreaView>
     </View>
   );
@@ -263,14 +262,12 @@ function FeedScreen({
   posts,
   likedById,
   isLoading,
-  errorMessage,
   onRefresh,
   onToggleLike,
 }: {
   posts: FamilyMemoryPost[];
   likedById: Record<string, boolean>;
   isLoading: boolean;
-  errorMessage: string | null;
   onRefresh: () => void;
   onToggleLike: (postId: string) => void;
 }) {
@@ -295,7 +292,6 @@ function FeedScreen({
           )}
         </Pressable>
       </View>
-      {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
       {posts.map((post) => (
         <MemoryCard
           key={post.postId}
