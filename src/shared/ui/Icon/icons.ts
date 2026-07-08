@@ -38,6 +38,8 @@ export const ICON_SVG_MAP = {
 
   CheckMark: `<svg viewBox="0 0 11.5976 8.41875" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.96635 6.58125L10.3226 0.225C10.4726 0.0750001 10.6476 0 10.8476 0C11.0476 0 11.2226 0.0750001 11.3726 0.225C11.5226 0.375 11.5976 0.55325 11.5976 0.75975C11.5976 0.96625 11.5226 1.14425 11.3726 1.29375L4.49135 8.19375C4.34135 8.34375 4.16635 8.41875 3.96635 8.41875C3.76635 8.41875 3.59135 8.34375 3.44135 8.19375L0.216346 4.96875C0.0663462 4.81875 -0.00565385 4.64075 0.000346153 4.43475C0.00634615 4.22875 0.084596 4.0505 0.235096 3.9C0.385596 3.7495 0.563846 3.6745 0.769846 3.675C0.975846 3.6755 1.15385 3.7505 1.30385 3.9L3.96635 6.58125Z" fill="currentColor"/></svg>`,
 
+  Close: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+
 } as const;
 
 export type IconSVGKey = keyof typeof ICON_SVG_MAP;

@@ -21,4 +21,5 @@ export {
   Map,
   People,
   CheckMark,
+  Close,
 } from './icons-components';

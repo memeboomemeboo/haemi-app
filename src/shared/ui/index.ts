@@ -24,6 +24,7 @@ export {
   Map,
   People,
   CheckMark,
+  Close,
   type IconName,
   type IconProps,
   type IllustrationName,
