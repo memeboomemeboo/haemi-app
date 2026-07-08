@@ -88,7 +88,10 @@ export default function QuizScreen() {
               {/* O/X 카드 (128-3132): gap 17 */}
               <View style={styles.answersRow}>
                 <Pressable
-                  style={styles.answerCardO}
+                  style={[
+                    styles.answerCard,
+                    userAnswer === 'O' && styles.answerCardSelected,
+                  ]}
                   onPress={() => handleAnswer('O')}
                   disabled={answered}
                 >
@@ -99,7 +102,10 @@ export default function QuizScreen() {
                 </Pressable>
 
                 <Pressable
-                  style={styles.answerCardX}
+                  style={[
+                    styles.answerCard,
+                    userAnswer === 'X' && styles.answerCardSelected,
+                  ]}
                   onPress={() => handleAnswer('X')}
                   disabled={answered}
                 >
@@ -248,11 +254,13 @@ const styles = StyleSheet.create({
     gap: 17,
     marginBottom: 16,
   },
-  answerCardO: {
+  answerCard: {
     width: 151,
     height: 181,
     borderRadius: 6.688,
     backgroundColor: '#fff3f0',
+  },
+  answerCardSelected: {
     borderWidth: 0.4,
     borderColor: '#fd6941',
     shadowColor: '#fd6941',
@@ -261,11 +269,13 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  answerCardX: {
-    width: 151,
-    height: 181,
-    borderRadius: 6.688,
-    backgroundColor: '#fff3f0',
+  answerText: {
+    position: 'absolute',
+    fontSize: 64,
+    fontWeight: '500',
+    color: '#fd6941',
+    letterSpacing: -1.28,
+    lineHeight: 64,
   },
   answerTextO: {
     position: 'absolute',
