@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Arrow, BottomNavigation, Comment, Heart, More, Picture, Plus, Sent } from '@/shared/ui';
+import { Arrow, BottomNavigation, Comment, Fab, Heart, More, Picture, Sent } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 
 type MemoryMode = 'feed' | 'compose' | 'composeAlbum';
@@ -64,7 +64,7 @@ export default function FamilyMemoriesScreen() {
     <View style={styles.container}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <View style={styles.headerWrapper}>
-          <HomeHeader />
+          <HomeHeader style={styles.header} />
         </View>
 
         {isCompose ? (
@@ -83,14 +83,11 @@ export default function FamilyMemoriesScreen() {
         )}
 
         {!isCompose && (
-          <Pressable
-            accessibilityRole="button"
+          <Fab
             accessibilityLabel="추억 등록"
-            style={({ pressed }) => [styles.fab, pressed && styles.pressed]}
+            style={styles.fab}
             onPress={() => setMode('compose')}
-          >
-            <Plus size={30} color="#ffffff" />
-          </Pressable>
+          />
         )}
       </SafeAreaView>
 
@@ -397,6 +394,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 26,
     paddingTop: 14,
   },
+  header: {
+    marginBottom: 26,
+  },
   scroll: {
     flex: 1,
   },
@@ -536,15 +536,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   fab: {
-    position: 'absolute',
-    right: 23,
     bottom: 20,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: ORANGE,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   compose: {
     flex: 1,

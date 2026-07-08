@@ -1,5 +1,6 @@
 // Export UI components from shared
 export { BottomNavigation, type NavigationTab } from './BottomNavigation';
+export { Fab } from './Fab';
 export {
   Icon,
   ICON_SIZES,
