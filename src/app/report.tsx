@@ -18,7 +18,7 @@ import {
   ReportApiError,
 } from '@/shared/api/report';
 import type { CognitiveMetricResult, CognitiveReportResult } from '@/shared/types/report';
-import { Alarm, Report, Setting } from '@/shared/ui';
+import { Alarm, BottomNavigation, Report, Setting } from '@/shared/ui';
 
 const LOGO_URL = 'https://www.figma.com/api/mcp/asset/3340f72f-9dcc-4a58-a4f2-84f75e3cfb54';
 const DEFAULT_ELDER_ID = process.env.EXPO_PUBLIC_HAEMI_ELDER_ID ?? 'elder-001';
@@ -215,6 +215,8 @@ export default function ReportScreen() {
         onCancel={() => setLogoutOpen(false)}
         onConfirm={() => setLogoutOpen(false)}
       />
+
+      <BottomNavigation activeTab="Report" />
     </View>
   );
 }
