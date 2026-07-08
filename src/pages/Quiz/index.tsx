@@ -1,9 +1,14 @@
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getQuizQuestions, type QuizQuestion } from '@/shared/api/quiz';
+import {
+  getQuizQuestions,
+  submitQuizAnswer,
+  endQuizSession,
+  type QuizQuestion,
+} from '@/shared/api/quiz';
 import { BottomNavigation } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 import { Circle } from '@/widgets/QuizAnswerCard/Circle';
@@ -21,25 +26,37 @@ const FALLBACK_QUESTIONS: QuizQuestion[] = [
   },
 ];
 
+type QuizMode = 'loading' | 'active' | 'completed';
+
+interface SessionStats {
+  totalQuestions: number;
+  correctCount: number;
+  accuracy: number;
+  averageResponseTime: number;
+}
+
 export default function QuizScreen() {
   const [questions, setQuestions] = useState<QuizQuestion[]>(FALLBACK_QUESTIONS);
-  const [isLoading, setIsLoading] = useState(true);
+  const [mode, setMode] = useState<QuizMode>('loading');
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState<'O' | 'X' | null>(null);
   const [answered, setAnswered] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [stats, setStats] = useState<SessionStats | null>(null);
 
   // API에서 문제 로드
   useEffect(() => {
     const loadQuestions = async () => {
       try {
-        setIsLoading(true);
+        setMode('loading');
         const data = await getQuizQuestions({ limit: 10 });
         setQuestions(data.length > 0 ? data : FALLBACK_QUESTIONS);
+        setMode('active');
       } catch (error) {
         console.warn('Failed to load quiz questions from API, using fallback data');
         setQuestions(FALLBACK_QUESTIONS);
-      } finally {
-        setIsLoading(false);
+        setMode('active');
       }
     };
 
@@ -51,17 +68,59 @@ export default function QuizScreen() {
   const progress = currentIndex + 1;
   const total = questions.length;
 
-  const handleAnswer = (answer: 'O' | 'X') => {
+  const handleAnswer = async (answer: 'O' | 'X') => {
     setUserAnswer(answer);
     setAnswered(true);
+
+    // 답변을 API로 전송
+    try {
+      setIsSubmitting(true);
+      const question = questions[currentIndex];
+      await submitQuizAnswer(question.id, answer);
+    } catch (error) {
+      console.warn('Failed to submit answer', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleNext = () => {
-    if (currentIndex < questions.length - 1) {
+  const handleNext = async () => {
+    const isLastQuestion = currentIndex === questions.length - 1;
+
+    if (isLastQuestion) {
+      // 마지막 문제: 세션 종료 및 결과 표시
+      try {
+        setIsSubmitting(true);
+        // TODO: sessionId로 세션 종료 및 결과 가져오기
+        // const sessionResult = await endQuizSession(sessionId || '');
+        // setStats({
+        //   totalQuestions: sessionResult.totalQuestions,
+        //   correctCount: sessionResult.correctCount,
+        //   accuracy: sessionResult.accuracy,
+        //   averageResponseTime: sessionResult.averageResponseTime,
+        // });
+        setMode('completed');
+      } catch (error) {
+        console.warn('Failed to end session', error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      // 다음 문제로 이동
       setCurrentIndex(currentIndex + 1);
       setUserAnswer(null);
       setAnswered(false);
     }
+  };
+
+  const handleRestart = () => {
+    setMode('loading');
+    setCurrentIndex(0);
+    setUserAnswer(null);
+    setAnswered(false);
+    setStats(null);
+    // 다시 로드
+    window.location.reload?.();
   };
 
   return (
@@ -74,7 +133,15 @@ export default function QuizScreen() {
         <View style={styles.mainContent}>
           <Text style={styles.title}>인지 훈련</Text>
 
-          <View style={styles.quizSection}>
+          {mode === 'loading' && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#fd6941" />
+              <Text style={styles.loadingText}>문제를 준비하고 있어요...</Text>
+            </View>
+          )}
+
+          {mode === 'active' && (
+            <View style={styles.quizSection}>
             {/* 진행도 바 섹션 (128-3119): gap 20 */}
             <View style={styles.progressRow}>
               <View style={styles.progressBar}>
@@ -163,7 +230,51 @@ export default function QuizScreen() {
                 </Pressable>
               </View>
             )}
-          </View>
+            </View>
+          )}
+
+          {mode === 'completed' && (
+            <View style={styles.completedContainer}>
+              <View style={styles.completedContent}>
+                <Text style={styles.completedTitle}>완료!</Text>
+                <Text style={styles.completedSubtitle}>
+                  {questions.length}개 문제를 모두 풀었어요
+                </Text>
+
+                {stats && (
+                  <View style={styles.statsBox}>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statLabel}>정답률</Text>
+                      <Text style={styles.statValue}>{stats.accuracy}%</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statLabel}>정답</Text>
+                      <Text style={styles.statValue}>
+                        {stats.correctCount} / {stats.totalQuestions}
+                      </Text>
+                    </View>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statLabel}>평균 시간</Text>
+                      <Text style={styles.statValue}>
+                        {stats.averageResponseTime.toFixed(1)}초
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.restartButton,
+                    pressed && styles.nextButtonPressed,
+                  ]}
+                  onPress={handleRestart}
+                  disabled={isSubmitting}
+                >
+                  <Text style={styles.restartButtonText}>다시 풀기</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
         </View>
       </SafeAreaView>
 
@@ -370,6 +481,81 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   nextButtonText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#ffffff',
+    letterSpacing: -0.4,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#76787a',
+    letterSpacing: -0.32,
+  },
+  completedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  completedContent: {
+    alignItems: 'center',
+    gap: 28,
+  },
+  completedTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#fd6941',
+    letterSpacing: -0.64,
+  },
+  completedSubtitle: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#3c3e3f',
+    letterSpacing: -0.36,
+    textAlign: 'center',
+  },
+  statsBox: {
+    width: '100%',
+    gap: 16,
+    paddingHorizontal: 20,
+  },
+  statItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#f7f7f7',
+    borderRadius: 10,
+  },
+  statLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#76787a',
+    letterSpacing: -0.28,
+  },
+  statValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fd6941',
+    letterSpacing: -0.28,
+  },
+  restartButton: {
+    height: 42,
+    width: '100%',
+    backgroundColor: '#fd6941',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  restartButtonText: {
     fontSize: 20,
     fontWeight: '600',
     color: '#ffffff',
