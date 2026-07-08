@@ -1,6 +1,8 @@
 import { Image } from 'expo-image';
-import { useMemo, useState } from 'react';
+import * as ImagePicker from 'expo-image-picker';
+import { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
@@ -12,13 +14,18 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { HaemiHeader } from '@/components/haemi-header';
 import { HaemiIcon } from '@/components/haemi-icons';
+import {
+  createFamilyMemoryPost,
+  getFamilyMemoryFeed,
+  toggleFamilyMemoryLike,
+} from '@/shared/api/family-memories';
+import type { FamilyMemoryPhotoUpload, FamilyMemoryPost } from '@/shared/types/family-memories';
 
 type MemoryMode = 'feed' | 'compose' | 'composeAlbum';
 
 const PHOTO_URL = 'https://www.figma.com/api/mcp/asset/2722f17b-68ff-447f-b601-5b19f87fa5be';
-const LOGO_URL = 'https://www.figma.com/api/mcp/asset/5300de0b-0352-4b87-afed-9e109f965b6e';
-
 const ORANGE = '#fd6941';
 const ORANGE_SOFT = '#fed7cd';
 const TEXT = '#3c3e3f';
@@ -29,59 +36,191 @@ const LINE_NORMAL = '#c1c2c3';
 const FILL = '#f7f7f7';
 const MAX_SELECTED_PHOTOS = 3;
 
-const feedItems = [
-  { id: 'first', liked: true, comments: 12 },
-  { id: 'second', liked: false, comments: 12 },
-  { id: 'third', liked: false, comments: 12 },
-];
+const FALLBACK_ALBUM_ID = '00000000-0000-0000-0000-000000000000';
+const DEFAULT_MEMBER_NAME = '가족';
+const DEFAULT_RELATION = '딸';
 
-const albumRows = [
-  { date: '06.10', count: 2 },
-  { date: '06.10', count: 4 },
-  { date: '06.10', count: 3 },
+const fallbackFeedItems: FamilyMemoryPost[] = [
+  {
+    postId: 'first',
+    authorName: '딸',
+    authorRelation: '딸',
+    textContent: '엄마와 함께 첫 벚꽃 구경 갔던 날이에요.\n정말 예뻤던 기억이 나요.',
+    likeCount: 12,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    postId: 'second',
+    authorName: '딸',
+    authorRelation: '딸',
+    textContent: '아버지가 좋아하시던 음식을 함께 먹었던 날이에요.',
+    likeCount: 11,
+    createdAt: new Date().toISOString(),
+  },
 ];
 
 export default function FamilyMemoriesScreen() {
   const [mode, setMode] = useState<MemoryMode>('feed');
-  const [selectedPhotos, setSelectedPhotos] = useState(1);
+  const [selectedPhotos, setSelectedPhotos] = useState<FamilyMemoryPhotoUpload[]>([]);
   const [memo, setMemo] = useState('가족끼리 나들이에 갔던 날이에요');
+  const [feedPosts, setFeedPosts] = useState<FamilyMemoryPost[]>([]);
+  const [likedById, setLikedById] = useState<Record<string, boolean>>({});
+  const [isFeedLoading, setIsFeedLoading] = useState(false);
+  const [isPosting, setIsPosting] = useState(false);
+  const [feedError, setFeedError] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const screenWidth = Math.min(width, 393);
 
-  const canPost = selectedPhotos > 0 || memo.trim().length > 0;
+  const albumId = process.env.EXPO_PUBLIC_HAEMI_ALBUM_ID || FALLBACK_ALBUM_ID;
+  const [currentMember] = useState(getCurrentFamilyMember);
+  const canPost = selectedPhotos.length > 0 || memo.trim().length > 0;
   const isCompose = mode === 'compose' || mode === 'composeAlbum';
 
-  const selectedPhotoSlots = useMemo(() => {
-    return Array.from({ length: selectedPhotos }, (_, index) => `selected-${index}`);
-  }, [selectedPhotos]);
+  const refreshFeed = useCallback(async () => {
+    setIsFeedLoading(true);
+    setFeedError(null);
+    try {
+      const feed = await getFamilyMemoryFeed({ albumId, sortBy: 'LATEST', period: 'ALL' });
+      setFeedPosts(feed.posts);
+    } catch (error) {
+      setFeedError(error instanceof Error ? error.message : '피드를 불러오지 못했습니다.');
+      setFeedPosts((current) => (current.length > 0 ? current : fallbackFeedItems));
+    } finally {
+      setIsFeedLoading(false);
+    }
+  }, [albumId]);
 
-  const handlePost = () => {
+  useEffect(() => {
+    const timeoutId = setTimeout(refreshFeed, 0);
+    return () => clearTimeout(timeoutId);
+  }, [refreshFeed]);
+
+  const handlePickPhotos = async () => {
+    const remainingSlots = MAX_SELECTED_PHOTOS - selectedPhotos.length;
+
+    if (remainingSlots <= 0) {
+      Alert.alert('사진은 최대 3장까지 업로드할 수 있어요.');
+      return;
+    }
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('권한이 필요해요', '사진을 선택하려면 갤러리 접근 권한을 허용해주세요.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: remainingSlots,
+      quality: 0.9,
+    });
+
+    if (result.canceled) {
+      return;
+    }
+
+    const pickedPhotos = result.assets.map((asset, index) => ({
+      uri: asset.uri,
+      fileName: asset.fileName || `family-memory-${Date.now()}-${index + 1}.jpg`,
+      mimeType: asset.mimeType || 'image/jpeg',
+    }));
+
+    setSelectedPhotos((current) => [...current, ...pickedPhotos].slice(0, MAX_SELECTED_PHOTOS));
+  };
+
+  const handlePost = async () => {
     if (!canPost) {
       Alert.alert('추억 내용을 입력해주세요');
       return;
     }
+
+    setIsPosting(true);
+    try {
+      const createdPost = await createFamilyMemoryPost({
+        albumId,
+        data: {
+          memberId: currentMember.memberId,
+          memberName: currentMember.memberName,
+          relation: currentMember.relation,
+          textContent: memo.trim(),
+          publishImmediately: true,
+        },
+        photos: selectedPhotos,
+      });
+
+      setFeedPosts((current) => [createdPost, ...current]);
+      setSelectedPhotos([]);
+      setMemo('');
+      setMode('feed');
+    } catch (error) {
+      Alert.alert('게시 실패', error instanceof Error ? error.message : '추억글을 게시하지 못했습니다.');
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
+  const handleToggleLike = async (postId: string) => {
+    setLikedById((current) => ({ ...current, [postId]: !current[postId] }));
+    try {
+      const updatedPost = await toggleFamilyMemoryLike(albumId, postId, currentMember.memberId);
+      setFeedPosts((current) => current.map((post) => (post.postId === postId ? updatedPost : post)));
+    } catch (error) {
+      setLikedById((current) => ({ ...current, [postId]: !current[postId] }));
+      Alert.alert('좋아요 실패', error instanceof Error ? error.message : '좋아요를 처리하지 못했습니다.');
+    }
+  };
+
+  const handleCancel = () => {
     setMode('feed');
+  };
+
+  const handleBack = () => {
+    setMode('feed');
+  };
+
+  const handleLogout = () => {
+    setLogoutConfirmOpen(false);
+    Alert.alert('로그아웃', '로그아웃되었습니다.');
   };
 
   return (
     <View style={styles.outer}>
       <SafeAreaView edges={['top']} style={[styles.phone, { width: screenWidth }]}>
-        <Header />
+        <HaemiHeader
+          settingsOpen={settingsOpen}
+          logoutConfirmOpen={logoutConfirmOpen}
+          userLabel={currentMember.memberName}
+          onToggleSettings={() => setSettingsOpen((current) => !current)}
+          onCloseSettings={() => setSettingsOpen(false)}
+          onOpenLogoutConfirm={() => setLogoutConfirmOpen(true)}
+          onCloseLogoutConfirm={() => setLogoutConfirmOpen(false)}
+          onConfirmLogout={handleLogout}
+        />
 
         {isCompose ? (
           <ComposeScreen
             memo={memo}
-            selectedPhotoSlots={selectedPhotoSlots}
             selectedPhotos={selectedPhotos}
-            onBack={() => setMode('feed')}
-            onOpenAlbum={() => setMode('composeAlbum')}
+            isPosting={isPosting}
+            onBack={handleBack}
+            onPickPhotos={handlePickPhotos}
             onMemoChange={setMemo}
             onPost={handlePost}
-            onCancel={() => setMode('feed')}
+            onCancel={handleCancel}
           />
         ) : (
-          <FeedScreen />
+          <FeedScreen
+            posts={feedPosts.length > 0 ? feedPosts : fallbackFeedItems}
+            likedById={likedById}
+            isLoading={isFeedLoading}
+            errorMessage={feedError}
+            onRefresh={refreshFeed}
+            onToggleLike={handleToggleLike}
+          />
         )}
 
         {!isCompose && (
@@ -94,42 +233,48 @@ export default function FamilyMemoriesScreen() {
           </Pressable>
         )}
       </SafeAreaView>
-
-      {mode === 'composeAlbum' && (
-        <AlbumSheet
-          width={screenWidth}
-          onSelect={() => {
-            setSelectedPhotos((value) => Math.min(MAX_SELECTED_PHOTOS, value + 1));
-            setMode('compose');
-          }}
-          onClose={() => setMode('compose')}
-        />
-      )}
     </View>
   );
 }
 
-function Header() {
-  return (
-    <View style={styles.header}>
-      <Image source={LOGO_URL} style={styles.logo} contentFit="contain" />
-      <View style={styles.headerActions}>
-        <HaemiIcon name="alarm" color={LINE} size={30} />
-        <HaemiIcon name="gear" color={LINE} size={28} />
-      </View>
-    </View>
-  );
-}
+function getCurrentFamilyMember() {
+  const token = process.env.EXPO_PUBLIC_HAEMI_ACCESS_TOKEN;
+  const payload = token ? decodeJwtPayload(token) : undefined;
 
-function FeedScreen() {
-  const [likedById, setLikedById] = useState(() =>
-    Object.fromEntries(feedItems.map((item) => [item.id, item.liked]))
-  );
-  const [commentOpenById, setCommentOpenById] = useState<Record<string, boolean>>({});
-
-  const toggleLike = (id: string) => {
-    setLikedById((current) => ({ ...current, [id]: !current[id] }));
+  return {
+    memberId: payload?.sub || process.env.EXPO_PUBLIC_HAEMI_MEMBER_ID || 'member-002',
+    memberName: payload?.name || process.env.EXPO_PUBLIC_HAEMI_MEMBER_NAME || DEFAULT_MEMBER_NAME,
+    relation: process.env.EXPO_PUBLIC_HAEMI_MEMBER_RELATION || DEFAULT_RELATION,
   };
+}
+
+function decodeJwtPayload(token: string): { sub?: string; name?: string } | undefined {
+  try {
+    const payload = token.split('.')[1];
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
+    return JSON.parse(globalThis.atob(padded)) as { sub?: string; name?: string };
+  } catch {
+    return undefined;
+  }
+}
+
+function FeedScreen({
+  posts,
+  likedById,
+  isLoading,
+  errorMessage,
+  onRefresh,
+  onToggleLike,
+}: {
+  posts: FamilyMemoryPost[];
+  likedById: Record<string, boolean>;
+  isLoading: boolean;
+  errorMessage: string | null;
+  onRefresh: () => void;
+  onToggleLike: (postId: string) => void;
+}) {
+  const [commentOpenById, setCommentOpenById] = useState<Record<string, boolean>>({});
 
   const toggleComments = (id: string) => {
     setCommentOpenById((current) => ({ ...current, [id]: !current[id] }));
@@ -140,15 +285,25 @@ function FeedScreen() {
       style={styles.scroll}
       contentContainerStyle={styles.feedContent}
       showsVerticalScrollIndicator={false}>
-      <Text style={styles.title}>가족 추억</Text>
-      {feedItems.map((item) => (
+      <View style={styles.feedTitleRow}>
+        <Text style={styles.title}>가족 추억</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="새로고침" onPress={onRefresh} hitSlop={8}>
+          {isLoading ? (
+            <ActivityIndicator color={ORANGE} />
+          ) : (
+            <HaemiIcon name="refresh" color={ORANGE} size={24} />
+          )}
+        </Pressable>
+      </View>
+      {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
+      {posts.map((post) => (
         <MemoryCard
-          key={item.id}
-          liked={likedById[item.id]}
-          comments={item.comments}
-          commentsOpen={commentOpenById[item.id] ?? false}
-          onToggleLike={() => toggleLike(item.id)}
-          onToggleComments={() => toggleComments(item.id)}
+          key={post.postId}
+          post={post}
+          liked={likedById[post.postId] ?? false}
+          commentsOpen={commentOpenById[post.postId] ?? false}
+          onToggleLike={() => onToggleLike(post.postId)}
+          onToggleComments={() => toggleComments(post.postId)}
         />
       ))}
     </ScrollView>
@@ -156,35 +311,36 @@ function FeedScreen() {
 }
 
 function MemoryCard({
+  post,
   liked,
-  comments,
   commentsOpen,
   onToggleLike,
   onToggleComments,
 }: {
+  post: FamilyMemoryPost;
   liked: boolean;
-  comments: number;
   commentsOpen: boolean;
   onToggleLike: () => void;
   onToggleComments: () => void;
 }) {
-  const likeCount = liked ? 12 : 11;
+  const likeCount = Math.max(0, (post.likeCount ?? 0) + (liked ? 1 : 0));
+  const commentCount = post.elderReply?.content ? 1 : 0;
+  const authorName = post.authorRelation || post.authorName || '가족';
+  const photoSource = getMemoryPhotoSource(post.photoKeys);
 
   return (
     <View style={[styles.memoryCard, commentsOpen && styles.memoryCardExpanded]}>
       <View style={styles.cardHeader}>
         <View style={styles.author}>
           <Avatar />
-          <Text style={styles.authorName}>딸</Text>
+          <Text style={styles.authorName}>{authorName}</Text>
         </View>
-        <Text style={styles.timeText}>2일전</Text>
+        <Text style={styles.timeText}>{formatRelativeDate(post.publishedAt || post.createdAt)}</Text>
       </View>
 
-      <Text style={styles.bodyText}>
-        엄마와 함께 첫 벚꽃 구경 갔던 날이에요.{'\n'}정말 예뻤던 기억이 나요.🌸
-      </Text>
+      {!!post.textContent && <Text style={styles.bodyText}>{post.textContent}</Text>}
 
-      <Image source={PHOTO_URL} style={styles.feedPhoto} contentFit="cover" />
+      <Image source={photoSource} style={styles.feedPhoto} contentFit="cover" />
 
       <View style={styles.reactionRow}>
         <Reaction
@@ -197,7 +353,7 @@ function MemoryCard({
         <Reaction
           icon="comment"
           label="댓글"
-          count={comments}
+          count={commentCount}
           active={commentsOpen}
           onPress={onToggleComments}
         />
@@ -211,13 +367,15 @@ function MemoryCard({
             <View style={styles.author}>
               <Avatar />
               <View>
-                <Text style={styles.authorName}>어머니</Text>
-                <Text style={styles.commentDate}>06.10</Text>
+                <Text style={styles.authorName}>어르신</Text>
+                <Text style={styles.commentDate}>{formatShortDate(post.elderReply?.repliedAt)}</Text>
               </View>
             </View>
             <HaemiIcon name="more" color={LINE_NORMAL} size={24} />
           </View>
-          <Text style={styles.bodyText}>그때 너무 예뻤는데~~ 나도 기억이 떠오르네!</Text>
+          <Text style={styles.bodyText}>
+            {post.elderReply?.content || '아직 어르신 답변이 도착하지 않았어요.'}
+          </Text>
           <View style={styles.commentInput}>
             <Text style={styles.placeholderText}>댓글을 작성해 보세요.</Text>
             <HaemiIcon name="send" color={ORANGE} size={22} />
@@ -226,6 +384,35 @@ function MemoryCard({
       )}
     </View>
   );
+}
+
+function getMemoryPhotoSource(photoKeys?: string[]) {
+  const firstPhoto = photoKeys?.[0];
+  return firstPhoto && firstPhoto.startsWith('http') ? firstPhoto : PHOTO_URL;
+}
+
+function formatRelativeDate(value?: string) {
+  if (!value) {
+    return '방금 전';
+  }
+
+  const date = new Date(value);
+  const diffDays = Math.max(0, Math.floor((Date.now() - date.getTime()) / 86400000));
+
+  if (diffDays === 0) {
+    return '오늘';
+  }
+
+  return `${diffDays}일전`;
+}
+
+function formatShortDate(value?: string) {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+  return `${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
 }
 
 function Avatar() {
@@ -273,19 +460,19 @@ function Reaction({
 
 function ComposeScreen({
   memo,
-  selectedPhotoSlots,
   selectedPhotos,
+  isPosting,
   onBack,
-  onOpenAlbum,
+  onPickPhotos,
   onMemoChange,
   onPost,
   onCancel,
 }: {
   memo: string;
-  selectedPhotoSlots: string[];
-  selectedPhotos: number;
+  selectedPhotos: FamilyMemoryPhotoUpload[];
+  isPosting: boolean;
   onBack: () => void;
-  onOpenAlbum: () => void;
+  onPickPhotos: () => void;
   onMemoChange: (value: string) => void;
   onPost: () => void;
   onCancel: () => void;
@@ -299,14 +486,18 @@ function ComposeScreen({
         <Text style={styles.title}>추억 등록</Text>
       </View>
 
-      <View style={styles.form}>
+      <ScrollView
+        style={styles.composeScroll}
+        contentContainerStyle={styles.form}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>사진</Text>
           <View style={styles.photoRow}>
-            {selectedPhotoSlots.map((slot) => (
-              <PhotoTile key={slot} />
+            {selectedPhotos.map((photo) => (
+              <PhotoTile key={photo.uri} photo={photo} />
             ))}
-            {selectedPhotos < MAX_SELECTED_PHOTOS && <UploadTile onPress={onOpenAlbum} />}
+            {selectedPhotos.length < MAX_SELECTED_PHOTOS && <UploadTile onPress={onPickPhotos} />}
           </View>
         </View>
 
@@ -328,22 +519,32 @@ function ComposeScreen({
         </View>
 
         <View style={styles.buttonRow}>
-          <Pressable style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]} onPress={onCancel}>
+          <Pressable
+            disabled={isPosting}
+            style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed, isPosting && styles.disabled]}
+            onPress={onCancel}>
             <Text style={styles.secondaryButtonText}>취소</Text>
           </Pressable>
-          <Pressable style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]} onPress={onPost}>
-            <Text style={styles.primaryButtonText}>게시</Text>
+          <Pressable
+            disabled={isPosting}
+            style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed, isPosting && styles.disabled]}
+            onPress={onPost}>
+            {isPosting ? (
+              <ActivityIndicator color={ORANGE_SOFT} />
+            ) : (
+              <Text style={styles.primaryButtonText}>게시</Text>
+            )}
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
 
-function PhotoTile() {
+function PhotoTile({ photo }: { photo: FamilyMemoryPhotoUpload }) {
   return (
     <View style={styles.photoTile}>
-      <Image source={PHOTO_URL} style={styles.photoTileImage} contentFit="cover" />
+      <Image source={{ uri: photo.uri }} style={styles.photoTileImage} contentFit="cover" />
     </View>
   );
 }
@@ -354,35 +555,6 @@ function UploadTile({ onPress }: { onPress: () => void }) {
       <HaemiIcon name="photo" color={LINE_NORMAL} size={40} />
       <Text style={styles.uploadText}>이미지를 업로드하세요</Text>
     </Pressable>
-  );
-}
-
-function AlbumSheet({ width, onSelect, onClose }: { width: number; onSelect: () => void; onClose: () => void }) {
-  return (
-    <View style={styles.scrim}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-      <View style={[styles.sheet, { width }]}>
-        <View style={styles.sheetHandle} />
-        <View style={styles.sheetHeader}>
-          <Text style={styles.title}>앨범 사진</Text>
-          <Text style={styles.sheetCount}>200장</Text>
-        </View>
-        <ScrollView horizontal={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.albumContent}>
-          {albumRows.map((row, rowIndex) => (
-            <View key={`${row.date}-${rowIndex}`} style={styles.albumGroup}>
-              <Text style={styles.albumDate}>{row.date}</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.albumRow}>
-                {Array.from({ length: row.count }, (_, index) => (
-                  <Pressable key={`${rowIndex}-${index}`} style={styles.albumThumb} onPress={onSelect}>
-                    <Image source={PHOTO_URL} style={styles.albumThumbImage} contentFit="cover" />
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-    </View>
   );
 }
 
@@ -422,6 +594,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 19,
     paddingBottom: 128,
     gap: 12,
+  },
+  feedTitleRow: {
+    minHeight: 31,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  errorText: {
+    color: TEXT_ASSISTIVE,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500',
   },
   title: {
     color: TEXT,
@@ -567,7 +751,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 23,
     paddingTop: 14,
-    paddingBottom: 112,
+  },
+  composeScroll: {
+    flex: 1,
   },
   backTitle: {
     height: 31,
@@ -577,6 +763,7 @@ const styles = StyleSheet.create({
   },
   form: {
     paddingTop: 40,
+    paddingBottom: 112,
     gap: 35,
   },
   field: {
@@ -761,5 +948,8 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.72,
+  },
+  disabled: {
+    opacity: 0.5,
   },
 });

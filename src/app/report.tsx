@@ -1,3 +1,4 @@
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -10,6 +11,9 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useState } from 'react';
+
+import { HaemiHeader } from '@/components/haemi-header';
 
 import { HaemiIcon } from '@/components/haemi-icons';
 import { generateReport, getReportMetrics, markReportViewed, ReportApiError } from '@/shared/api/report';
