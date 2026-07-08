@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
-import { useMemo, useState } from 'react';
+import * as ImagePicker from 'expo-image-picker';
+import { useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -14,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Arrow, BottomNavigation, Comment, Fab, Heart, More, Picture, Sent } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 
-type MemoryMode = 'feed' | 'compose' | 'composeAlbum';
+type MemoryMode = 'feed' | 'compose';
 
 const samplePhoto = require('../../../assets/images/album-sample.png');
 
@@ -34,23 +35,50 @@ const feedItems = [
   { id: 'third', liked: false, comments: 12 },
 ];
 
-const albumRows = [
-  { date: '06.10', count: 2 },
-  { date: '06.10', count: 4 },
-  { date: '06.10', count: 3 },
-];
-
 export default function FamilyMemoriesScreen() {
   const [mode, setMode] = useState<MemoryMode>('feed');
-  const [selectedPhotos, setSelectedPhotos] = useState(1);
+  const [selectedPhotoUris, setSelectedPhotoUris] = useState<string[]>([]);
   const [memo, setMemo] = useState('가족끼리 나들이에 갔던 날이에요');
+  const selectedPhotoUriList = Array.isArray(selectedPhotoUris) ? selectedPhotoUris : [];
 
-  const canPost = selectedPhotos > 0 || memo.trim().length > 0;
-  const isCompose = mode === 'compose' || mode === 'composeAlbum';
+  const canPost = selectedPhotoUriList.length > 0 || memo.trim().length > 0;
+  const isCompose = mode === 'compose';
 
-  const selectedPhotoSlots = useMemo(() => {
-    return Array.from({ length: selectedPhotos }, (_, index) => `selected-${index}`);
-  }, [selectedPhotos]);
+  const handlePickPhotos = async () => {
+    const remainingSlots = MAX_SELECTED_PHOTOS - selectedPhotoUriList.length;
+
+    if (remainingSlots <= 0) {
+      Alert.alert('사진은 최대 3장까지 업로드할 수 있어요.');
+      return;
+    }
+
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert('권한이 필요해요', '사진을 선택하려면 갤러리 접근 권한을 허용해주세요.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        selectionLimit: remainingSlots,
+        quality: 0.9,
+      });
+
+      if (result.canceled) {
+        return;
+      }
+
+      setSelectedPhotoUris((current) => [
+        ...(Array.isArray(current) ? current : []),
+        ...result.assets.slice(0, remainingSlots).map((asset) => asset.uri),
+      ]);
+    } catch {
+      Alert.alert('사진을 불러오지 못했어요', '잠시 후 다시 시도해주세요.');
+    }
+  };
 
   const handlePost = () => {
     if (!canPost) {
@@ -70,10 +98,9 @@ export default function FamilyMemoriesScreen() {
         {isCompose ? (
           <ComposeScreen
             memo={memo}
-            selectedPhotoSlots={selectedPhotoSlots}
-            selectedPhotos={selectedPhotos}
+            selectedPhotoUris={selectedPhotoUriList}
             onBack={() => setMode('feed')}
-            onOpenAlbum={() => setMode('composeAlbum')}
+            onPickPhotos={handlePickPhotos}
             onMemoChange={setMemo}
             onPost={handlePost}
             onCancel={() => setMode('feed')}
@@ -92,16 +119,6 @@ export default function FamilyMemoriesScreen() {
       </SafeAreaView>
 
       {!isCompose && <BottomNavigation activeTab="Memory" />}
-
-      {mode === 'composeAlbum' && (
-        <AlbumSheet
-          onSelect={() => {
-            setSelectedPhotos((value) => Math.min(MAX_SELECTED_PHOTOS, value + 1));
-            setMode('compose');
-          }}
-          onClose={() => setMode('compose')}
-        />
-      )}
     </View>
   );
 }
@@ -256,19 +273,17 @@ function Reaction({
 
 function ComposeScreen({
   memo,
-  selectedPhotoSlots,
-  selectedPhotos,
+  selectedPhotoUris,
   onBack,
-  onOpenAlbum,
+  onPickPhotos,
   onMemoChange,
   onPost,
   onCancel,
 }: {
   memo: string;
-  selectedPhotoSlots: string[];
-  selectedPhotos: number;
+  selectedPhotoUris: string[];
   onBack: () => void;
-  onOpenAlbum: () => void;
+  onPickPhotos: () => void;
   onMemoChange: (value: string) => void;
   onPost: () => void;
   onCancel: () => void;
@@ -286,10 +301,10 @@ function ComposeScreen({
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>사진</Text>
           <View style={styles.photoRow}>
-            {selectedPhotoSlots.map((slot) => (
-              <PhotoTile key={slot} />
+            {selectedPhotoUris.map((uri) => (
+              <PhotoTile key={uri} uri={uri} />
             ))}
-            {selectedPhotos < MAX_SELECTED_PHOTOS && <UploadTile onPress={onOpenAlbum} />}
+            {selectedPhotoUris.length < MAX_SELECTED_PHOTOS && <UploadTile onPress={onPickPhotos} />}
           </View>
         </View>
 
@@ -329,10 +344,10 @@ function ComposeScreen({
   );
 }
 
-function PhotoTile() {
+function PhotoTile({ uri }: { uri: string }) {
   return (
     <View style={styles.photoTile}>
-      <Image source={samplePhoto} style={styles.photoTileImage} contentFit="cover" />
+      <Image source={{ uri }} style={styles.photoTileImage} contentFit="cover" />
     </View>
   );
 }
@@ -343,42 +358,6 @@ function UploadTile({ onPress }: { onPress: () => void }) {
       <Picture size={40} color={LINE_NORMAL} />
       <Text style={styles.uploadText}>이미지를 업로드하세요</Text>
     </Pressable>
-  );
-}
-
-function AlbumSheet({ onSelect, onClose }: { onSelect: () => void; onClose: () => void }) {
-  return (
-    <View style={styles.scrim}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-      <View style={styles.sheet}>
-        <View style={styles.sheetHandle} />
-        <View style={styles.sheetHeader}>
-          <Text style={styles.title}>앨범 사진</Text>
-          <Text style={styles.sheetCount}>200장</Text>
-        </View>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.albumContent}
-        >
-          {albumRows.map((row, rowIndex) => (
-            <View key={`${row.date}-${rowIndex}`} style={styles.albumGroup}>
-              <Text style={styles.albumDate}>{row.date}</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.albumRow}
-              >
-                {Array.from({ length: row.count }, (_, index) => (
-                  <Pressable key={`${rowIndex}-${index}`} style={styles.albumThumb} onPress={onSelect}>
-                    <Image source={samplePhoto} style={styles.albumThumbImage} contentFit="cover" />
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-    </View>
   );
 }
 
