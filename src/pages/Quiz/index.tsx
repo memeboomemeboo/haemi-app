@@ -1,21 +1,18 @@
 import { Image } from 'expo-image';
-import { useState } from 'react';
-import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet, Text, View, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { getQuizQuestions, type QuizQuestion } from '@/shared/api/quiz';
 import { BottomNavigation } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 import { Circle } from '@/widgets/QuizAnswerCard/Circle';
 
-interface QuizQuestion {
-  id: string;
-  question: string;
-  correctAnswer: 'O' | 'X';
-  explanation: string;
-}
+// Figma MCP 에셋들 (localhost:3845)
+const QUIZ_EMOJI = 'http://localhost:3845/assets/596d86be093839995361d77d7ec263267d8fbce7.png';
 
-// TODO: API 연결 시 GET /quiz/questions로 대체
-const MOCK_QUESTIONS: QuizQuestion[] = [
+// Fallback 모의 데이터 (API 미연결 시)
+const FALLBACK_QUESTIONS: QuizQuestion[] = [
   {
     id: 'q1',
     question: '길고양이 급식소는 아무곳에나 설치해도 된다.',
@@ -24,18 +21,35 @@ const MOCK_QUESTIONS: QuizQuestion[] = [
   },
 ];
 
-// Figma MCP 에셋들 (localhost:3845)
-const QUIZ_EMOJI = 'http://localhost:3845/assets/596d86be093839995361d77d7ec263267d8fbce7.png';
-
 export default function QuizScreen() {
+  const [questions, setQuestions] = useState<QuizQuestion[]>(FALLBACK_QUESTIONS);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState<'O' | 'X' | null>(null);
   const [answered, setAnswered] = useState(false);
 
-  const question = MOCK_QUESTIONS[currentIndex];
+  // API에서 문제 로드
+  useEffect(() => {
+    const loadQuestions = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getQuizQuestions({ limit: 10 });
+        setQuestions(data.length > 0 ? data : FALLBACK_QUESTIONS);
+      } catch (error) {
+        console.warn('Failed to load quiz questions from API, using fallback data');
+        setQuestions(FALLBACK_QUESTIONS);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadQuestions();
+  }, []);
+
+  const question = questions[currentIndex];
   const isCorrect = userAnswer === question.correctAnswer;
   const progress = currentIndex + 1;
-  const total = MOCK_QUESTIONS.length;
+  const total = questions.length;
 
   const handleAnswer = (answer: 'O' | 'X') => {
     setUserAnswer(answer);
@@ -43,7 +57,7 @@ export default function QuizScreen() {
   };
 
   const handleNext = () => {
-    if (currentIndex < MOCK_QUESTIONS.length - 1) {
+    if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setUserAnswer(null);
       setAnswered(false);
