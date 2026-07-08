@@ -4,7 +4,8 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAlbumItems } from '@/entities/album';
-import { BottomNavigation, Fab } from '@/shared/ui';
+import type { AlbumItem } from '@/entities/album/model/types';
+import { AsyncContainer, BottomNavigation, Fab } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 import { AlbumFilterTabs, type AlbumFilter } from '@/widgets/AlbumFilterTabs';
 import { AlbumGrid } from '@/widgets/AlbumGrid';
@@ -14,10 +15,12 @@ export default function AlbumScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<AlbumFilter>('all');
-  const { items, isLoading } = useAlbumItems();
+  const albumState = useAlbumItems();
 
-  // API 연결 후에도 그대로 동작: 로딩이 끝났는데 사진이 없으면 빈 화면 표시
-  const isEmpty = !isLoading && (items?.length ?? 0) === 0;
+  const renderAlbumContent = (items: AlbumItem[]) => {
+    const isEmpty = items.length === 0;
+    return isEmpty ? <AlbumEmptyState /> : <AlbumGrid items={items} />;
+  };
 
   return (
     <View style={styles.container}>
@@ -28,19 +31,31 @@ export default function AlbumScreen() {
         <AlbumFilterTabs value={filter} onChange={setFilter} />
       </View>
 
-      {isEmpty ? (
-        <View style={styles.emptyWrapper}>
-          <AlbumEmptyState />
-        </View>
-      ) : (
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.gridContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <AlbumGrid items={items} />
-        </ScrollView>
-      )}
+      {/* AsyncContainer로 로딩/에러/성공 상태 관리 */}
+      <AsyncContainer
+        state={albumState}
+        loadingMessage="앨범을 불러오는 중..."
+        errorTitle="앨범 로드 실패"
+        errorMessage="앨범을 불러올 수 없습니다. 다시 시도해주세요."
+      >
+        {(items: AlbumItem[]) => (
+          <>
+            {items.length === 0 ? (
+              <View style={styles.emptyWrapper}>
+                <AlbumEmptyState />
+              </View>
+            ) : (
+              <ScrollView
+                style={styles.scroll}
+                contentContainerStyle={styles.gridContent}
+                showsVerticalScrollIndicator={false}
+              >
+                <AlbumGrid items={items} />
+              </ScrollView>
+            )}
+          </>
+        )}
+      </AsyncContainer>
 
       <Fab
         accessibilityLabel="앨범 추가"

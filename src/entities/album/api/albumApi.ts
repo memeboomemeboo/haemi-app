@@ -2,9 +2,6 @@ import { getAlbums, type Album } from '@/shared/api/albums';
 import type { AlbumItem } from '../model/types';
 import { MOCK_ALBUM_ITEMS } from './mock';
 
-/** API 서버가 준비되면 false로 바꾸면 실제 엔드포인트로 연결된다. */
-const USE_MOCK = false;
-
 /**
  * Album API의 응답을 AlbumItem으로 변환
  */
@@ -20,12 +17,12 @@ function transformAlbumToItem(album: Album): AlbumItem {
 }
 
 export async function fetchAlbumItems(): Promise<AlbumItem[]> {
-  if (USE_MOCK) {
-    return MOCK_ALBUM_ITEMS;
-  }
-
   try {
     const albums = await getAlbums({ limit: 100 });
+    if (albums.length === 0) {
+      // API에서 데이터가 없으면 mock으로 대체
+      return MOCK_ALBUM_ITEMS;
+    }
     return albums.map(transformAlbumToItem);
   } catch (error) {
     console.warn('Failed to fetch albums from API, using fallback data', error);
