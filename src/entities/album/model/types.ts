@@ -1,7 +1,7 @@
 /** 기억 앨범 항목 */
 export interface AlbumItem {
   id: string;
-  /** 카드 제목 (예: 안영세 서거일) */
+  /** 카드 제목 (예: 가족과 함께한 기억) */
   title: string;
   /** 표시용 날짜 (예: 1980.04.) */
   date: string;

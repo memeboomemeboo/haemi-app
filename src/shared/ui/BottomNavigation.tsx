@@ -48,13 +48,12 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab })
           const isActive = activeTab === tab;
           const tabColor = isActive ? ACTIVE_COLOR : INACTIVE_COLOR;
           const IconComponent = ICON_COMPONENTS[tab];
-          const route = TAB_ROUTES[tab];
 
           return (
             <Pressable
               key={tab}
               style={styles.tabButton}
-              onPress={() => router.replace(route)}
+              onPress={() => router.replace(TAB_ROUTES[tab])}
               disabled={isActive}
             >
               <View style={styles.tabIcon}>

@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { HaemiIcon } from '@/components/haemi-icons';
+import { Alarm, Setting } from '@/shared/ui';
 
 const LOGO_URL = 'https://www.figma.com/api/mcp/asset/5300de0b-0352-4b87-afed-9e109f965b6e';
 
@@ -57,14 +57,14 @@ export function HaemiHeader({
     <View style={styles.header}>
       <Image source={LOGO_URL} style={styles.logo} contentFit="contain" />
       <View style={styles.headerActions}>
-        <HaemiIcon name="alarm" color={LINE} size={30} />
+        <Alarm color={LINE} size={30} />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="설정"
           hitSlop={10}
           style={({ pressed }) => pressed && styles.pressed}
           onPress={onToggleSettings}>
-          <HaemiIcon name="gear" color={LINE} size={28} />
+          <Setting color={LINE} size={28} />
         </Pressable>
       </View>
 

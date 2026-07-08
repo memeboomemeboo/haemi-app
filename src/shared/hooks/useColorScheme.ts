@@ -1,11 +1,11 @@
-
-import { useSyncExternalStore } from 'react';import { useColorScheme as useRNColorScheme, Platform } from 'react-native';
+import { useSyncExternalStore } from 'react';
+import { Platform, useColorScheme as useRNColorScheme } from 'react-native';
 
 export function useColorScheme() {
   const hasHydrated = useSyncExternalStore(
     () => () => {},
     () => true,
-    () => false
+    () => false,
   );
   const colorScheme = useRNColorScheme();
 

@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Image,
   Modal,
@@ -10,14 +10,17 @@ import {
   Text,
   TextInput,
   View,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { uploadAlbumPhotos } from '@/shared/api/albums';
 import {
   Arrow,
   BottomNavigation,
   Calendar,
   CheckMark,
+  Close,
   Map,
   People,
   Picture,
@@ -40,7 +43,17 @@ export default function AlbumRegisterScreen() {
   const [location, setLocation] = useState('어린이 대공원');
   const [family, setFamily] = useState<string[]>(['아버지', '어머니']);
   const [showFamilyPicker, setShowFamilyPicker] = useState(false);
+  const [pickerPosition, setPickerPosition] = useState({ top: 0, left: 0 });
   const [memo, setMemo] = useState('가족끼리 나들이에 갔던 날이에요');
+  const chipAddRef = useRef<View>(null);
+
+  // + 버튼 위치를 측정해 바로 아래에 드롭다운을 띄운다 (Figma 109-568)
+  const openFamilyPicker = () => {
+    chipAddRef.current?.measureInWindow((x, y, width, height) => {
+      setPickerPosition({ top: y + height + 6, left: x + width / 2 - 52 });
+      setShowFamilyPicker(true);
+    });
+  };
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -58,9 +71,32 @@ export default function AlbumRegisterScreen() {
     );
   };
 
-  const handleSave = () => {
-    // TODO: API 연결 시 POST /albums 호출로 대체
-    router.back();
+  const handleSave = async () => {
+    try {
+      if (family.length === 0) {
+        Alert.alert('가족 구성원을 최소 1명 이상 추가해주세요.');
+        return;
+      }
+
+      // TODO: 앨범 생성 API (POST /albums) 호출
+      // const album = await createAlbum({
+      //   name: `${family.join(', ')}과 함께한 추억`,
+      //   description: memo,
+      //   memberIds: family,
+      // });
+
+      // 사진이 있으면 업로드
+      // if (photoUri && album.id) {
+      //   await uploadAlbumPhotos(album.id, {
+      //     photos: [{ uri: photoUri, fileName: 'photo.jpg', mimeType: 'image/jpeg' }],
+      //   });
+      // }
+
+      Alert.alert('앨범이 등록되었습니다.');
+      router.back();
+    } catch (error) {
+      Alert.alert('앨범 등록 실패', error instanceof Error ? error.message : '알 수 없는 오류 발생');
+    }
   };
 
   return (
@@ -145,14 +181,20 @@ export default function AlbumRegisterScreen() {
                   <Text style={styles.chipText}>{name}</Text>
                 </View>
               ))}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="가족 추가"
-                style={styles.chipAdd}
-                onPress={() => setShowFamilyPicker(true)}
-              >
-                <Plus size={12} color="#fd6941" />
-              </Pressable>
+              <View ref={chipAddRef} collapsable={false}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={family.length === FAMILY_CANDIDATES.length ? '가족 제거' : '가족 추가'}
+                  style={styles.chipAdd}
+                  onPress={openFamilyPicker}
+                >
+                  {family.length === FAMILY_CANDIDATES.length ? (
+                    <Close size={12} color="#fd6941" />
+                  ) : (
+                    <Plus size={12} color="#fd6941" />
+                  )}
+                </Pressable>
+              </View>
             </View>
           </View>
 
@@ -198,32 +240,37 @@ export default function AlbumRegisterScreen() {
 
       <BottomNavigation activeTab="Album" />
 
-      {/* 가족 선택 모달 */}
+      {/* 가족 추가 드롭다운 (Figma 109-568): + 버튼 아래 팝오버, 선택 항목은 체크 표시 */}
       <Modal
         visible={showFamilyPicker}
         transparent
         animationType="fade"
         onRequestClose={() => setShowFamilyPicker(false)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setShowFamilyPicker(false)}>
-          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.modalTitle}>가족 추가</Text>
-            <ScrollView style={styles.familyList} showsVerticalScrollIndicator={false}>
-              {FAMILY_CANDIDATES.filter((name) => !family.includes(name)).map((name) => (
-                <Pressable
-                  key={name}
-                  style={styles.familyItem}
-                  onPress={() => {
-                    toggleFamilyMember(name);
-                    setShowFamilyPicker(false);
-                  }}
-                >
-                  <Text style={styles.familyItemText}>{name}</Text>
-                  <CheckMark size={20} color="#fd6941" />
-                </Pressable>
-              ))}
-            </ScrollView>
-          </Pressable>
+        <Pressable style={styles.dropdownBackdrop} onPress={() => setShowFamilyPicker(false)}>
+          <View style={[styles.dropdown, { top: pickerPosition.top, left: pickerPosition.left }]}>
+            <View style={styles.dropdownInner}>
+              {FAMILY_CANDIDATES.map((name, index) => {
+                const isSelected = family.includes(name);
+                return (
+                  <Pressable
+                    key={name}
+                    style={[
+                      styles.dropdownRow,
+                      isSelected && styles.dropdownRowSelected,
+                      index < FAMILY_CANDIDATES.length - 1 && styles.dropdownRowDivider,
+                    ]}
+                    onPress={() => toggleFamilyMember(name)}
+                  >
+                    <View style={styles.dropdownCheckSlot}>
+                      {isSelected && <CheckMark size={13} color="#fd6035" />}
+                    </View>
+                    <Text style={styles.dropdownRowText}>{name}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
         </Pressable>
       </Modal>
     </View>
@@ -443,41 +490,48 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.85,
   },
-  modalOverlay: {
+  // 가족 추가 드롭다운 (Figma 109-568): 104px 팝오버, 어두운 배경 없음
+  dropdownBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  modalContent: {
-    width: '80%',
+  dropdown: {
+    position: 'absolute',
+    width: 104,
+    borderRadius: 8,
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 4,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#3c3e3f',
-    marginBottom: 16,
-    letterSpacing: -0.36,
+  dropdownInner: {
+    borderRadius: 8,
+    overflow: 'hidden',
   },
-  familyList: {
-    maxHeight: 200,
-  },
-  familyItem: {
+  dropdownRow: {
+    height: 36,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    paddingHorizontal: 12,
+    backgroundColor: '#ffffff',
   },
-  familyItemText: {
-    fontSize: 16,
+  dropdownRowSelected: {
+    backgroundColor: '#fff3f0',
+  },
+  dropdownRowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#fed7cd',
+  },
+  dropdownCheckSlot: {
+    width: 21,
+    justifyContent: 'center',
+  },
+  dropdownRowText: {
+    fontSize: 18,
     fontWeight: '500',
-    color: '#76787a',
-    letterSpacing: -0.32,
+    color: '#fd6035',
+    letterSpacing: -0.36,
+    lineHeight: 23,
   },
 });

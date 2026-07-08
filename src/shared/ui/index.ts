@@ -2,10 +2,30 @@
 export { BottomNavigation, type NavigationTab } from './BottomNavigation';
 export { Fab } from './Fab';
 export {
-  Alarm, Album, Arrow, Calendar, Check, CheckMark, Comment, Heart, Home, Icon,
+  Icon,
   ICON_SIZES,
-  Illustration, Map, More, People, Picture, Plus, Profile, Quiz, Report, Sent, Setting, type IconName,
+  Illustration,
+  Home,
+  Album,
+  Heart,
+  Report,
+  Quiz,
+  Alarm,
+  Setting,
+  Profile,
+  Arrow,
+  Check,
+  Plus,
+  Picture,
+  Comment,
+  More,
+  Sent,
+  Calendar,
+  Map,
+  People,
+  CheckMark,
+  Close,
+  type IconName,
   type IconProps,
-  type IllustrationName
+  type IllustrationName,
 } from './Icon';
-

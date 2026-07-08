@@ -6,14 +6,19 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View,
   useWindowDimensions,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { HaemiIcon } from '@/components/haemi-icons';
-import { generateReport, getReportMetrics, markReportViewed, ReportApiError } from '@/shared/api/report';
-import { BottomNavigation } from '@/shared/ui';
+
+import {
+  generateReport,
+  getReportMetrics,
+  markReportViewed,
+  ReportApiError,
+} from '@/shared/api/report';
 import type { CognitiveMetricResult, CognitiveReportResult } from '@/shared/types/report';
+import { Alarm, BottomNavigation, Report, Setting } from '@/shared/ui';
 
 const LOGO_URL = 'https://www.figma.com/api/mcp/asset/3340f72f-9dcc-4a58-a4f2-84f75e3cfb54';
 const DEFAULT_ELDER_ID = process.env.EXPO_PUBLIC_HAEMI_ELDER_ID ?? 'elder-001';
@@ -38,14 +43,54 @@ const BLUE_SOFT = '#cdeafe';
 type ReportMode = 'ready' | 'insufficient';
 
 const FALLBACK_METRICS: CognitiveMetricResult[] = [
-  { metricDate: '2026-06-15', trainingSessionCount: 4, trainingAccuracyRate: 60, averageResponseSeconds: 11 },
-  { metricDate: '2026-06-16', trainingSessionCount: 8, trainingAccuracyRate: 25, averageResponseSeconds: 14 },
-  { metricDate: '2026-06-17', trainingSessionCount: 6, trainingAccuracyRate: 35, averageResponseSeconds: 12 },
-  { metricDate: '2026-06-18', trainingSessionCount: 7, trainingAccuracyRate: 90, averageResponseSeconds: 9 },
-  { metricDate: '2026-06-19', trainingSessionCount: 1, trainingAccuracyRate: 65, averageResponseSeconds: 12 },
-  { metricDate: '2026-06-20', trainingSessionCount: 3, trainingAccuracyRate: 65, averageResponseSeconds: 12 },
-  { metricDate: '2026-06-21', trainingSessionCount: 5, trainingAccuracyRate: 50, averageResponseSeconds: 13 },
-  { metricDate: '2026-06-22', trainingSessionCount: 6, trainingAccuracyRate: 75, averageResponseSeconds: 10 },
+  {
+    metricDate: '2026-06-15',
+    trainingSessionCount: 4,
+    trainingAccuracyRate: 60,
+    averageResponseSeconds: 11,
+  },
+  {
+    metricDate: '2026-06-16',
+    trainingSessionCount: 8,
+    trainingAccuracyRate: 25,
+    averageResponseSeconds: 14,
+  },
+  {
+    metricDate: '2026-06-17',
+    trainingSessionCount: 6,
+    trainingAccuracyRate: 35,
+    averageResponseSeconds: 12,
+  },
+  {
+    metricDate: '2026-06-18',
+    trainingSessionCount: 7,
+    trainingAccuracyRate: 90,
+    averageResponseSeconds: 9,
+  },
+  {
+    metricDate: '2026-06-19',
+    trainingSessionCount: 1,
+    trainingAccuracyRate: 65,
+    averageResponseSeconds: 12,
+  },
+  {
+    metricDate: '2026-06-20',
+    trainingSessionCount: 3,
+    trainingAccuracyRate: 65,
+    averageResponseSeconds: 12,
+  },
+  {
+    metricDate: '2026-06-21',
+    trainingSessionCount: 5,
+    trainingAccuracyRate: 50,
+    averageResponseSeconds: 13,
+  },
+  {
+    metricDate: '2026-06-22',
+    trainingSessionCount: 6,
+    trainingAccuracyRate: 75,
+    averageResponseSeconds: 10,
+  },
 ];
 
 const FALLBACK_REPORT: CognitiveReportResult = {
@@ -54,7 +99,8 @@ const FALLBACK_REPORT: CognitiveReportResult = {
   participationCount: 5,
   averageAccuracyRate: 78,
   averageResponseSeconds: 12,
-  changeSummary: '지난주보다 반응 시간이 조금 늘었어요. 가족과 함께 쉬운 회상 활동을 해보는 것을 추천해요.',
+  changeSummary:
+    '지난주보다 반응 시간이 조금 늘었어요. 가족과 함께 쉬운 회상 활동을 해보는 것을 추천해요.',
 };
 
 export default function ReportScreen() {
@@ -68,7 +114,10 @@ export default function ReportScreen() {
   const screenWidth = Math.min(width, 393);
 
   const dateRange = useMemo(() => getWeeklyDateRange(rangeEnd), [rangeEnd]);
-  const reportData = useMemo(() => buildReportData(metrics, report, dateRange), [metrics, report, dateRange]);
+  const reportData = useMemo(
+    () => buildReportData(metrics, report, dateRange),
+    [metrics, report, dateRange]
+  );
 
   const loadReport = useCallback(async () => {
     try {
@@ -117,7 +166,8 @@ export default function ReportScreen() {
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+        >
           <Text style={styles.title}>인지 리포트</Text>
 
           <PeriodControl
@@ -131,8 +181,16 @@ export default function ReportScreen() {
             <>
               <SummaryCards data={reportData} />
               <View style={styles.chartSection}>
-                <LineChart title="정답률 변화" labels={reportData.labels} values={reportData.accuracyRates} />
-                <BarChart title="참여 횟수 변화" labels={reportData.labels} values={reportData.participationCounts} />
+                <LineChart
+                  title="정답률 변화"
+                  labels={reportData.labels}
+                  values={reportData.accuracyRates}
+                />
+                <BarChart
+                  title="참여 횟수 변화"
+                  labels={reportData.labels}
+                  values={reportData.participationCounts}
+                />
               </View>
               <ReportTip summary={reportData.changeSummary} />
             </>
@@ -150,11 +208,15 @@ export default function ReportScreen() {
             }}
           />
         )}
-
-        <BottomNavigation activeTab="Report" />
       </SafeAreaView>
 
-      <LogoutDialog visible={logoutOpen} onCancel={() => setLogoutOpen(false)} onConfirm={() => setLogoutOpen(false)} />
+      <LogoutDialog
+        visible={logoutOpen}
+        onCancel={() => setLogoutOpen(false)}
+        onConfirm={() => setLogoutOpen(false)}
+      />
+
+      <BottomNavigation activeTab="Report" />
     </View>
   );
 }
@@ -164,9 +226,14 @@ function Header({ onToggleMenu }: { onToggleMenu: () => void }) {
     <View style={styles.header}>
       <Image source={LOGO_URL} style={styles.logo} contentFit="contain" />
       <View style={styles.headerActions}>
-        <HaemiIcon name="alarm" color={LINE} size={30} />
-        <Pressable accessibilityRole="button" accessibilityLabel="설정 메뉴" hitSlop={8} onPress={onToggleMenu}>
-          <HaemiIcon name="gear" color={LINE} size={28} />
+        <Alarm color={LINE} size={30} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="설정 메뉴"
+          hitSlop={8}
+          onPress={onToggleMenu}
+        >
+          <Setting color={LINE} size={28} />
         </Pressable>
       </View>
     </View>
@@ -186,13 +253,23 @@ function PeriodControl({
 }) {
   return (
     <View style={styles.periodRow}>
-      <Pressable accessibilityRole="button" accessibilityLabel="이전 리포트 기간" hitSlop={8} onPress={onPrevious}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="이전 리포트 기간"
+        hitSlop={8}
+        onPress={onPrevious}
+      >
         <Text style={[styles.periodArrow, styles.periodArrowDisabled]}>‹</Text>
       </Pressable>
       <Text style={styles.periodText}>{formatDisplayDate(from)}</Text>
       <Text style={styles.periodText}>~</Text>
       <Text style={styles.periodText}>{formatDisplayDate(to)}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="다음 리포트 기간" hitSlop={8} onPress={onNext}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="다음 리포트 기간"
+        hitSlop={8}
+        onPress={onNext}
+      >
         <Text style={styles.periodArrow}>›</Text>
       </Pressable>
     </View>
@@ -202,9 +279,24 @@ function PeriodControl({
 function SummaryCards({ data }: { data: ReportDisplayData }) {
   return (
     <View style={styles.summaryRow}>
-      <SummaryCard value={`${data.participationCount}회`} label="훈련 참여" color={ORANGE_DEEP} backgroundColor={ORANGE_SOFT} />
-      <SummaryCard value={`${Math.round(data.averageAccuracyRate)}%`} label="평균 반응 시간" color={YELLOW} backgroundColor={YELLOW_SOFT} />
-      <SummaryCard value={`${Math.round(data.averageResponseSeconds)}초`} label="평균 정답률" color={BLUE} backgroundColor={BLUE_SOFT} />
+      <SummaryCard
+        value={`${data.participationCount}회`}
+        label="훈련 참여"
+        color={ORANGE_DEEP}
+        backgroundColor={ORANGE_SOFT}
+      />
+      <SummaryCard
+        value={`${Math.round(data.averageAccuracyRate)}%`}
+        label="평균 반응 시간"
+        color={YELLOW}
+        backgroundColor={YELLOW_SOFT}
+      />
+      <SummaryCard
+        value={`${Math.round(data.averageResponseSeconds)}초`}
+        label="평균 정답률"
+        color={BLUE}
+        backgroundColor={BLUE_SOFT}
+      />
     </View>
   );
 }
@@ -228,7 +320,15 @@ function SummaryCard({
   );
 }
 
-function LineChart({ title, labels, values }: { title: string; labels: string[]; values: number[] }) {
+function LineChart({
+  title,
+  labels,
+  values,
+}: {
+  title: string;
+  labels: string[];
+  values: number[];
+}) {
   const points = useMemo(() => getChartPoints(values, 100), [values]);
 
   return (
@@ -242,7 +342,10 @@ function LineChart({ title, labels, values }: { title: string; labels: string[];
             <LineSegment key={`${point.x}-${index}`} from={point} to={points[index + 1]} />
           ))}
           {points.map((point) => (
-            <View key={`${point.x}-${point.y}`} style={[styles.dot, { left: point.x - 3, top: point.y - 3 }]} />
+            <View
+              key={`${point.x}-${point.y}`}
+              style={[styles.dot, { left: point.x - 3, top: point.y - 3 }]}
+            />
           ))}
           <XLabels labels={labels} />
         </View>
@@ -251,14 +354,30 @@ function LineChart({ title, labels, values }: { title: string; labels: string[];
   );
 }
 
-function BarChart({ title, labels, values }: { title: string; labels: string[]; values: number[] }) {
+function BarChart({
+  title,
+  labels,
+  values,
+}: {
+  title: string;
+  labels: string[];
+  values: number[];
+}) {
   const maxValue = Math.max(8, ...values);
 
   return (
     <View style={styles.chartBlock}>
       <Text style={styles.sectionTitle}>{title}</Text>
       <View style={styles.chartRow}>
-        <YAxis labels={[String(maxValue), String(Math.round(maxValue * 0.75)), String(Math.round(maxValue * 0.5)), String(Math.round(maxValue * 0.25)), '0']} />
+        <YAxis
+          labels={[
+            String(maxValue),
+            String(Math.round(maxValue * 0.75)),
+            String(Math.round(maxValue * 0.5)),
+            String(Math.round(maxValue * 0.25)),
+            '0',
+          ]}
+        />
         <View style={styles.plotWrap}>
           <GridLines />
           <View style={styles.barLayer}>
@@ -309,7 +428,13 @@ function XLabels({ labels }: { labels: string[] }) {
   );
 }
 
-function LineSegment({ from, to }: { from: { x: number; y: number }; to: { x: number; y: number } }) {
+function LineSegment({
+  from,
+  to,
+}: {
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+}) {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const length = Math.sqrt(dx * dx + dy * dy);
@@ -358,9 +483,11 @@ function ReportTip({ summary }: { summary: string }) {
 function ReportState() {
   return (
     <View style={styles.stateCard}>
-      <HaemiIcon name="report" color={LINE_NORMAL} size={44} />
+      <Report color={LINE_NORMAL} size={44} />
       <Text style={styles.stateTitle}>아직 리포트가 준비되지 않았어요</Text>
-      <Text style={styles.stateDescription}>데이터가 충분히 쌓이면 리포트가 제공됩니다(7일 이상 필요)</Text>
+      <Text style={styles.stateDescription}>
+        데이터가 충분히 쌓이면 리포트가 제공됩니다(7일 이상 필요)
+      </Text>
     </View>
   );
 }
@@ -368,11 +495,17 @@ function ReportState() {
 function ProfileMenu({ onEdit, onLogout }: { onEdit: () => void; onLogout: () => void }) {
   return (
     <View style={styles.menu}>
-      <Pressable style={({ pressed }) => [styles.menuItemActive, pressed && styles.pressed]} onPress={onEdit}>
+      <Pressable
+        style={({ pressed }) => [styles.menuItemActive, pressed && styles.pressed]}
+        onPress={onEdit}
+      >
         <Text style={styles.checkText}>✓</Text>
         <Text style={styles.menuText}>정보 수정</Text>
       </Pressable>
-      <Pressable style={({ pressed }) => [styles.menuItem, pressed && styles.pressed]} onPress={onLogout}>
+      <Pressable
+        style={({ pressed }) => [styles.menuItem, pressed && styles.pressed]}
+        onPress={onLogout}
+      >
         <Text style={styles.menuText}>로그아웃</Text>
       </Pressable>
     </View>
@@ -394,13 +527,20 @@ function LogoutDialog({
         <View style={styles.dialog}>
           <Text style={styles.dialogTitle}>로그아웃</Text>
           <Text style={styles.dialogText}>
-            정말 <Text style={styles.dialogUser}>박승아(seunga418)</Text> 의 계정에서{'\n'}로그아웃하시겠습니까?
+            정말 <Text style={styles.dialogUser}>박승아(seunga418)</Text> 의 계정에서{'\n'}
+            로그아웃하시겠습니까?
           </Text>
           <View style={styles.dialogActions}>
-            <Pressable style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]} onPress={onCancel}>
+            <Pressable
+              style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
+              onPress={onCancel}
+            >
               <Text style={styles.cancelText}>취소</Text>
             </Pressable>
-            <Pressable style={({ pressed }) => [styles.logoutButton, pressed && styles.pressed]} onPress={onConfirm}>
+            <Pressable
+              style={({ pressed }) => [styles.logoutButton, pressed && styles.pressed]}
+              onPress={onConfirm}
+            >
               <Text style={styles.logoutText}>로그아웃</Text>
             </Pressable>
           </View>
@@ -427,7 +567,9 @@ function buildReportData(
   report: CognitiveReportResult,
   fallbackRange: { from: string; to: string }
 ): ReportDisplayData {
-  const sortedMetrics = [...metrics].sort((a, b) => (a.metricDate ?? '').localeCompare(b.metricDate ?? ''));
+  const sortedMetrics = [...metrics].sort((a, b) =>
+    (a.metricDate ?? '').localeCompare(b.metricDate ?? '')
+  );
   const trend = report.accuracyTrend?.length
     ? report.accuracyTrend.map((point) => ({
         metricDate: point.date,
@@ -439,14 +581,19 @@ function buildReportData(
   const participationCounts = sortedMetrics.map((item) => item.trainingSessionCount ?? 0);
   const averageAccuracyRate = report.averageAccuracyRate ?? average(accuracyRates);
   const averageResponseSeconds =
-    report.averageResponseSeconds ?? average(sortedMetrics.map((item) => item.averageResponseSeconds ?? 0));
+    report.averageResponseSeconds ??
+    average(sortedMetrics.map((item) => item.averageResponseSeconds ?? 0));
   const participationCount = report.participationCount ?? Math.round(average(participationCounts));
 
   return {
     periodStart: report.periodStart ?? fallbackRange.from,
     periodEnd: report.periodEnd ?? fallbackRange.to,
-    labels: labels.length ? labels : FALLBACK_METRICS.map((item) => formatShortDate(item.metricDate)),
-    accuracyRates: accuracyRates.length ? accuracyRates : FALLBACK_METRICS.map((item) => item.trainingAccuracyRate ?? 0),
+    labels: labels.length
+      ? labels
+      : FALLBACK_METRICS.map((item) => formatShortDate(item.metricDate)),
+    accuracyRates: accuracyRates.length
+      ? accuracyRates
+      : FALLBACK_METRICS.map((item) => item.trainingAccuracyRate ?? 0),
     participationCounts: participationCounts.length
       ? participationCounts
       : FALLBACK_METRICS.map((item) => item.trainingSessionCount ?? 0),
@@ -518,7 +665,12 @@ function isInsufficientDataError(error: unknown) {
     return false;
   }
 
-  return error.status === 400 || error.status === 409 || error.message.includes('7일') || error.message.includes('데이터');
+  return (
+    error.status === 400 ||
+    error.status === 409 ||
+    error.message.includes('7일') ||
+    error.message.includes('데이터')
+  );
 }
 
 const styles = StyleSheet.create({
