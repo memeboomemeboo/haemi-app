@@ -10,9 +10,11 @@ import {
   Text,
   TextInput,
   View,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { uploadAlbumPhotos } from '@/shared/api/albums';
 import {
   Arrow,
   BottomNavigation,
@@ -69,9 +71,32 @@ export default function AlbumRegisterScreen() {
     );
   };
 
-  const handleSave = () => {
-    // TODO: API 연결 시 POST /albums 호출로 대체
-    router.back();
+  const handleSave = async () => {
+    try {
+      if (family.length === 0) {
+        Alert.alert('가족 구성원을 최소 1명 이상 추가해주세요.');
+        return;
+      }
+
+      // TODO: 앨범 생성 API (POST /albums) 호출
+      // const album = await createAlbum({
+      //   name: `${family.join(', ')}과 함께한 추억`,
+      //   description: memo,
+      //   memberIds: family,
+      // });
+
+      // 사진이 있으면 업로드
+      // if (photoUri && album.id) {
+      //   await uploadAlbumPhotos(album.id, {
+      //     photos: [{ uri: photoUri, fileName: 'photo.jpg', mimeType: 'image/jpeg' }],
+      //   });
+      // }
+
+      Alert.alert('앨범이 등록되었습니다.');
+      router.back();
+    } catch (error) {
+      Alert.alert('앨범 등록 실패', error instanceof Error ? error.message : '알 수 없는 오류 발생');
+    }
   };
 
   return (
