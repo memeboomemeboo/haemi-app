@@ -17,4 +17,8 @@ export {
   Comment,
   More,
   Sent,
+  Calendar,
+  Map,
+  People,
+  CheckMark,
 } from './icons-components';
