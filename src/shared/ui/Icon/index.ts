@@ -13,4 +13,8 @@ export {
   Arrow,
   Check,
   Plus,
+  Picture,
+  Comment,
+  More,
+  Sent,
 } from './icons-components';

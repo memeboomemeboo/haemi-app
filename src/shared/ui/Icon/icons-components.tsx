@@ -15,3 +15,7 @@ export const Profile: React.FC<IndividualIconProps> = (props) => <Icon name="Pro
 export const Arrow: React.FC<IndividualIconProps> = (props) => <Icon name="Arrow" {...props} />;
 export const Check: React.FC<IndividualIconProps> = (props) => <Icon name="Check" {...props} />;
 export const Plus: React.FC<IndividualIconProps> = (props) => <Icon name="Plus" {...props} />;
+export const Picture: React.FC<IndividualIconProps> = (props) => <Icon name="Picture" {...props} />;
+export const Comment: React.FC<IndividualIconProps> = (props) => <Icon name="Comment" {...props} />;
+export const More: React.FC<IndividualIconProps> = (props) => <Icon name="More" {...props} />;
+export const Sent: React.FC<IndividualIconProps> = (props) => <Icon name="Sent" {...props} />;
