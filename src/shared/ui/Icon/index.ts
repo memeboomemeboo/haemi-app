@@ -5,6 +5,8 @@ export {
   Home,
   Album,
   Heart,
+  HeartOutline,
+  HeartFilled,
   Report,
   Quiz,
   Alarm,

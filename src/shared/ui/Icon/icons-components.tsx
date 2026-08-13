@@ -7,6 +7,8 @@ type IndividualIconProps = Omit<IconProps, 'name'>;
 export const Home: React.FC<IndividualIconProps> = (props) => <Icon name="Home" {...props} />;
 export const Album: React.FC<IndividualIconProps> = (props) => <Icon name="Album" {...props} />;
 export const Heart: React.FC<IndividualIconProps> = (props) => <Icon name="Heart" {...props} />;
+export const HeartOutline: React.FC<IndividualIconProps> = (props) => <Icon name="HeartOutline" {...props} />;
+export const HeartFilled: React.FC<IndividualIconProps> = (props) => <Icon name="HeartFilled" {...props} />;
 export const Report: React.FC<IndividualIconProps> = (props) => <Icon name="Report" {...props} />;
 export const Quiz: React.FC<IndividualIconProps> = (props) => <Icon name="Quiz" {...props} />;
 export const Alarm: React.FC<IndividualIconProps> = (props) => <Icon name="Alarm" {...props} />;
