@@ -12,12 +12,22 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Arrow, BottomNavigation, Comment, Fab, Heart, More, Picture, Sent } from '@/shared/ui';
+import {
+  Arrow,
+  BottomNavigation,
+  Comment,
+  Fab,
+  HeartFilled,
+  HeartOutline,
+  More,
+  Picture,
+  Sent,
+} from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 
 type MemoryMode = 'feed' | 'compose';
 
-const samplePhoto = require('../../../assets/images/album-sample.png');
+const samplePhoto = require('../../../assets/images/family-memory-sample.png');
 
 const ORANGE = '#fd6941';
 const ORANGE_SOFT = '#fed7cd';
@@ -32,7 +42,6 @@ const MAX_SELECTED_PHOTOS = 3;
 const feedItems = [
   { id: 'first', liked: true, comments: 12 },
   { id: 'second', liked: false, comments: 12 },
-  { id: 'third', liked: false, comments: 12 },
 ];
 
 export default function FamilyMemoriesScreen() {
@@ -92,7 +101,7 @@ export default function FamilyMemoriesScreen() {
     <View style={styles.container}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <View style={styles.headerWrapper}>
-          <HomeHeader style={styles.header} />
+          <HomeHeader showSetting={false} style={styles.header} />
         </View>
 
         {isCompose ? (
@@ -253,8 +262,8 @@ function Reaction({
   active?: boolean;
   onPress: () => void;
 }) {
-  const color = icon === 'heart' && active ? '#ff0000' : active ? ORANGE : LINE;
-  const IconComponent = icon === 'heart' ? Heart : Comment;
+  const color = icon === 'heart' && active ? '#f90606' : active ? ORANGE : LINE;
+  const IconComponent = icon === 'heart' ? (active ? HeartFilled : HeartOutline) : Comment;
 
   return (
     <Pressable
@@ -264,7 +273,7 @@ function Reaction({
       style={({ pressed }) => [styles.reaction, pressed && styles.pressed]}
       onPress={onPress}
     >
-      <IconComponent size={23} color={color} />
+      <IconComponent size={icon === 'heart' ? 24 : 23} color={color} />
       <Text style={styles.reactionText}>{label}</Text>
       <Text style={styles.reactionText}>{count}</Text>
     </Pressable>
@@ -370,7 +379,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerWrapper: {
-    paddingHorizontal: 26,
+    paddingHorizontal: 30,
     paddingTop: 14,
   },
   header: {
@@ -380,26 +389,36 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   feedContent: {
-    paddingHorizontal: 19,
-    paddingBottom: 40,
+    alignItems: 'center',
+    paddingHorizontal: 26,
+    paddingTop: 21,
+    paddingBottom: 28,
     gap: 12,
   },
   title: {
+    width: '100%',
+    maxWidth: 348,
     color: TEXT,
     fontSize: 24,
     lineHeight: 31,
     fontWeight: '700',
+    letterSpacing: -0.48,
   },
   memoryCard: {
+    width: '100%',
+    maxWidth: 348,
     minHeight: 276,
     paddingHorizontal: 18,
-    paddingTop: 15,
+    paddingTop: 16,
     paddingBottom: 12,
-    borderWidth: 1.5,
-    borderColor: FILL,
     borderRadius: 10,
     backgroundColor: '#ffffff',
     gap: 12,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   memoryCardExpanded: {
     minHeight: 481,
@@ -412,7 +431,7 @@ const styles = StyleSheet.create({
   author: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 17,
   },
   avatar: {
     width: 33,
@@ -441,33 +460,35 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 23,
     fontWeight: '600',
+    letterSpacing: -0.36,
   },
   timeText: {
     color: TEXT_ASSISTIVE,
     fontSize: 14,
     lineHeight: 18,
     fontWeight: '500',
+    letterSpacing: -0.28,
   },
   bodyText: {
     color: TEXT_MUTED,
     fontSize: 14,
     lineHeight: 18,
     fontWeight: '500',
+    letterSpacing: -0.28,
   },
   feedPhoto: {
     width: '100%',
     height: 123,
-    borderRadius: 15,
+    borderRadius: 10,
     backgroundColor: FILL,
   },
   reactionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 17,
   },
   reaction: {
-    minHeight: 36,
-    paddingRight: 12,
+    minHeight: 24,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
@@ -477,6 +498,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '500',
+    letterSpacing: -0.24,
   },
   divider: {
     height: 1.5,
