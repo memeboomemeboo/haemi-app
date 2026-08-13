@@ -1,30 +1,124 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useSeniorProfile } from '@/entities/user';
-import { useTodayActivities } from '@/entities/activity';
+import { Alarm, Arrow, Comment, Picture, Report } from '@/shared/ui/Icon';
 import { BottomNavigation } from '@/shared/ui';
-import { HomeHeader } from '@/widgets/HomeHeader';
-import { UserCard } from '@/widgets/UserCard';
-import { HaemiSection } from '@/widgets/HaemiSection';
-import { TodayActivities } from '@/widgets/TodayActivities';
+
+const logoSource = require('../../../assets/images/haemi-logo-small.png');
+const familySource = require('../../../assets/images/haemi-family.png');
+const memorySource = require('../../../assets/images/album-sample.png');
+
+type NoticeType = 'reply' | 'summary' | 'photo' | 'report';
+
+type Notice = {
+  id: string;
+  type: NoticeType;
+  title: string;
+  description: string;
+  time: string;
+};
+
+const NOTICES: Notice[] = [
+  {
+    id: 'reply',
+    type: 'reply',
+    title: '어머니가 답을 보내셨어요',
+    description: '오늘의 회상 카드에 음성으로 답하셨어요',
+    time: '방금',
+  },
+  {
+    id: 'summary',
+    type: 'summary',
+    title: '오늘의 하루 요약이 도착했어요',
+    description: '어머니의 반응과 가족의 추억을 모았어요',
+    time: '어제',
+  },
+  {
+    id: 'photo',
+    type: 'photo',
+    title: '사진 28장이 추억 피드에 담겼어요',
+    description: '사진 동기화가 모두 완료됐어요',
+    time: '2일 전',
+  },
+  {
+    id: 'report',
+    type: 'report',
+    title: '이번 주 회상 리포트가 도착했어요',
+    description: '한 주 동안의 회상 활동을 확인해 보세요',
+    time: '월요일',
+  },
+];
+
+const NOTICE_ICONS: Record<NoticeType, typeof Comment> = {
+  reply: Comment,
+  summary: Alarm,
+  photo: Picture,
+  report: Report,
+};
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { profile } = useSeniorProfile();
-  const { activities } = useTodayActivities();
 
   return (
-    <View style={styles.container}>
+    <View style={styles.screen}>
       <ScrollView
-        style={styles.content}
-        contentContainerStyle={[styles.contentContainer, { paddingTop: Math.max(insets.top, 20) }]}
+        contentContainerStyle={[styles.content, { paddingTop: Math.max(insets.top + 7, 24) }]}
         showsVerticalScrollIndicator={false}
       >
-        <HomeHeader style={styles.header} />
-        <UserCard profile={profile} />
-        <HaemiSection />
-        <TodayActivities activities={activities} />
+        <View style={styles.header}>
+          <Image source={logoSource} style={styles.logo} resizeMode="contain" />
+          <Pressable accessibilityLabel="알림 보기" hitSlop={10}>
+            <Alarm size={23} color="#dadbdc" />
+          </Pressable>
+        </View>
+
+        <View style={styles.greeting}>
+          <Text style={styles.greetingTitle}>승아님, 안녕하세요</Text>
+          <Text style={styles.greetingDescription}>엄마와의 소중한 추억을 함께 만들어가요.</Text>
+        </View>
+
+        <View style={styles.summaryRow}>
+          <View style={styles.connectionCard}>
+            <View style={styles.connectionHeading}>
+              <Image source={logoSource} style={styles.cardLogo} resizeMode="contain" />
+              <Text style={styles.connectionSuffix}>로</Text>
+            </View>
+            <Text style={styles.connectionDescription}>엄마와 가족 연결</Text>
+            <Text style={styles.connectionDays}>128일째</Text>
+            <Image source={familySource} style={styles.familyImage} resizeMode="contain" />
+          </View>
+
+          <View style={styles.metricsColumn}>
+            <MetricCard label="오늘의 추억" value="1개" icon="▣" />
+            <MetricCard label="이번 주 대화 시간" value="48분" icon="◷" />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>오늘의 회상 카드</Text>
+          <View style={styles.recallCard}>
+            <Image source={memorySource} style={styles.memoryImage} />
+            <View style={styles.recallContent}>
+              <Text style={styles.recallTitle}>1978년 여름</Text>
+              <Text style={styles.recallDescription}>가족과 바다에 갔던 날</Text>
+              <Pressable style={styles.detailButton}>
+                <Text style={styles.detailButtonText}>자세히 보기</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.noticeSection}>
+          <Pressable style={styles.noticeHeading}>
+            <Text style={styles.sectionTitle}>최근 알림</Text>
+            <Arrow size={14} color="#3c3e3f" />
+          </Pressable>
+          <View style={styles.noticeList}>
+            {NOTICES.map((notice) => (
+              <NoticeRow key={notice.id} notice={notice} />
+            ))}
+          </View>
+        </View>
       </ScrollView>
 
       <BottomNavigation activeTab="Home" />
@@ -32,19 +126,283 @@ export default function HomeScreen() {
   );
 }
 
+function MetricCard({ label, value, icon }: { label: string; value: string; icon: string }) {
+  return (
+    <View style={styles.metricCard}>
+      <Text style={styles.metricLabel}>{label}</Text>
+      <Text style={styles.metricValue}>{value}</Text>
+      <Text style={styles.metricIcon}>{icon}</Text>
+    </View>
+  );
+}
+
+function NoticeRow({ notice }: { notice: Notice }) {
+  const NoticeIcon = NOTICE_ICONS[notice.type];
+
+  return (
+    <Pressable style={styles.noticeRow}>
+      <View style={styles.noticeIcon}>
+        <NoticeIcon size={20} color="#76787a" />
+      </View>
+      <View style={styles.noticeCopy}>
+        <Text style={styles.noticeTitle} numberOfLines={1}>{notice.title}</Text>
+        <Text style={styles.noticeDescription} numberOfLines={1}>{notice.description}</Text>
+      </View>
+      <Text style={styles.noticeTime}>{notice.time}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
     backgroundColor: '#ffffff',
   },
   content: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingHorizontal: 26,
-    paddingBottom: 20,
+    paddingHorizontal: 21,
+    paddingBottom: 28,
   },
   header: {
-    marginBottom: 31,
+    height: 42,
+    paddingHorizontal: 9,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  logo: {
+    width: 62,
+    height: 24,
+  },
+  greeting: {
+    marginTop: 12,
+    marginHorizontal: 9,
+    gap: 7,
+  },
+  greetingTitle: {
+    color: '#3c3e3f',
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 31,
+    letterSpacing: -0.48,
+  },
+  greetingDescription: {
+    color: '#76787a',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 18,
+    letterSpacing: -0.28,
+  },
+  summaryRow: {
+    height: 202,
+    marginTop: 32,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  connectionCard: {
+    flex: 1.29,
+    paddingTop: 15,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#f2f2f2',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  connectionHeading: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 1,
+  },
+  cardLogo: {
+    width: 62,
+    height: 24,
+  },
+  connectionSuffix: {
+    color: '#76787a',
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 21,
+  },
+  connectionDescription: {
+    marginTop: 6,
+    color: '#76787a',
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 21,
+    letterSpacing: -0.32,
+  },
+  connectionDays: {
+    marginTop: 4,
+    color: '#5a5c5d',
+    fontSize: 20,
+    fontWeight: '600',
+    lineHeight: 26,
+    letterSpacing: -0.4,
+  },
+  familyImage: {
+    position: 'absolute',
+    right: 11,
+    bottom: 8,
+    width: 137,
+    height: 90,
+  },
+  metricsColumn: {
+    flex: 1,
+    gap: 8,
+  },
+  metricCard: {
+    flex: 1,
+    paddingTop: 11,
+    paddingHorizontal: 13,
+    overflow: 'hidden',
+    borderRadius: 10,
+    backgroundColor: '#fed7cd',
+  },
+  metricLabel: {
+    color: '#fd6035',
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 16,
+    letterSpacing: -0.24,
+  },
+  metricValue: {
+    marginTop: 2,
+    color: '#5a5c5d',
+    fontSize: 20,
+    fontWeight: '600',
+    lineHeight: 26,
+    letterSpacing: -0.4,
+  },
+  metricIcon: {
+    position: 'absolute',
+    right: 14,
+    bottom: 8,
+    color: '#fd8d70',
+    fontSize: 42,
+    fontWeight: '400',
+    lineHeight: 44,
+  },
+  section: {
+    marginTop: 32,
+    gap: 16,
+  },
+  sectionTitle: {
+    marginHorizontal: 9,
+    color: '#3c3e3f',
+    fontSize: 20,
+    fontWeight: '600',
+    lineHeight: 26,
+    letterSpacing: -0.4,
+  },
+  recallCard: {
+    height: 114,
+    padding: 16,
+    paddingLeft: 21,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 15,
+    backgroundColor: '#ffffff',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  memoryImage: {
+    width: 81,
+    height: 81,
+    borderRadius: 15,
+  },
+  recallContent: {
+    flex: 1,
+    alignSelf: 'stretch',
+  },
+  recallTitle: {
+    color: '#3c3e3f',
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 23,
+    letterSpacing: -0.36,
+  },
+  recallDescription: {
+    marginTop: 2,
+    color: '#76787a',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 18,
+    letterSpacing: -0.28,
+  },
+  detailButton: {
+    height: 25,
+    marginTop: 'auto',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    backgroundColor: '#fd6941',
+  },
+  detailButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 18,
+    letterSpacing: -0.28,
+  },
+  noticeSection: {
+    marginTop: 25,
+    gap: 12,
+  },
+  noticeHeading: {
+    paddingRight: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  noticeList: {
+    gap: 8,
+  },
+  noticeRow: {
+    minHeight: 49,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 5,
+    backgroundColor: '#f7f7f7',
+  },
+  noticeIcon: {
+    width: 35,
+    height: 35,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 18,
+    backgroundColor: '#e8e8e9',
+  },
+  noticeCopy: {
+    flex: 1,
+  },
+  noticeTitle: {
+    color: '#3c3e3f',
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 21,
+    letterSpacing: -0.32,
+  },
+  noticeDescription: {
+    color: '#76787a',
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 16,
+    letterSpacing: -0.24,
+  },
+  noticeTime: {
+    color: '#c1c2c3',
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 16,
   },
 });
