@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { uploadAlbumPhotos } from '@/shared/api/albums';
 import {
   Arrow,
   BottomNavigation,
@@ -22,10 +21,8 @@ import {
   CheckMark,
   Close,
   Map,
-  People,
   Picture,
   Plus,
-  Report,
 } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 
@@ -39,12 +36,12 @@ export default function AlbumRegisterScreen() {
   const insets = useSafeAreaInsets();
 
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [date, setDate] = useState('1999.04.');
-  const [location, setLocation] = useState('어린이 대공원');
+  const [date, setDate] = useState('');
+  const [location, setLocation] = useState('');
   const [family, setFamily] = useState<string[]>(['아버지', '어머니']);
   const [showFamilyPicker, setShowFamilyPicker] = useState(false);
   const [pickerPosition, setPickerPosition] = useState({ top: 0, left: 0 });
-  const [memo, setMemo] = useState('가족끼리 나들이에 갔던 날이에요');
+  const [memo, setMemo] = useState('');
   const chipAddRef = useRef<View>(null);
 
   // + 버튼 위치를 측정해 바로 아래에 드롭다운을 띄운다 (Figma 109-568)
@@ -56,12 +53,24 @@ export default function AlbumRegisterScreen() {
   };
 
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-    });
-    if (!result.canceled) {
-      setPhotoUri(result.assets[0].uri);
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert('권한이 필요해요', '사진을 선택하려면 갤러리 접근 권한을 허용해주세요.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.9,
+      });
+
+      if (!result.canceled) {
+        setPhotoUri(result.assets[0].uri);
+      }
+    } catch {
+      Alert.alert('사진을 불러오지 못했어요', '잠시 후 다시 시도해주세요.');
     }
   };
 
@@ -130,7 +139,7 @@ export default function AlbumRegisterScreen() {
           {!photoUri && (
             <>
               <View style={styles.uploadTextGroup}>
-                <Text style={styles.uploadLabel}>앨범 사진</Text>
+                <Text style={styles.uploadLabel}>Before 사진</Text>
                 <Text style={styles.uploadHint}>이미지를 업로드하세요</Text>
               </View>
               <View style={styles.uploadButton}>
@@ -142,39 +151,37 @@ export default function AlbumRegisterScreen() {
 
         {/* 입력 필드 */}
         <View style={styles.fields}>
-          <View style={styles.fieldRow}>
-            <View style={styles.fieldLabelGroup}>
-              <Calendar size={24} color="#76787a" />
+          <View style={styles.twoColumnRow}>
+            <View style={styles.halfField}>
               <Text style={styles.fieldLabel}>시기</Text>
+              <View style={styles.fieldInputGroup}>
+                <Calendar size={20} color={date ? '#76787a' : '#dadbdc'} />
+                <TextInput
+                  value={date}
+                  onChangeText={setDate}
+                  placeholder="2026.07."
+                  placeholderTextColor="#dadbdc"
+                  style={styles.fieldInput}
+                />
+              </View>
             </View>
-            <TextInput
-              value={date}
-              onChangeText={setDate}
-              placeholder="예: 1999.04."
-              placeholderTextColor="#c1c2c3"
-              style={styles.fieldInput}
-            />
-          </View>
-
-          <View style={styles.fieldRow}>
-            <View style={styles.fieldLabelGroup}>
-              <Map size={24} color="#76787a" />
+            <View style={styles.halfField}>
               <Text style={styles.fieldLabel}>장소</Text>
+              <View style={styles.fieldInputGroup}>
+                <Map size={20} color={location ? '#76787a' : '#dadbdc'} />
+                <TextInput
+                  value={location}
+                  onChangeText={setLocation}
+                  placeholder="장소"
+                  placeholderTextColor="#dadbdc"
+                  style={styles.fieldInput}
+                />
+              </View>
             </View>
-            <TextInput
-              value={location}
-              onChangeText={setLocation}
-              placeholder="장소를 입력하세요"
-              placeholderTextColor="#c1c2c3"
-              style={styles.fieldInput}
-            />
           </View>
 
-          <View style={styles.fieldRow}>
-            <View style={styles.fieldLabelGroup}>
-              <People size={26} color="#76787a" />
-              <Text style={styles.fieldLabel}>가족</Text>
-            </View>
+          <View style={styles.fullField}>
+            <Text style={styles.fieldLabel}>가족</Text>
             <View style={styles.chipsRow}>
               {family.map((name) => (
                 <View key={name} style={styles.chip}>
@@ -184,11 +191,11 @@ export default function AlbumRegisterScreen() {
               <View ref={chipAddRef} collapsable={false}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={family.length === FAMILY_CANDIDATES.length ? '가족 제거' : '가족 추가'}
+                  accessibilityLabel={showFamilyPicker ? '가족 선택 닫기' : '가족 추가'}
                   style={styles.chipAdd}
                   onPress={openFamilyPicker}
                 >
-                  {family.length === FAMILY_CANDIDATES.length ? (
+                  {showFamilyPicker ? (
                     <Close size={12} color="#fd6941" />
                   ) : (
                     <Plus size={12} color="#fd6941" />
@@ -198,18 +205,15 @@ export default function AlbumRegisterScreen() {
             </View>
           </View>
 
-          <View style={[styles.fieldRow, styles.fieldRowTop]}>
-            <View style={styles.fieldLabelGroup}>
-              <Report size={22} color="#76787a" />
-              <Text style={styles.fieldLabel}>메모</Text>
-            </View>
+          <View style={styles.fullField}>
+            <Text style={styles.fieldLabel}>메모</Text>
             <View style={styles.memoBox}>
               <TextInput
                 multiline
                 maxLength={MEMO_MAX_LENGTH}
                 value={memo}
                 onChangeText={setMemo}
-                placeholder="추억을 적어주세요"
+                placeholder="메모 내용을 입력해주세요."
                 placeholderTextColor="#c1c2c3"
                 style={styles.memoInput}
                 textAlignVertical="top"
@@ -293,9 +297,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 23,
+    paddingHorizontal: 27,
     paddingBottom: 40,
-    gap: 37,
+    gap: 28,
   },
   backTitle: {
     flexDirection: 'row',
@@ -313,7 +317,7 @@ const styles = StyleSheet.create({
     lineHeight: 31,
   },
   uploadCard: {
-    height: 189,
+    height: 165,
     borderWidth: 1.5,
     borderColor: '#f7f7f7',
     borderRadius: 20,
@@ -362,20 +366,18 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   fields: {
-    gap: 28,
+    gap: 26,
   },
-  fieldRow: {
+  twoColumnRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 9,
   },
-  fieldRowTop: {
-    alignItems: 'flex-start',
+  halfField: {
+    flex: 1,
+    gap: 6,
   },
-  fieldLabelGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+  fullField: {
+    gap: 8,
   },
   fieldLabel: {
     fontSize: 18,
@@ -384,27 +386,32 @@ const styles = StyleSheet.create({
     letterSpacing: -0.36,
     lineHeight: 23,
   },
-  fieldInput: {
-    width: 254,
-    height: 37,
+  fieldInputGroup: {
+    height: 47,
     borderRadius: 10,
     backgroundColor: '#f7f7f7',
-    paddingHorizontal: 16,
+    paddingHorizontal: 11,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  fieldInput: {
+    flex: 1,
+    padding: 0,
     fontSize: 18,
     fontWeight: '500',
     color: '#76787a',
     letterSpacing: -0.36,
   },
   chipsRow: {
-    width: 252,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
   chip: {
-    height: 23,
-    paddingHorizontal: 10,
-    borderRadius: 5,
+    height: 30,
+    paddingHorizontal: 13,
+    borderRadius: 7,
     backgroundColor: '#fed7cd',
     justifyContent: 'center',
     alignItems: 'center',
@@ -417,15 +424,14 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   chipAdd: {
-    width: 26,
-    height: 26,
+    width: 30,
+    height: 30,
     borderRadius: 100,
     backgroundColor: '#fff3f0',
     justifyContent: 'center',
     alignItems: 'center',
   },
   memoBox: {
-    width: 254,
     height: 99,
     borderRadius: 10,
     backgroundColor: '#f7f7f7',
@@ -452,7 +458,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   buttonRow: {
-    marginTop: 31,
+    marginTop: 20,
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 10,

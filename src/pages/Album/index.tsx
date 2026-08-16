@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   fixedTop: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     backgroundColor: '#ffffff',
   },
   header: {
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.48,
     lineHeight: 31,
     marginBottom: 16,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
   },
   scroll: {
     flex: 1,
@@ -95,12 +95,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   gridContent: {
-    // Figma: 필터 탭(bottom 152)에서 그리드(top 195)까지 43, 그리드 폭 364(좌우 여백 14.5)
-    paddingTop: 43,
+    paddingTop: 32,
     paddingHorizontal: 14,
     paddingBottom: 40,
   },
   fab: {
-    bottom: 93,
+    bottom: 123,
   },
 });

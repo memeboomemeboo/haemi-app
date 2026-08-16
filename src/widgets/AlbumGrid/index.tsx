@@ -1,5 +1,6 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { AlbumItem } from '@/entities/album';
+import { Profile } from '@/shared/ui';
 
 const sampleSource = require('../../../assets/images/album-sample.png');
 
@@ -11,7 +12,7 @@ interface AlbumGridProps {
 export const AlbumGrid = ({ items, onItemPress }: AlbumGridProps) => {
   return (
     <View style={styles.grid}>
-      {(items ?? []).map((item) => (
+      {(items ?? []).map((item, index) => (
         <Pressable key={item.id} style={styles.card} onPress={() => onItemPress?.(item)}>
           <View style={styles.photoFrame}>
             <Image
@@ -21,9 +22,20 @@ export const AlbumGrid = ({ items, onItemPress }: AlbumGridProps) => {
             />
           </View>
           <View style={styles.info}>
-            <Text style={styles.title} numberOfLines={1}>
-              {item.title}
-            </Text>
+            <View style={styles.cardHeader}>
+              <View style={styles.author}>
+                <View style={styles.profile}>
+                  <Profile size={16} color="#ff8463" />
+                </View>
+                <Text style={styles.authorText}>딸</Text>
+              </View>
+              <View style={[styles.status, index % 3 !== 0 && styles.statusAnswered]}>
+                <Text style={[styles.statusText, index % 3 !== 0 && styles.statusTextAnswered]}>
+                  {index % 3 === 0 ? '대기중' : '답변'}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.title} numberOfLines={1}>{item.description}</Text>
             <View style={styles.badgeRow}>
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{item.date}</Text>
@@ -32,9 +44,6 @@ export const AlbumGrid = ({ items, onItemPress }: AlbumGridProps) => {
                 <Text style={styles.badgeText}>{item.location}</Text>
               </View>
             </View>
-            <Text style={styles.description} numberOfLines={1}>
-              {item.description}
-            </Text>
           </View>
         </Pressable>
       ))}
@@ -44,33 +53,29 @@ export const AlbumGrid = ({ items, onItemPress }: AlbumGridProps) => {
 
 const styles = StyleSheet.create({
   grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    // 홀수 개일 때 마지막 카드는 왼쪽 정렬 (Figma node 68-3864)
-    justifyContent: 'flex-start',
     alignSelf: 'center',
-    width: 364,
+    width: 337,
     maxWidth: '100%',
-    columnGap: 16,
-    rowGap: 28,
+    gap: 16,
   },
   card: {
-    width: 174,
-    height: 223,
+    width: '100%',
+    height: 115,
     backgroundColor: '#ffffff',
-    borderRadius: 15,
-    paddingHorizontal: 11,
-    justifyContent: 'center',
-    gap: 18,
-    shadowColor: '#e6e6e7',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 5,
+    borderRadius: 12,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
     elevation: 3,
   },
   photoFrame: {
-    width: 152,
-    height: 108,
+    width: 96,
+    height: 96,
     borderRadius: 15,
     backgroundColor: '#ffffff',
     overflow: 'hidden',
@@ -86,23 +91,69 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   info: {
-    gap: 6,
+    width: 206,
+    gap: 5,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  author: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  profile: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#fed7cd',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  authorText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#5a5c5d',
+    letterSpacing: -0.32,
+  },
+  status: {
+    minWidth: 56,
+    height: 28,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    backgroundColor: '#c1c2c3',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusAnswered: {
+    backgroundColor: '#fd6941',
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#5a5c5d',
+    letterSpacing: -0.24,
+  },
+  statusTextAnswered: {
+    color: '#f5f5f5',
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
     color: '#3c3e3f',
     letterSpacing: -0.4,
-    lineHeight: 26,
+    lineHeight: 23,
   },
   badgeRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 8,
   },
   badge: {
-    height: 20,
-    paddingHorizontal: 5,
-    borderRadius: 5,
+    height: 25,
+    paddingHorizontal: 8,
+    borderRadius: 6,
     backgroundColor: '#fed7cd',
     justifyContent: 'center',
     alignItems: 'center',
@@ -111,13 +162,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#fd6941',
-    letterSpacing: -0.28,
-    lineHeight: 18,
-  },
-  description: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#5a5c5d',
     letterSpacing: -0.28,
     lineHeight: 18,
   },
