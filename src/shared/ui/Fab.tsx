@@ -17,7 +17,7 @@ export const Fab: React.FC<FabProps> = ({ onPress, accessibilityLabel, style }) 
   <Pressable
     accessibilityRole="button"
     accessibilityLabel={accessibilityLabel}
-    style={({ pressed }) => [styles.fab, style, pressed && styles.pressed]}
+    style={[styles.fab, style]}
     onPress={onPress}
   >
     <Plus size={51} color="#f5f5f5" />
@@ -39,8 +39,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4.8,
     elevation: 5,
-  },
-  pressed: {
-    opacity: 0.85,
   },
 });

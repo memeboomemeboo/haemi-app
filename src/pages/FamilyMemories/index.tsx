@@ -1,43 +1,35 @@
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
+import { Link } from 'expo-router';
 import { useState } from 'react';
 import {
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
-  Arrow,
   BottomNavigation,
   Comment,
   Fab,
   HeartFilled,
   HeartOutline,
   More,
-  Picture,
   Sent,
 } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 
-type MemoryMode = 'feed' | 'compose';
-
 const samplePhoto = require('../../../assets/images/family-memory-sample.png');
 
 const ORANGE = '#fd6941';
-const ORANGE_SOFT = '#fed7cd';
 const TEXT = '#3c3e3f';
 const TEXT_MUTED = '#5a5c5d';
 const TEXT_ASSISTIVE = '#76787a';
 const LINE = '#dadbdc';
 const LINE_NORMAL = '#c1c2c3';
 const FILL = '#f7f7f7';
-const MAX_SELECTED_PHOTOS = 3;
 
 const feedItems = [
   { id: 'first', liked: true, comments: 12 },
@@ -45,58 +37,6 @@ const feedItems = [
 ];
 
 export default function FamilyMemoriesScreen() {
-  const [mode, setMode] = useState<MemoryMode>('feed');
-  const [selectedPhotoUris, setSelectedPhotoUris] = useState<string[]>([]);
-  const [memo, setMemo] = useState('가족끼리 나들이에 갔던 날이에요');
-  const selectedPhotoUriList = Array.isArray(selectedPhotoUris) ? selectedPhotoUris : [];
-
-  const canPost = selectedPhotoUriList.length > 0 || memo.trim().length > 0;
-  const isCompose = mode === 'compose';
-
-  const handlePickPhotos = async () => {
-    const remainingSlots = MAX_SELECTED_PHOTOS - selectedPhotoUriList.length;
-
-    if (remainingSlots <= 0) {
-      Alert.alert('사진은 최대 3장까지 업로드할 수 있어요.');
-      return;
-    }
-
-    try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (!permission.granted) {
-        Alert.alert('권한이 필요해요', '사진을 선택하려면 갤러리 접근 권한을 허용해주세요.');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsMultipleSelection: true,
-        selectionLimit: remainingSlots,
-        quality: 0.9,
-      });
-
-      if (result.canceled) {
-        return;
-      }
-
-      setSelectedPhotoUris((current) => [
-        ...(Array.isArray(current) ? current : []),
-        ...result.assets.slice(0, remainingSlots).map((asset) => asset.uri),
-      ]);
-    } catch {
-      Alert.alert('사진을 불러오지 못했어요', '잠시 후 다시 시도해주세요.');
-    }
-  };
-
-  const handlePost = () => {
-    if (!canPost) {
-      Alert.alert('추억 내용을 입력해주세요');
-      return;
-    }
-    setMode('feed');
-  };
-
   return (
     <View style={styles.container}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -104,30 +44,17 @@ export default function FamilyMemoriesScreen() {
           <HomeHeader showSetting={false} style={styles.header} />
         </View>
 
-        {isCompose ? (
-          <ComposeScreen
-            memo={memo}
-            selectedPhotoUris={selectedPhotoUriList}
-            onBack={() => setMode('feed')}
-            onPickPhotos={handlePickPhotos}
-            onMemoChange={setMemo}
-            onPost={handlePost}
-            onCancel={() => setMode('feed')}
-          />
-        ) : (
-          <FeedScreen />
-        )}
+        <FeedScreen />
 
-        {!isCompose && (
+        <Link href="/memory-register" asChild>
           <Fab
             accessibilityLabel="추억 등록"
             style={styles.fab}
-            onPress={() => setMode('compose')}
           />
-        )}
+        </Link>
       </SafeAreaView>
 
-      {!isCompose && <BottomNavigation activeTab="Memory" />}
+      <BottomNavigation activeTab="Memory" />
     </View>
   );
 }
@@ -280,96 +207,6 @@ function Reaction({
   );
 }
 
-function ComposeScreen({
-  memo,
-  selectedPhotoUris,
-  onBack,
-  onPickPhotos,
-  onMemoChange,
-  onPost,
-  onCancel,
-}: {
-  memo: string;
-  selectedPhotoUris: string[];
-  onBack: () => void;
-  onPickPhotos: () => void;
-  onMemoChange: (value: string) => void;
-  onPost: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <View style={styles.compose}>
-      <View style={styles.backTitle}>
-        <Pressable accessibilityRole="button" accessibilityLabel="뒤로" onPress={onBack} hitSlop={8}>
-          <Arrow size={22} color={TEXT} style={styles.backArrow} />
-        </Pressable>
-        <Text style={styles.title}>추억 등록</Text>
-      </View>
-
-      <View style={styles.form}>
-        <View style={styles.field}>
-          <Text style={styles.fieldLabel}>사진</Text>
-          <View style={styles.photoRow}>
-            {selectedPhotoUris.map((uri) => (
-              <PhotoTile key={uri} uri={uri} />
-            ))}
-            {selectedPhotoUris.length < MAX_SELECTED_PHOTOS && <UploadTile onPress={onPickPhotos} />}
-          </View>
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.fieldLabel}>메모</Text>
-          <View style={styles.memoBox}>
-            <TextInput
-              multiline
-              maxLength={200}
-              value={memo}
-              onChangeText={onMemoChange}
-              placeholder="가족과 나누고 싶은 추억을 적어주세요"
-              placeholderTextColor={TEXT_ASSISTIVE}
-              style={styles.memoInput}
-              textAlignVertical="top"
-            />
-            <Text style={styles.countText}>{memo.length}/200</Text>
-          </View>
-        </View>
-
-        <View style={styles.buttonRow}>
-          <Pressable
-            style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
-            onPress={onCancel}
-          >
-            <Text style={styles.secondaryButtonText}>취소</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
-            onPress={onPost}
-          >
-            <Text style={styles.primaryButtonText}>게시</Text>
-          </Pressable>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function PhotoTile({ uri }: { uri: string }) {
-  return (
-    <View style={styles.photoTile}>
-      <Image source={{ uri }} style={styles.photoTileImage} contentFit="cover" />
-    </View>
-  );
-}
-
-function UploadTile({ onPress }: { onPress: () => void }) {
-  return (
-    <Pressable style={({ pressed }) => [styles.uploadTile, pressed && styles.pressed]} onPress={onPress}>
-      <Picture size={40} color={LINE_NORMAL} />
-      <Text style={styles.uploadText}>이미지를 업로드하세요</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -391,7 +228,7 @@ const styles = StyleSheet.create({
   feedContent: {
     alignItems: 'center',
     paddingHorizontal: 26,
-    paddingTop: 21,
+    paddingTop: 0,
     paddingBottom: 28,
     gap: 12,
   },
@@ -538,204 +375,6 @@ const styles = StyleSheet.create({
   },
   fab: {
     bottom: 20,
-  },
-  compose: {
-    flex: 1,
-    paddingHorizontal: 23,
-    paddingTop: 14,
-    paddingBottom: 40,
-  },
-  backTitle: {
-    height: 31,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  backArrow: {
-    transform: [{ scaleX: -1 }],
-  },
-  form: {
-    paddingTop: 40,
-    gap: 35,
-  },
-  field: {
-    gap: 12,
-  },
-  fieldLabel: {
-    marginLeft: 10,
-    color: TEXT_MUTED,
-    fontSize: 18,
-    lineHeight: 23,
-    fontWeight: '500',
-  },
-  photoRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  photoTile: {
-    width: 166,
-    height: 127,
-    borderRadius: 15,
-    overflow: 'hidden',
-    backgroundColor: '#ffffff',
-    shadowColor: '#000000',
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 2,
-  },
-  photoTileImage: {
-    width: '100%',
-    height: '100%',
-  },
-  uploadTile: {
-    width: 166,
-    height: 127,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#f5f5f5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#ffffff',
-  },
-  uploadText: {
-    color: LINE_NORMAL,
-    fontSize: 14,
-    lineHeight: 18,
-    fontWeight: '500',
-  },
-  memoBox: {
-    height: 246,
-    borderRadius: 10,
-    backgroundColor: FILL,
-    overflow: 'hidden',
-  },
-  memoInput: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 9,
-    paddingBottom: 28,
-    color: TEXT_ASSISTIVE,
-    fontSize: 18,
-    lineHeight: 23,
-    fontWeight: '500',
-  },
-  countText: {
-    position: 'absolute',
-    right: 13,
-    bottom: 6,
-    color: LINE_NORMAL,
-    fontSize: 14,
-    lineHeight: 18,
-    fontWeight: '400',
-  },
-  buttonRow: {
-    marginTop: 39,
-    flexDirection: 'row',
-    gap: 10,
-  },
-  secondaryButton: {
-    flex: 1,
-    height: 44,
-    borderRadius: 5,
-    backgroundColor: ORANGE_SOFT,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButton: {
-    flex: 1,
-    height: 44,
-    borderRadius: 5,
-    backgroundColor: ORANGE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryButtonText: {
-    color: ORANGE,
-    fontSize: 20,
-    lineHeight: 28,
-    fontWeight: '500',
-    includeFontPadding: false,
-  },
-  primaryButtonText: {
-    color: ORANGE_SOFT,
-    fontSize: 20,
-    lineHeight: 28,
-    fontWeight: '500',
-    includeFontPadding: false,
-  },
-  scrim: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  sheet: {
-    height: 526,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    backgroundColor: '#ffffff',
-    paddingTop: 19,
-    overflow: 'hidden',
-  },
-  sheetHandle: {
-    width: 36,
-    height: 5,
-    borderRadius: 3,
-    alignSelf: 'center',
-    backgroundColor: TEXT_ASSISTIVE,
-  },
-  sheetHeader: {
-    paddingTop: 28,
-    paddingHorizontal: 26,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sheetCount: {
-    color: TEXT_MUTED,
-    fontSize: 18,
-    lineHeight: 23,
-    fontWeight: '400',
-  },
-  albumContent: {
-    paddingHorizontal: 26,
-    paddingTop: 33,
-    paddingBottom: 36,
-    gap: 12,
-  },
-  albumGroup: {
-    gap: 9,
-  },
-  albumDate: {
-    color: TEXT_MUTED,
-    fontSize: 18,
-    lineHeight: 23,
-    fontWeight: '500',
-  },
-  albumRow: {
-    gap: 12,
-  },
-  albumThumb: {
-    width: 100,
-    height: 100,
-    borderRadius: 15,
-    overflow: 'hidden',
-    backgroundColor: '#ffffff',
-    shadowColor: '#000000',
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 2,
-  },
-  albumThumbImage: {
-    width: '100%',
-    height: '100%',
   },
   pressed: {
     opacity: 0.72,
