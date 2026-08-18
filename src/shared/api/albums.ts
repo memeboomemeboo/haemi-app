@@ -51,6 +51,12 @@ export interface AlbumPhotoUpload {
   mimeType: string;
 }
 
+export interface AlbumPersonOption {
+  personId: string;
+  name: string;
+  relation: string;
+}
+
 export async function createAlbum(): Promise<Album> {
   const homeResponse = await get<ApiResponse<HomeContext>>('/home');
   const response = await post<ApiResponse<Album>>('/albums', {
@@ -63,6 +69,15 @@ export async function createAlbum(): Promise<Album> {
 
 export async function getAlbumById(albumId: string): Promise<Album> {
   const response = await get<ApiResponse<Album>>(`/albums/${albumId}`);
+  return response.data;
+}
+
+export async function getAlbumPersonOptions(): Promise<AlbumPersonOption[]> {
+  const homeResponse = await get<ApiResponse<HomeContext>>('/home');
+  const response = await get<ApiResponse<AlbumPersonOption[]>>(
+    `/groups/${homeResponse.data.groupId}/persons`
+  );
+
   return response.data;
 }
 

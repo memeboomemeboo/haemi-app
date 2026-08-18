@@ -21,8 +21,10 @@ export const clearAuthToken = async () => {
  */
 export const initializeTestToken = async () => {
   if (__DEV__) {
+    const currentToken = await getClientToken();
     const testToken = process.env.EXPO_PUBLIC_TEST_TOKEN;
-    if (testToken) {
+
+    if (!currentToken && testToken) {
       await setCurrentAuthToken(testToken);
     }
   }
