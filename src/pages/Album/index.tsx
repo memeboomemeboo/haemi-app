@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,9 +13,10 @@ import { AlbumEmptyState } from '@/widgets/AlbumEmptyState';
 
 export default function AlbumScreen() {
   const router = useRouter();
+  const { albumId } = useLocalSearchParams<{ albumId?: string }>();
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<AlbumFilter>('all');
-  const albumState = useAlbumItems();
+  const albumState = useAlbumItems(albumId);
 
   return (
     <View style={styles.container}>
@@ -55,7 +56,7 @@ export default function AlbumScreen() {
       <Fab
         accessibilityLabel="앨범 추가"
         style={styles.fab}
-        onPress={() => router.push('/album-register')}
+        onPress={() => router.push({ pathname: '/album-register', params: { albumId } })}
       />
 
       <BottomNavigation activeTab="Album" />

@@ -168,13 +168,16 @@ interface FetchOptions extends RequestInit {
   timeout?: number;
 }
 
-const getHeaders = async (skipAuth = false): Promise<HeadersInit> => {
+const getHeaders = async (skipAuth = false, isFormData = false): Promise<HeadersInit> => {
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     'Cache-Control': 'no-store, no-cache, max-age=0',
     'Pragma': 'no-cache',
     'X-Content-Type-Options': 'nosniff',
   };
+
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (!skipAuth) {
     const token = await getAuthToken();
@@ -239,7 +242,7 @@ export async function fetchApi<T>(
   const { skipAuth = false, timeout = 30000, headers: customHeaders, ...fetchOptions } = options;
 
   const url = `${API_BASE_URL}${endpoint}`;
-  const headers = await getHeaders(skipAuth);
+  const headers = await getHeaders(skipAuth, fetchOptions.body instanceof FormData);
   const mergedHeaders = { ...headers, ...(customHeaders as HeadersInit) };
 
   const makeRequest = async (): Promise<Response> => {

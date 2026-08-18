@@ -16,7 +16,8 @@ export const AlbumEmptyState = () => {
 
 const styles = StyleSheet.create({
   container: {
-    width: 247,
+    width: 300,
+    maxWidth: '100%',
     alignItems: 'center',
     gap: 29,
   },

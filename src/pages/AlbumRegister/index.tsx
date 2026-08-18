@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import {
   Image,
@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { createAlbum, updateAlbumPhotoMemo, uploadAlbumPhoto } from '@/shared/api/albums';
 import {
   Arrow,
   BottomNavigation,
@@ -33,9 +34,14 @@ const FAMILY_CANDIDATES = ['언니', '남동생'];
 
 export default function AlbumRegisterScreen() {
   const router = useRouter();
+  const { albumId: existingAlbumId } = useLocalSearchParams<{ albumId?: string }>();
   const insets = useSafeAreaInsets();
 
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<{
+    uri: string;
+    fileName: string;
+    mimeType: string;
+  } | null>(null);
   const [date, setDate] = useState('');
   const [location, setLocation] = useState('');
   const [family, setFamily] = useState<string[]>(['아버지', '어머니']);
@@ -67,7 +73,12 @@ export default function AlbumRegisterScreen() {
       });
 
       if (!result.canceled) {
-        setPhotoUri(result.assets[0].uri);
+        const asset = result.assets[0];
+        setPhoto({
+          uri: asset.uri,
+          fileName: asset.fileName || 'photo.jpg',
+          mimeType: asset.mimeType || 'image/jpeg',
+        });
       }
     } catch {
       Alert.alert('사진을 불러오지 못했어요', '잠시 후 다시 시도해주세요.');
@@ -87,22 +98,22 @@ export default function AlbumRegisterScreen() {
         return;
       }
 
-      // TODO: 앨범 생성 API (POST /albums) 호출
-      // const album = await createAlbum({
-      //   name: `${family.join(', ')}과 함께한 추억`,
-      //   description: memo,
-      //   memberIds: family,
-      // });
+      const albumId = existingAlbumId || (await createAlbum()).albumId;
 
-      // 사진이 있으면 업로드
-      // if (photoUri && album.id) {
-      //   await uploadAlbumPhotos(album.id, {
-      //     photos: [{ uri: photoUri, fileName: 'photo.jpg', mimeType: 'image/jpeg' }],
-      //   });
-      // }
+      if (photo) {
+        const [uploadedPhoto] = await uploadAlbumPhoto(albumId, photo);
+
+        if (uploadedPhoto && (date || location || memo)) {
+          await updateAlbumPhotoMemo(albumId, uploadedPhoto.photoId, {
+            timePeriod: date || undefined,
+            locationText: location || undefined,
+            memo: memo || undefined,
+          });
+        }
+      }
 
       Alert.alert('앨범이 등록되었습니다.');
-      router.back();
+      router.replace({ pathname: '/album', params: { albumId } });
     } catch (error) {
       Alert.alert('앨범 등록 실패', error instanceof Error ? error.message : '알 수 없는 오류 발생');
     }
@@ -134,9 +145,9 @@ export default function AlbumRegisterScreen() {
 
         {/* 이미지 업로드 카드 */}
         <Pressable style={styles.uploadCard} onPress={pickImage}>
-          {photoUri && <Image source={{ uri: photoUri }} style={styles.uploadImage} />}
-          {!photoUri && <Picture size={40} color="#dadbdc" />}
-          {!photoUri && (
+          {photo && <Image source={{ uri: photo.uri }} style={styles.uploadImage} />}
+          {!photo && <Picture size={40} color="#dadbdc" />}
+          {!photo && (
             <>
               <View style={styles.uploadTextGroup}>
                 <Text style={styles.uploadLabel}>Before 사진</Text>
