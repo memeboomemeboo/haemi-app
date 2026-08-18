@@ -1,3 +1,9 @@
+/**
+ * @deprecated Use @/shared/api/group.ts (groupService) instead.
+ * This file contains a duplicate implementation that doesn't sync with the centralized API client.
+ * All new code should use: import { groupService } from '@/shared/api'
+ */
+
 import type { Group } from './types';
 
 interface CreateGroupRequest {
