@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -45,8 +45,8 @@ export default function MemberEditScreen() {
   const [activeModal, setActiveModal] = useState<EditModal>(null);
   const [name, setName] = useState('');
   const [familyCount, setFamilyCount] = useState('');
-  const [password, setPassword] = useState('');
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const initializedRef = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -69,9 +69,11 @@ export default function MemberEditScreen() {
     loadUserInfo();
   }, []);
 
-  // 그룹 정보로부터 가족 수 설정
+  // 그룹 정보로부터 가족 수 설정 (최초 1회만)
   useEffect(() => {
+    if (initializedRef.current) return;
     if (group?.members) {
+      initializedRef.current = true;
       setFamilyMembers(
         group.members.map((member) => ({
           id: member.memberId,
@@ -84,11 +86,9 @@ export default function MemberEditScreen() {
   }, [group]);
 
   const deleteFamilyMember = (memberId: string) => {
-    setFamilyMembers((current) => {
-      const nextMembers = current.filter((member) => member.id !== memberId);
-      setFamilyCount(`${nextMembers.length}명`);
-      return nextMembers;
-    });
+    const nextMembers = familyMembers.filter((member) => member.id !== memberId);
+    setFamilyMembers(nextMembers);
+    setFamilyCount(`${nextMembers.length}명`);
   };
 
   const handleSave = async () => {
@@ -171,10 +171,11 @@ export default function MemberEditScreen() {
                   />
                   <InfoRow
                     label="비밀번호"
-                    value={password}
-                    onChangeText={setPassword}
+                    value="••••••••"
+                    onChangeText={() => {}}
                     onIconPress={() => setActiveModal('password')}
-                    secureTextEntry
+                    secureTextEntry={false}
+                    editable={false}
                   />
                 </View>
               </View>
@@ -226,6 +227,7 @@ function InfoRow({
   onChangeText: (value: string) => void;
   onIconPress: () => void;
   secureTextEntry?: boolean;
+  editable?: boolean;
 }) {
   return (
     <View style={styles.infoRow}>
@@ -235,6 +237,7 @@ function InfoRow({
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={secureTextEntry}
+          editable={editable}
           style={styles.infoInput}
           cursorColor={ORANGE}
           selectionColor={ORANGE_SOFT}

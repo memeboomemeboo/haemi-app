@@ -79,10 +79,4 @@ export const authService = {
     return post<ApiResponse<AuthUser>>('/auth/profile', data);
   },
 
-  async changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse<void>> {
-    return post<ApiResponse<void>>('/auth/password', {
-      currentPassword,
-      newPassword,
-    });
-  },
 };
