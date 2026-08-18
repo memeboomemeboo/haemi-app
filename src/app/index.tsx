@@ -1,6 +1,7 @@
 import { View, ActivityIndicator } from 'react-native';
 import { useEffect } from 'react';
 import HomeScreen from '@/pages/Home';
+import ElderHomeScreen from '@/pages/ElderHome';
 import GroupCreateScreen from '@/pages/GroupCreate';
 import GroupJoinScreen from '@/pages/GroupJoin';
 import RoleSelectScreen from '@/pages/RoleSelect';
@@ -81,6 +82,10 @@ export default function RootScreen() {
     }
   }
 
-  // 모든 것이 준비됨 → 홈 화면 (그룹 있음 + 관계는 자동 설정됨)
+  // 모든 것이 준비됨 → 역할에 따라 다른 홈 화면 표시
+  if (role === 'ELDER') {
+    return <ElderHomeScreen />;
+  }
+
   return <HomeScreen />;
 }
