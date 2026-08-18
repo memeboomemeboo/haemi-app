@@ -12,14 +12,13 @@ import { colors } from '@/shared/constants';
 import type { Relation } from '@/shared/types';
 
 export default function RootScreen() {
-  const { token, role, relation, setRole, setRelation, setGroup } = useUserContext();
+  const { token, role, relation, isHydrating, setRole, setRelation, setGroup } = useUserContext();
   const { group, isLoading: groupLoading } = useUserGroup();
 
   // 그룹 정보가 로드되었으면 Context에 저장
   useEffect(() => {
     if (group) {
       setGroup(group);
-      // 그룹이 있으면 관계 정보를 그룹의 멤버 정보에서 가져오기
       if (group.members && group.members.length > 0) {
         const userMember = group.members[0];
         setRelation(userMember.relation);
@@ -27,7 +26,16 @@ export default function RootScreen() {
     }
   }, [group, setGroup, setRelation]);
 
-  //  로그인 상태 확인
+  // hydration 진행 중 로딩 표시
+  if (isHydrating) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  // 로그인 상태 확인
   if (!token) {
     return <AuthStack />;
   }

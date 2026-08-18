@@ -4,6 +4,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { getAuthToken, authService, setOnUnauthorizedCallback } from '@/shared/api';
+import { initializeTestToken } from '@/shared/lib/auth';
 import type { UserRole, Relation, Group } from '@/shared/types';
 
 interface UserContextType {
@@ -31,10 +32,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [group, setGroupState] = useState<Group | null>(null);
   const [isHydrating, setIsHydrating] = useState(true);
 
-  // 앱 시작 시 저장된 토큰 복구 (hydration)
+  // 앱 시작 시 테스트 토큰 설정 및 저장된 토큰 복구 (hydration)
   useEffect(() => {
     const hydrateToken = async () => {
       try {
+        // 1. 개발 환경에서 테스트 토큰 초기화 (hydration 전)
+        await initializeTestToken();
+
+        // 2. 저장된 토큰 복구
         const savedToken = await getAuthToken();
         if (savedToken) {
           setTokenState(savedToken);
