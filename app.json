@@ -9,7 +9,12 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.suane0311.haemi"
+      "bundleIdentifier": "com.suane0311.haemi",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSExceptionDomains": {}
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -35,6 +40,7 @@
           "imageWidth": 76
         }
       ],
+      "expo-secure-store",
       "expo-audio"
     ],
     "experiments": {

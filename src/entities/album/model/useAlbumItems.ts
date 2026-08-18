@@ -1,7 +1,7 @@
-import { useAsyncData } from '@/shared/hooks';
+import { useAsyncData, type AsyncDataState } from '@/shared/hooks';
+import type { AlbumItem } from './types';
 import { fetchAlbumItems } from '../api/albumApi';
 
-export function useAlbumItems() {
-  const { data: items, isLoading, error, refetch } = useAsyncData(fetchAlbumItems);
-  return { items, isLoading, error, refetch };
+export function useAlbumItems(): AsyncDataState<AlbumItem[]> {
+  return useAsyncData(fetchAlbumItems);
 }

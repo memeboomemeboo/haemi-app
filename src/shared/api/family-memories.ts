@@ -6,7 +6,12 @@ import type {
   GetFamilyMemoryFeedParams,
 } from '@/shared/types/family-memories';
 
-const HAEMI_API_BASE_URL = 'http://54.180.61.149:8080';
+// 기본 API URL (환경변수)
+const HAEMI_API_BASE_URL = `${process.env.EXPO_PUBLIC_API_URL}/api/v1`;
+
+if (!process.env.EXPO_PUBLIC_API_URL) {
+  console.warn('⚠️ EXPO_PUBLIC_API_URL not set');
+}
 
 class HaemiApiError extends Error {
   status: number;
@@ -52,7 +57,7 @@ export async function getFamilyMemoryFeed({
     size: String(size),
   });
 
-  const response = await fetch(`${HAEMI_API_BASE_URL}/api/v1/albums/${albumId}/feed?${searchParams}`, {
+  const response = await fetch(`${HAEMI_API_BASE_URL}/albums/${albumId}/feed?${searchParams}`, {
     headers: getAuthHeaders(),
   });
 
@@ -71,7 +76,7 @@ export async function createFamilyMemoryPost({ albumId, data, photos = [] }: Cre
     } as unknown as Blob);
   });
 
-  const response = await fetch(`${HAEMI_API_BASE_URL}/api/v1/albums/${albumId}/posts`, {
+  const response = await fetch(`${HAEMI_API_BASE_URL}/albums/${albumId}/posts`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: formData,
@@ -83,7 +88,7 @@ export async function createFamilyMemoryPost({ albumId, data, photos = [] }: Cre
 export async function toggleFamilyMemoryLike(albumId: string, postId: string, memberId: string) {
   const searchParams = new URLSearchParams({ memberId });
   const response = await fetch(
-    `${HAEMI_API_BASE_URL}/api/v1/albums/${albumId}/posts/${postId}/like?${searchParams}`,
+    `${HAEMI_API_BASE_URL}/albums/${albumId}/posts/${postId}/like?${searchParams}`,
     {
       method: 'POST',
       headers: getAuthHeaders(),

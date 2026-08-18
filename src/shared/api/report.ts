@@ -5,10 +5,12 @@ import type {
   ReportDeliveryMethod,
 } from '@/shared/types/report';
 
-const DEFAULT_API_BASE_URL = 'http://54.180.61.149:8080';
+// 기본 API URL (환경변수)
+export const REPORT_API_BASE_URL = `${process.env.EXPO_PUBLIC_API_URL}/api/v1`;
 
-export const REPORT_API_BASE_URL =
-  process.env.EXPO_PUBLIC_HAEMI_API_BASE_URL ?? DEFAULT_API_BASE_URL;
+if (!process.env.EXPO_PUBLIC_API_URL) {
+  console.warn('⚠️ EXPO_PUBLIC_API_URL not set');
+}
 
 export const REPORT_ACCESS_TOKEN = process.env.EXPO_PUBLIC_HAEMI_ACCESS_TOKEN;
 
