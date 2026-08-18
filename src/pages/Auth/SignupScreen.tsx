@@ -253,23 +253,39 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
         {/* Role Selection Screen */}
         {state.step === 'role' && (
           <View style={styles.roleSection}>
-            <Text style={styles.label}>역할 선택</Text>
-            <View style={styles.roleButtons}>
-              {(['FAMILY', 'ELDER'] as const).map((r) => (
-                <Pressable
-                  key={r}
-                  style={[
-                    styles.roleButton,
-                    state.role === r && styles.roleButtonActive,
-                  ]}
-                  onPress={() => handleRoleSelect(r)}
-                  disabled={state.isLoading}
-                >
-                  <Text style={[styles.roleButtonText, state.role === r && styles.roleButtonTextActive]}>
-                    {r === 'FAMILY' ? '가족' : '어르신'}
-                  </Text>
-                </Pressable>
-              ))}
+            <Text style={styles.roleTitle}>어떤 역할로 가입하실까요?</Text>
+            <View style={styles.roleCardsContainer}>
+              {/* Family Card */}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.roleCard,
+                  state.role === 'FAMILY' && styles.roleCardActive,
+                  pressed && styles.roleCardPressed,
+                ]}
+                onPress={() => handleRoleSelect('FAMILY')}
+                disabled={state.isLoading}
+              >
+                <Text style={styles.roleEmoji}>👨‍👩‍👧</Text>
+                <Text style={styles.roleCardTitle}>가족</Text>
+                <Text style={styles.roleCardDesc}>어르신의 추억을 기록하고{'\n'}가족과 함께 공유해요</Text>
+                {state.role === 'FAMILY' && <Text style={styles.roleCheckmark}>✓</Text>}
+              </Pressable>
+
+              {/* Elder Card */}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.roleCard,
+                  state.role === 'ELDER' && styles.roleCardActive,
+                  pressed && styles.roleCardPressed,
+                ]}
+                onPress={() => handleRoleSelect('ELDER')}
+                disabled={state.isLoading}
+              >
+                <Text style={styles.roleEmoji}>👵</Text>
+                <Text style={styles.roleCardTitle}>어르신</Text>
+                <Text style={styles.roleCardDesc}>보호자가 기록한 추억을{'\n'}함께 나눠요</Text>
+                {state.role === 'ELDER' && <Text style={styles.roleCheckmark}>✓</Text>}
+              </Pressable>
             </View>
           </View>
         )}
@@ -534,34 +550,69 @@ const styles = StyleSheet.create({
   },
   roleSection: {
     marginBottom: 32,
-    marginTop: 16,
+    marginTop: 24,
   },
-  roleButtons: {
-    flexDirection: 'row',
+  roleTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.light.label.strong,
+    marginBottom: 20,
+    textAlign: 'center',
+    letterSpacing: -0.4,
+  },
+  roleCardsContainer: {
     gap: 12,
   },
-  roleButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+  roleCard: {
+    backgroundColor: colors.light.fill.normal,
+    borderRadius: 16,
     borderWidth: 2,
     borderColor: colors.light.line.neutral,
-    backgroundColor: colors.light.fill.normal,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
   },
-  roleButtonActive: {
+  roleCardActive: {
+    backgroundColor: colors.light.background.neutral,
     borderColor: colors.primary,
+  },
+  roleCardPressed: {
+    opacity: 0.7,
+  },
+  roleEmoji: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  roleCardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.light.label.strong,
+    marginBottom: 8,
+    letterSpacing: -0.36,
+  },
+  roleCardDesc: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.light.label.assistive,
+    textAlign: 'center',
+    lineHeight: 18,
+    letterSpacing: -0.26,
+  },
+  roleCheckmark: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: colors.primary,
-  },
-  roleButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.light.label.normal,
-    letterSpacing: -0.32,
-  },
-  roleButtonTextActive: {
     color: colors.light.background.normal,
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+    textAlignVertical: 'center',
   },
   formSection: {
     marginBottom: 24,
