@@ -156,7 +156,7 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
       return;
     }
     setState((prev) => ({ ...prev, step: 'elder-info', error: '' }));
-  }, [state.code]);
+  }, [state.code, validateElderCode]);
 
   const handleElderSignup = async () => {
     const validationError = validateElderInfo();
