@@ -24,6 +24,7 @@ const colors = {
 };
 
 interface ElderSignupState {
+  step: 'code' | 'info'; // 1단계: 코드, 2단계: 이름·전화
   code: string;
   name: string;
   phoneNumber: string;
@@ -37,6 +38,7 @@ export default function ElderSignupScreen() {
   const { setToken, setRole } = useUserContext();
   const { success: showSuccess, error: showError } = useToast();
   const [state, setState] = useState<ElderSignupState>({
+    step: 'code',
     code: '',
     name: '',
     phoneNumber: '',
@@ -44,7 +46,8 @@ export default function ElderSignupScreen() {
     error: null,
   });
 
-  const validateForm = useCallback((): boolean => {
+  // 1단계: 코드 검증
+  const validateCode = useCallback((): boolean => {
     if (!state.code.trim()) {
       setState((prev) => ({ ...prev, error: '초대코드를 입력해주세요.' }));
       return false;
@@ -55,6 +58,11 @@ export default function ElderSignupScreen() {
       return false;
     }
 
+    return true;
+  }, [state.code]);
+
+  // 2단계: 이름·전화번호 검증
+  const validateInfo = useCallback((): boolean => {
     if (!state.name.trim()) {
       setState((prev) => ({ ...prev, error: '성함을 입력해주세요.' }));
       return false;
@@ -72,10 +80,17 @@ export default function ElderSignupScreen() {
     }
 
     return true;
-  }, [state.code, state.name, state.phoneNumber]);
+  }, [state.name, state.phoneNumber]);
 
+  // 1단계에서 "다음" 버튼 클릭
+  const handleCodeNext = useCallback(() => {
+    if (!validateCode()) return;
+    setState((prev) => ({ ...prev, step: 'info', error: null }));
+  }, [validateCode]);
+
+  // 2단계에서 "가입" 버튼 클릭
   const handleSignup = useCallback(async () => {
-    if (!validateForm()) return;
+    if (!validateInfo()) return;
 
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
@@ -114,12 +129,14 @@ export default function ElderSignupScreen() {
       // 백엔드 예외 코드 처리
       if (errorMessage.includes('EX-F001E-01')) {
         showError('존재하지 않는 초대코드입니다.');
+        setState((prev) => ({ ...prev, step: 'code' }));
       } else if (errorMessage.includes('EX-F001E-02')) {
         showError('성함 불일치로 보류 중입니다. 가족분께 확인 후 다시 시도해주세요.');
       } else if (errorMessage.includes('EX-F001E-03')) {
         showError('이미 등록된 전화번호입니다.');
       } else if (errorMessage.includes('EX-F001E-04')) {
         showError('코드 시도 횟수를 초과했습니다. 새 코드를 받아주세요.');
+        setState((prev) => ({ ...prev, step: 'code' }));
       } else {
         showError(errorMessage);
       }
@@ -130,7 +147,7 @@ export default function ElderSignupScreen() {
         isLoading: false,
       }));
     }
-  }, [state.code, state.name, state.phoneNumber, validateForm, setToken, setRole, showSuccess, showError]);
+  }, [state.code, state.name, state.phoneNumber, validateInfo, setToken, setRole, showSuccess, showError]);
 
   return (
     <View style={[styles.container, { paddingTop: Math.max(insets.top, 20) }]}>
@@ -141,8 +158,14 @@ export default function ElderSignupScreen() {
       >
         {/* Title */}
         <View style={styles.header}>
-          <Text style={styles.title}>어르신 계정 생성</Text>
-          <Text style={styles.subtitle}>초대받은 정보를 입력해주세요.</Text>
+          <Text style={styles.title}>
+            {state.step === 'code' ? '초대코드 입력' : '정보 입력'}
+          </Text>
+          <Text style={styles.subtitle}>
+            {state.step === 'code'
+              ? '가족으로부터 받은 초대코드를 입력해주세요.'
+              : '어르신의 이름과 전화번호를 입력해주세요.'}
+          </Text>
         </View>
 
         {/* Error Message */}
@@ -152,86 +175,126 @@ export default function ElderSignupScreen() {
           </View>
         )}
 
-        {/* Form */}
-        <View style={styles.form}>
-          {/* Code Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>초대코드</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="6자리 코드"
-              placeholderTextColor="#999"
-              maxLength={6}
-              value={state.code}
-              onChangeText={(code) => setState((prev) => ({ ...prev, code, error: null }))}
-              editable={!state.isLoading}
-              keyboardType="default"
-            />
+        {/* Step 1: Code Input */}
+        {state.step === 'code' && (
+          <View style={styles.form}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>초대코드</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="6자리 코드 입력"
+                placeholderTextColor="#999"
+                maxLength={6}
+                value={state.code}
+                onChangeText={(code) => setState((prev) => ({ ...prev, code, error: null }))}
+                editable={!state.isLoading}
+                keyboardType="default"
+                autoFocus
+              />
+            </View>
           </View>
+        )}
 
-          {/* Name Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>성함</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="예) 김영희"
-              placeholderTextColor="#999"
-              value={state.name}
-              onChangeText={(name) => setState((prev) => ({ ...prev, name, error: null }))}
-              editable={!state.isLoading}
-              maxLength={50}
-            />
+        {/* Step 2: Info Input */}
+        {state.step === 'info' && (
+          <View style={styles.form}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>성함</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="예) 김영희"
+                placeholderTextColor="#999"
+                value={state.name}
+                onChangeText={(name) => setState((prev) => ({ ...prev, name, error: null }))}
+                editable={!state.isLoading}
+                maxLength={50}
+                autoFocus
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>전화번호</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="010-1234-5678"
+                placeholderTextColor="#999"
+                value={state.phoneNumber}
+                onChangeText={(phoneNumber) =>
+                  setState((prev) => ({ ...prev, phoneNumber, error: null }))
+                }
+                editable={!state.isLoading}
+                keyboardType="phone-pad"
+                maxLength={13}
+              />
+            </View>
           </View>
+        )}
 
-          {/* Phone Number Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>전화번호</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="010-1234-5678"
-              placeholderTextColor="#999"
-              value={state.phoneNumber}
-              onChangeText={(phoneNumber) =>
-                setState((prev) => ({ ...prev, phoneNumber, error: null }))
-              }
-              editable={!state.isLoading}
-              keyboardType="phone-pad"
-              maxLength={13}
-            />
-          </View>
-        </View>
+        {/* Step 1: Next Button */}
+        {state.step === 'code' && (
+          <>
+            <Pressable
+              onPress={handleCodeNext}
+              disabled={state.isLoading}
+              style={({ pressed }) => [
+                styles.signupButton,
+                {
+                  opacity: pressed || state.isLoading ? 0.6 : 1,
+                },
+              ]}
+            >
+              <Text style={styles.signupButtonText}>다음</Text>
+            </Pressable>
 
-        {/* Signup Button */}
-        <Pressable
-          onPress={handleSignup}
-          disabled={state.isLoading}
-          style={({ pressed }) => [
-            styles.signupButton,
-            {
-              opacity: pressed || state.isLoading ? 0.6 : 1,
-            },
-          ]}
-        >
-          {state.isLoading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.signupButtonText}>계정 생성</Text>
-          )}
-        </Pressable>
+            <Pressable
+              onPress={() => router.back()}
+              disabled={state.isLoading}
+              style={({ pressed }) => [
+                styles.backButton,
+                {
+                  opacity: pressed || state.isLoading ? 0.5 : 1,
+                },
+              ]}
+            >
+              <Text style={styles.backButtonText}>돌아가기</Text>
+            </Pressable>
+          </>
+        )}
 
-        {/* Back Button */}
-        <Pressable
-          onPress={() => router.back()}
-          disabled={state.isLoading}
-          style={({ pressed }) => [
-            styles.backButton,
-            {
-              opacity: pressed || state.isLoading ? 0.5 : 1,
-            },
-          ]}
-        >
-          <Text style={styles.backButtonText}>돌아가기</Text>
-        </Pressable>
+        {/* Step 2: Signup Button */}
+        {state.step === 'info' && (
+          <>
+            <Pressable
+              onPress={handleSignup}
+              disabled={state.isLoading}
+              style={({ pressed }) => [
+                styles.signupButton,
+                {
+                  opacity: pressed || state.isLoading ? 0.6 : 1,
+                },
+              ]}
+            >
+              {state.isLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.signupButtonText}>가입</Text>
+              )}
+            </Pressable>
+
+            <Pressable
+              onPress={() => setState((prev) => ({ ...prev, step: 'code', error: null }))}
+              disabled={state.isLoading}
+              style={({ pressed }) => [
+                styles.backButton,
+                {
+                  opacity: pressed || state.isLoading ? 0.5 : 1,
+                },
+              ]}
+            >
+              <Text style={styles.backButtonText}>이전</Text>
+            </Pressable>
+          </>
+        )}
       </ScrollView>
     </View>
   );
