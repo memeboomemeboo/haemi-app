@@ -521,7 +521,9 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
             </Pressable>
 
             <Pressable
-              onPress={onSignupSuccess}
+              onPress={() => {
+                // 토큰과 role이 이미 저장되었으므로 자동으로 다음 화면으로 이동
+              }}
               disabled={state.isLoading}
             >
               <Text style={styles.loginLink}>나중에</Text>
