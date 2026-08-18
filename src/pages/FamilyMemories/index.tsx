@@ -1,3 +1,11 @@
+import {
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  useAudioPlaylist,
+  useAudioPlaylistStatus,
+  useAudioRecorder,
+} from 'expo-audio';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Link } from 'expo-router';
@@ -19,7 +27,7 @@ import {
   updateFamilyMemoryItem,
   useFamilyMemoryItems,
 } from '@/entities/family-memory';
-import type { FamilyMemoryItem } from '@/entities/family-memory';
+import type { FamilyMemoryItem, VoiceMemoSegment } from '@/entities/family-memory';
 import {
   BottomNavigation,
   Comment,
@@ -41,6 +49,10 @@ const TEXT_ASSISTIVE = '#76787a';
 const LINE = '#dadbdc';
 const LINE_NORMAL = '#c1c2c3';
 const FILL = '#f7f7f7';
+const VOICE_RECORDING_OPTIONS = {
+  ...RecordingPresets.HIGH_QUALITY,
+  directory: 'document' as const,
+};
 
 function formatVoiceDuration(seconds: number) {
   const totalSeconds = Math.max(0, Math.round(seconds));
@@ -49,6 +61,39 @@ function formatVoiceDuration(seconds: number) {
 
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 }
+
+const getVoiceSegmentsDuration = (segments: VoiceMemoSegment[]) => (
+  segments.reduce((total, segment) => total + segment.durationSeconds, 0)
+);
+
+const getVoiceSegmentOffset = (segments: VoiceMemoSegment[], segmentIndex: number) => (
+  segments
+    .slice(0, segmentIndex)
+    .reduce((total, segment) => total + segment.durationSeconds, 0)
+);
+
+const getPlayableVoiceSegments = ({
+  voiceSegments,
+  voiceUri,
+  voiceDurationSeconds,
+}: {
+  voiceSegments?: VoiceMemoSegment[];
+  voiceUri?: string | null;
+  voiceDurationSeconds: number;
+}) => {
+  if (voiceSegments && voiceSegments.length > 0) {
+    return voiceSegments;
+  }
+
+  if (!voiceUri) {
+    return [];
+  }
+
+  return [{
+    uri: voiceUri,
+    durationSeconds: Math.max(1, voiceDurationSeconds),
+  }];
+};
 
 type MemoryComment = {
   id: string;
@@ -72,6 +117,7 @@ type MemoryVoiceDraft = {
   hasVoiceMemo: boolean;
   voiceDurationSeconds: number;
   voiceUri: string | null;
+  voiceSegments: VoiceMemoSegment[];
 };
 
 type MemoryFeedItem = {
@@ -85,6 +131,7 @@ type MemoryFeedItem = {
   hasVoiceMemo: boolean;
   voiceDurationSeconds: number;
   voiceUri: string | null;
+  voiceSegments: VoiceMemoSegment[];
   liked: boolean;
   comments: MemoryComment[];
   likeCount: number;
@@ -124,6 +171,7 @@ function mapRegisteredMemory(memory: FamilyMemoryItem): MemoryFeedItem {
     hasVoiceMemo: memory.hasVoiceMemo,
     voiceDurationSeconds: memory.voiceDurationSeconds,
     voiceUri: memory.voiceUri,
+    voiceSegments: memory.voiceSegments,
     liked: false,
     comments: [],
     likeCount: 0,
@@ -154,7 +202,9 @@ export default function FamilyMemoriesScreen() {
 }
 
 function FeedScreen() {
+  const editVoiceRecorder = useAudioRecorder(VOICE_RECORDING_OPTIONS);
   const registeredMemories = useFamilyMemoryItems();
+  const editVoiceRecordingStartedAtRef = useRef<number | null>(null);
   const [removedMemoryIds, setRemovedMemoryIds] = useState<Record<string, boolean>>({});
   const [likedById, setLikedById] = useState<Record<string, boolean>>({});
   const [commentOpenById, setCommentOpenById] = useState<Record<string, boolean>>({});
@@ -174,6 +224,7 @@ function FeedScreen() {
     hasVoiceMemo: false,
     voiceDurationSeconds: 0,
     voiceUri: null,
+    voiceSegments: [],
   });
   const [editVoiceRecordingStartedAt, setEditVoiceRecordingStartedAt] = useState<number | null>(null);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -199,6 +250,7 @@ function FeedScreen() {
       setEditVoiceDraft((current) => ({
         hasVoiceMemo: true,
         voiceUri: current.voiceUri,
+        voiceSegments: current.voiceSegments,
         voiceDurationSeconds: Math.max(1, (Date.now() - editVoiceRecordingStartedAt) / 1000),
       }));
     }, 100);
@@ -251,6 +303,18 @@ function FeedScreen() {
     setCommentEditDraft('');
   };
 
+  const discardActiveEditVoiceRecording = () => {
+    if (!editVoiceRecorder.isRecording) {
+      return;
+    }
+
+    void editVoiceRecorder.stop().catch(() => undefined);
+    void setAudioModeAsync({
+      allowsRecording: false,
+      playsInSilentMode: true,
+    }).catch(() => undefined);
+  };
+
   const saveEditComment = (commentId: string) => {
     const nextBody = commentEditDraft.trim();
 
@@ -272,6 +336,7 @@ function FeedScreen() {
   };
 
   const startEdit = (item: MemoryFeedItem) => {
+    discardActiveEditVoiceRecording();
     setEditingMemoryId(item.id);
     setEditDraft(item.body);
     setEditPhotoDraft({
@@ -283,16 +348,25 @@ function FeedScreen() {
       hasVoiceMemo: item.hasVoiceMemo,
       voiceDurationSeconds: item.voiceDurationSeconds,
       voiceUri: item.voiceUri,
+      voiceSegments: item.voiceSegments,
     });
     setEditVoiceRecordingStartedAt(null);
+    editVoiceRecordingStartedAtRef.current = null;
   };
 
   const cancelEdit = () => {
+    discardActiveEditVoiceRecording();
     setEditingMemoryId(null);
     setEditDraft('');
     setEditPhotoDraft({ hasPhoto: false, photoUri: null, photoUris: [] });
-    setEditVoiceDraft({ hasVoiceMemo: false, voiceDurationSeconds: 0, voiceUri: null });
+    setEditVoiceDraft({
+      hasVoiceMemo: false,
+      voiceDurationSeconds: 0,
+      voiceUri: null,
+      voiceSegments: [],
+    });
     setEditVoiceRecordingStartedAt(null);
+    editVoiceRecordingStartedAtRef.current = null;
   };
 
   const pickEditPhoto = async () => {
@@ -332,22 +406,77 @@ function FeedScreen() {
     setEditPhotoDraft({ hasPhoto: false, photoUri: null, photoUris: [] });
   };
 
+  const ensureEditRecordingPermission = async () => {
+    const permission = await requestRecordingPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert('권한이 필요해요', '음성 메모를 녹음하려면 마이크 권한을 허용해주세요.');
+      return false;
+    }
+
+    return true;
+  };
+
   const startEditVoiceRecording = async () => {
+    const hasPermission = await ensureEditRecordingPermission();
+
+    if (!hasPermission) {
+      return;
+    }
+
+    await setAudioModeAsync({
+      allowsRecording: true,
+      playsInSilentMode: true,
+    });
+    await editVoiceRecorder.prepareToRecordAsync(VOICE_RECORDING_OPTIONS);
+    editVoiceRecorder.record();
+
+    const startedAt = Date.now();
+
+    editVoiceRecordingStartedAtRef.current = startedAt;
     setEditVoiceDraft({
       hasVoiceMemo: true,
       voiceDurationSeconds: 0,
       voiceUri: null,
+      voiceSegments: [],
     });
-    setEditVoiceRecordingStartedAt(Date.now());
+    setEditVoiceRecordingStartedAt(startedAt);
   };
 
   const stopEditVoiceRecording = async () => {
-    setEditVoiceDraft((current) => ({
+    const segmentStartedAt = editVoiceRecordingStartedAtRef.current ?? Date.now();
+
+    await editVoiceRecorder.stop();
+
+    const recordedUri = editVoiceRecorder.uri;
+    const segmentDurationSeconds = Math.max(
+      1,
+      editVoiceRecorder.currentTime,
+      (Date.now() - segmentStartedAt) / 1000,
+    );
+
+    if (!recordedUri) {
+      throw new Error('Recording URI is empty.');
+    }
+
+    const nextSegment = {
+      uri: recordedUri,
+      durationSeconds: segmentDurationSeconds,
+    };
+
+    await setAudioModeAsync({
+      allowsRecording: false,
+      playsInSilentMode: true,
+    });
+
+    setEditVoiceDraft({
       hasVoiceMemo: true,
-      voiceDurationSeconds: Math.max(1, Math.round(current.voiceDurationSeconds)),
-      voiceUri: null,
-    }));
+      voiceDurationSeconds: Math.max(1, Math.round(segmentDurationSeconds)),
+      voiceUri: recordedUri,
+      voiceSegments: [nextSegment],
+    });
     setEditVoiceRecordingStartedAt(null);
+    editVoiceRecordingStartedAtRef.current = null;
   };
 
   const toggleEditVoiceRecording = async () => {
@@ -368,11 +497,14 @@ function FeedScreen() {
   };
 
   const removeEditVoice = () => {
+    discardActiveEditVoiceRecording();
     setEditVoiceRecordingStartedAt(null);
+    editVoiceRecordingStartedAtRef.current = null;
     setEditVoiceDraft({
       hasVoiceMemo: false,
       voiceDurationSeconds: 0,
       voiceUri: null,
+      voiceSegments: [],
     });
   };
 
@@ -384,6 +516,7 @@ function FeedScreen() {
         ? Math.max(1, Math.round(editVoiceDraft.voiceDurationSeconds))
         : 0,
       voiceUri: editVoiceDraft.hasVoiceMemo ? editVoiceDraft.voiceUri : null,
+      voiceSegments: editVoiceDraft.hasVoiceMemo ? editVoiceDraft.voiceSegments : [],
     };
 
     if (!nextBody && !editPhotoDraft.hasPhoto && !nextVoiceDraft.hasVoiceMemo) {
@@ -399,6 +532,7 @@ function FeedScreen() {
       hasVoiceMemo: nextVoiceDraft.hasVoiceMemo,
       voiceDurationSeconds: nextVoiceDraft.voiceDurationSeconds,
       voiceUri: nextVoiceDraft.voiceUri,
+      voiceSegments: nextVoiceDraft.voiceSegments,
     });
     setEditedBodyById((current) => ({ ...current, [item.id]: nextBody }));
     setEditedPhotoById((current) => ({ ...current, [item.id]: editPhotoDraft }));
@@ -466,6 +600,7 @@ function FeedScreen() {
               hasVoiceMemo: item.hasVoiceMemo,
               voiceDurationSeconds: item.voiceDurationSeconds,
               voiceUri: item.voiceUri,
+              voiceSegments: item.voiceSegments,
             }}
             isEditVoiceRecording={editingMemoryId === item.id && editVoiceRecordingStartedAt !== null}
             editingCommentId={editingCommentId}
@@ -585,7 +720,12 @@ function MemoryCard({
     : { hasPhoto: item.hasPhoto, photoUri: item.photoUri, photoUris: item.photoUris };
   const displayedVoice = isEditing
     ? editVoiceDraft
-    : { hasVoiceMemo: item.hasVoiceMemo, voiceDurationSeconds: item.voiceDurationSeconds, voiceUri: item.voiceUri };
+    : {
+        hasVoiceMemo: item.hasVoiceMemo,
+        voiceDurationSeconds: item.voiceDurationSeconds,
+        voiceUri: item.voiceUri,
+        voiceSegments: item.voiceSegments,
+      };
   const displayedPhotoUris = displayedPhoto.photoUris;
   const photoSources = displayedPhotoUris.length > 0
     ? displayedPhotoUris.map((photoUri) => ({ uri: photoUri }))
@@ -682,6 +822,7 @@ function MemoryCard({
         <VoiceMemoPlayer
           durationSeconds={displayedVoice.voiceDurationSeconds}
           voiceUri={displayedVoice.voiceUri}
+          voiceSegments={displayedVoice.voiceSegments}
         />
       )}
 
@@ -895,11 +1036,100 @@ function MemoryCard({
 
 function VoiceMemoPlayer({
   durationSeconds,
+  voiceUri,
+  voiceSegments,
 }: {
   durationSeconds: number;
   voiceUri?: string | null;
+  voiceSegments?: VoiceMemoSegment[];
 }) {
-  return <SimulatedVoiceMemoPlayer durationSeconds={durationSeconds} />;
+  const playableSegments = getPlayableVoiceSegments({
+    voiceSegments,
+    voiceUri,
+    voiceDurationSeconds: durationSeconds,
+  });
+
+  if (playableSegments.length === 0) {
+    return <SimulatedVoiceMemoPlayer durationSeconds={durationSeconds} />;
+  }
+
+  return (
+    <RealVoiceMemoPlayer
+      durationSeconds={durationSeconds}
+      voiceSegments={playableSegments}
+    />
+  );
+}
+
+function RealVoiceMemoPlayer({
+  durationSeconds,
+  voiceSegments,
+}: {
+  durationSeconds: number;
+  voiceSegments: VoiceMemoSegment[];
+}) {
+  const playlist = useAudioPlaylist({
+    sources: voiceSegments.map((segment) => ({ uri: segment.uri })),
+    updateInterval: 100,
+  });
+  const status = useAudioPlaylistStatus(playlist);
+  const duration = Math.max(1, Math.round(
+    getVoiceSegmentsDuration(voiceSegments) || durationSeconds,
+  ));
+  const elapsedSeconds = Math.min(
+    duration,
+    getVoiceSegmentOffset(voiceSegments, status.currentIndex) + status.currentTime,
+  );
+  const progressPercent = `${Math.min(100, (elapsedSeconds / duration) * 100)}%` as `${number}%`;
+
+  useEffect(() => () => {
+    playlist.pause();
+  }, [playlist]);
+
+  const togglePlayback = async () => {
+    if (status.playing) {
+      playlist.pause();
+      return;
+    }
+
+    await setAudioModeAsync({
+      allowsRecording: false,
+      playsInSilentMode: true,
+    });
+
+    if (elapsedSeconds >= duration) {
+      playlist.skipTo(0);
+      await playlist.seekTo(0);
+    }
+
+    playlist.play();
+  };
+
+  return (
+    <View style={styles.voiceMemoPlayer}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={status.playing ? '음성 메모 일시정지' : '음성 메모 재생'}
+        style={({ pressed }) => [styles.voicePlayButton, pressed && styles.pressed]}
+        onPress={togglePlayback}
+      >
+        {status.playing ? (
+          <View style={styles.pauseIcon}>
+            <View style={styles.pauseBar} />
+            <View style={styles.pauseBar} />
+          </View>
+        ) : (
+          <View style={styles.playIcon} />
+        )}
+      </Pressable>
+      <View style={styles.voiceProgressTrack}>
+        <View style={[styles.voiceProgressFill, { width: progressPercent }]} />
+      </View>
+      <Text style={styles.voiceDurationText}>
+        {formatVoiceDuration(status.playing ? Math.max(0, duration - elapsedSeconds) : duration)}
+      </Text>
+    </View>
+  );
 }
 
 function SimulatedVoiceMemoPlayer({
@@ -995,6 +1225,7 @@ function EditVoiceMemo({
           <VoiceMemoPlayer
             durationSeconds={voiceDraft.voiceDurationSeconds}
             voiceUri={voiceDraft.voiceUri}
+            voiceSegments={voiceDraft.voiceSegments}
           />
         ) : (
           <View style={styles.editVoiceEmptyBox}>
