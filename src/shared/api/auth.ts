@@ -74,4 +74,15 @@ export const authService = {
     await setClientToken(null);
     await setClientRefreshToken(null);
   },
+
+  async updateProfile(data: { name?: string; password?: string }): Promise<ApiResponse<AuthUser>> {
+    return post<ApiResponse<AuthUser>>('/auth/profile', data);
+  },
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse<void>> {
+    return post<ApiResponse<void>>('/auth/password', {
+      currentPassword,
+      newPassword,
+    });
+  },
 };
