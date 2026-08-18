@@ -1,23 +1,20 @@
-export type UserRole = 'GUARDIAN' | 'ELDER';
-export type Relation = 'SON' | 'DAUGHTER' | 'OTHER';
-export type NotificationPreference = 'ALL' | 'IMPORTANT';
+/**
+ * 그룹 관련 타입 (shared/types에서 재내보내기)
+ * @deprecated shared/types를 직접 사용하세요
+ */
 
-export interface GroupMember {
-  memberId: string;
-  relation: Relation;
-  role: UserRole;
-  notificationPreference: NotificationPreference;
-  joinedAt: string;
-}
+export type { UserRole, Relation, NotificationPreference } from '@/shared/types';
+export type {
+  GroupMember,
+  Group,
+  Invitation,
+  CreateGroupResponse,
+  CreateInvitationResponse,
+  AcceptInvitationResponse,
+  GetMeResponse,
+} from '@/shared/types';
 
-export interface Group {
-  groupId: string;
-  ownerMemberId: string;
-  memberCount: number;
-  createdAt: string;
-  members: GroupMember[];
-}
-
+// 하위 호환성 유지
 export interface InvitationToken {
   invitationId: string;
   token: string;

@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { colors } from '@/shared/constants';
 import { authService, getErrorMessage } from '@/shared/api';
+import { useToast } from '@/shared/hooks';
 import type { SignUpRequest, UserRole } from '@/shared/types';
 
 interface SignupScreenProps {
@@ -19,6 +20,7 @@ const PASSWORD_REGEX = {
 
 export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupScreenProps) {
   const insets = useSafeAreaInsets();
+  const { success: showSuccess } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -77,7 +79,9 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
       const response = await authService.signup(request);
 
       if (response.success) {
-        onSignupSuccess();
+        showSuccess('회원가입에 성공했습니다!', {
+          onDismiss: onSignupSuccess,
+        });
       } else {
         setError(response.message || '회원가입에 실패했습니다.');
       }

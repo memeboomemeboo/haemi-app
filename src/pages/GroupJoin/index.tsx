@@ -1,8 +1,10 @@
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useState, useCallback } from 'react';
 import { colors } from '@/shared/constants';
-import { groupAPI } from '@/entities/group';
+import { groupService, getErrorMessage } from '@/shared/api';
+import { useToast } from '@/shared/hooks';
 import { useUserContext } from '@/shared/context/UserContext';
 
 interface JoinErrorType {
@@ -27,6 +29,8 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 export default function GroupJoinScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { success: showSuccess } = useToast();
   const { setGroup } = useUserContext();
   const [state, setState] = useState<GroupJoinState>({
     inviteCode: '',
@@ -36,11 +40,11 @@ export default function GroupJoinScreen() {
     groupId: null,
   });
 
-  const handleJoinGroup = async () => {
+  const handleJoinGroup = useCallback(async () => {
     const code = state.inviteCode.trim();
 
     if (!code) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         error: { code: null, message: '초대코드를 입력해주세요.' },
       }));
@@ -48,34 +52,36 @@ export default function GroupJoinScreen() {
     }
 
     if (code.length < 6) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         error: { code: 'INVALID', message: ERROR_MESSAGES.INVALID },
       }));
       return;
     }
 
-    setState(prev => ({ ...prev, isLoading: true, error: { code: null, message: '' } }));
+    setState((prev) => ({ ...prev, isLoading: true, error: { code: null, message: '' } }));
 
     try {
-      const response = await groupAPI.acceptInvitation(code);
+      const response = await groupService.acceptInvitation(code);
 
-      if (response.success) {
-        // Context에 그룹 정보 저장
-        setGroup(response.data);
-
-        setState(prev => ({
-          ...prev,
-          joined: true,
-          groupId: response.data.groupId,
-          isLoading: false,
-        }));
+      if (!response.success) {
+        throw new Error(response.message || '참여에 실패했습니다.');
       }
-    } catch (err: any) {
-      console.error('그룹 참여 실패:', err);
 
-      // 에러 메시지 파싱
-      const errorMessage = err.message || '참여에 실패했습니다.';
+      setGroup(response.data);
+
+      setState((prev) => ({
+        ...prev,
+        joined: true,
+        groupId: response.data.groupId,
+        isLoading: false,
+      }));
+
+      showSuccess('그룹에 참여했습니다!', {
+        onDismiss: () => router.replace('/'),
+      });
+    } catch (err) {
+      const errorMessage = getErrorMessage(err);
       let errorCode: 'NOT_FOUND' | 'EXPIRED' | 'DISABLED' | 'INVALID' = 'INVALID';
 
       if (errorMessage.includes('404') || errorMessage.includes('not found')) {
@@ -86,7 +92,7 @@ export default function GroupJoinScreen() {
         errorCode = 'DISABLED';
       }
 
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         error: {
           code: errorCode,
@@ -95,7 +101,15 @@ export default function GroupJoinScreen() {
         isLoading: false,
       }));
     }
-  };
+  }, [state.inviteCode, setGroup, showSuccess, router]);
+
+  const handleInputChange = useCallback((text: string) => {
+    setState((prev) => ({
+      ...prev,
+      inviteCode: text.toUpperCase(),
+      error: { code: null, message: '' },
+    }));
+  }, []);
 
   if (state.joined) {
     return (
@@ -125,6 +139,7 @@ export default function GroupJoinScreen() {
               styles.startButton,
               pressed && styles.startButtonPressed,
             ]}
+            onPress={() => router.replace('/')}
           >
             <Text style={styles.startButtonText}>시작하기</Text>
           </Pressable>
@@ -150,13 +165,7 @@ export default function GroupJoinScreen() {
             placeholder="초대코드 입력 (6자 이상)"
             placeholderTextColor={colors.light.label.disabled}
             value={state.inviteCode}
-            onChangeText={text =>
-              setState(prev => ({
-                ...prev,
-                inviteCode: text.toUpperCase(),
-                error: { code: null, message: '' },
-              }))
-            }
+            onChangeText={handleInputChange}
             maxLength={20}
             autoCapitalize="characters"
             editable={!state.isLoading}
@@ -188,9 +197,11 @@ export default function GroupJoinScreen() {
           onPress={handleJoinGroup}
           disabled={state.isLoading || !state.inviteCode.trim()}
         >
-          <Text style={styles.joinButtonText}>
-            {state.isLoading ? '참여 중...' : '참여'}
-          </Text>
+          {state.isLoading ? (
+            <ActivityIndicator color={colors.light.background.normal} />
+          ) : (
+            <Text style={styles.joinButtonText}>참여</Text>
+          )}
         </Pressable>
       </View>
     </View>

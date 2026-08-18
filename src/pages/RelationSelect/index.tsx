@@ -1,15 +1,15 @@
 import { View, ScrollView, StyleSheet, Text, TextInput, Pressable, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { colors } from '@/shared/constants';
 import { useUserContext } from '@/shared/context/UserContext';
-import type { Relation } from '@/entities/group';
+import type { Relation } from '@/shared/types';
 
 interface RelationSelectScreenProps {
   onRelationSelect: (relation: Relation, phoneNumber: string) => void;
 }
 
-const RELATION_OPTIONS: { value: Relation; label: string }[] = [
+const RELATION_OPTIONS: Array<{ value: Relation; label: string }> = [
   { value: 'SON', label: '아들' },
   { value: 'DAUGHTER', label: '딸' },
   { value: 'OTHER', label: '기타' },
@@ -23,7 +23,7 @@ export default function RelationSelectScreen({ onRelationSelect }: RelationSelec
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleNext = async () => {
+  const handleNext = useCallback(async () => {
     if (!phoneNumber.trim()) {
       setError('연락처를 입력해주세요.');
       return;
@@ -33,18 +33,20 @@ export default function RelationSelectScreen({ onRelationSelect }: RelationSelec
     setError('');
 
     try {
-      // Context에 저장
       setRelation(relation);
       setPhoneNumber(phoneNumber.trim());
-
-      // 다음 화면으로 이동
       onRelationSelect(relation, phoneNumber.trim());
     } catch (err) {
       setError('오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [relation, phoneNumber, setRelation, setPhoneNumber, onRelationSelect]);
+
+  const handlePhoneChange = useCallback((text: string) => {
+    setPhoneNumberState(text);
+    if (error) setError('');
+  }, [error]);
 
   return (
     <View style={styles.container}>
@@ -93,17 +95,12 @@ export default function RelationSelectScreen({ onRelationSelect }: RelationSelec
             placeholder="010-1234-5678"
             placeholderTextColor={colors.light.label.disabled}
             value={phoneNumber}
-            onChangeText={(text) => {
-              setPhoneNumberState(text);
-              if (error) setError('');
-            }}
+            onChangeText={handlePhoneChange}
             editable={!isLoading}
             keyboardType="phone-pad"
             maxLength={20}
           />
-          <Text style={styles.hint}>
-            가족 그룹 초대 시 필요한 정보입니다.
-          </Text>
+          <Text style={styles.hint}>가족 그룹 초대 시 필요한 정보입니다.</Text>
         </View>
       </ScrollView>
 

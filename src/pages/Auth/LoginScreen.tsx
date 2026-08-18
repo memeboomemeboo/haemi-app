@@ -2,7 +2,9 @@ import { View, ScrollView, StyleSheet, Text, TextInput, Pressable, ActivityIndic
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { colors } from '@/shared/constants';
-import { authService, getErrorMessage, isApiError } from '@/shared/api';
+import { authService, getErrorMessage } from '@/shared/api';
+import { useToast } from '@/shared/hooks';
+import { useUserContext } from '@/shared/context/UserContext';
 import type { LoginRequest } from '@/shared/types';
 
 interface LoginScreenProps {
@@ -12,6 +14,8 @@ interface LoginScreenProps {
 
 export default function LoginScreen({ onLoginSuccess, onSignupPress }: LoginScreenProps) {
   const insets = useSafeAreaInsets();
+  const { success: showSuccess } = useToast();
+  const { setRole } = useUserContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -36,12 +40,25 @@ export default function LoginScreen({ onLoginSuccess, onSignupPress }: LoginScre
 
       if (response.success) {
         authService.setToken(response.data.accessToken);
-        onLoginSuccess(response.data.accessToken);
+
+        try {
+          const meResponse = await authService.getMe();
+          if (meResponse.success && meResponse.data.role) {
+            setRole(meResponse.data.role);
+          }
+        } catch (meErr) {
+          console.warn('Failed to fetch user role:', meErr);
+        }
+
+        showSuccess('로그인에 성공했습니다!', {
+          onDismiss: () => onLoginSuccess(response.data.accessToken),
+        });
       } else {
         setError(response.message || '로그인에 실패했습니다.');
       }
     } catch (err) {
-      setError(getErrorMessage(err));
+      const errorMessage = getErrorMessage(err);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

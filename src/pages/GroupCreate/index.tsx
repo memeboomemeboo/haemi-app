@@ -1,10 +1,12 @@
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { colors } from '@/shared/constants';
-import { groupAPI, type Relation, type NotificationPreference } from '@/entities/group';
+import { groupService, getErrorMessage } from '@/shared/api';
+import { useToast } from '@/shared/hooks';
 import { useUserContext } from '@/shared/context/UserContext';
+import type { Relation, NotificationPreference, CreateGroupRequest, CreateInvitationRequest } from '@/shared/types';
 
 interface GroupCreateState {
   groupName: string;
@@ -16,9 +18,15 @@ interface GroupCreateState {
   notificationPreference: NotificationPreference;
 }
 
+const NOTIFICATION_PREFERENCES: Array<{ value: NotificationPreference; label: string }> = [
+  { value: 'ALL', label: '모든 알림' },
+  { value: 'IMPORTANT', label: '중요 알림' },
+];
+
 export default function GroupCreateScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { success: showSuccess } = useToast();
   const { setGroup, relation, phoneNumber } = useUserContext();
   const [state, setState] = useState<GroupCreateState>({
     groupName: '',
@@ -41,72 +49,80 @@ export default function GroupCreateScreen() {
     }
   }, [state.groupId, state.inviteCode, router]);
 
-  const handleCreateGroup = async () => {
+  const handleCreateGroup = useCallback(async () => {
     if (!state.groupName.trim()) {
-      setState(prev => ({ ...prev, error: '그룹명을 입력해주세요.' }));
+      setState((prev) => ({ ...prev, error: '그룹명을 입력해주세요.' }));
       return;
     }
 
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const response = await groupAPI.createGroup({
+      const groupRequest: CreateGroupRequest = {
         relation: state.relation,
         notificationPreference: state.notificationPreference,
-      });
+      };
 
-      if (response.success) {
-        const groupId = response.data.groupId;
+      const groupResponse = await groupService.createGroup(groupRequest);
 
-        // Context에 그룹 정보 저장
-        setGroup(response.data);
+      if (!groupResponse.success) {
+        throw new Error(groupResponse.message || '그룹 생성 실패');
+      }
 
-        setState(prev => ({
+      const groupId = groupResponse.data.groupId;
+      setGroup({ ...groupResponse.data, members: [] } as any);
+
+      setState((prev) => ({
+        ...prev,
+        groupId,
+        isLoading: false,
+      }));
+
+      // 초대코드 자동 생성
+      try {
+        const invitationRequest: CreateInvitationRequest = {
+          phoneNumber: phoneNumber || '',
+          relation: state.relation,
+        };
+
+        const invitationResponse = await groupService.createInvitation(groupId, invitationRequest);
+
+        if (!invitationResponse.success) {
+          throw new Error(invitationResponse.message || '초대코드 생성 실패');
+        }
+
+        setState((prev) => ({
           ...prev,
-          groupId,
-          isLoading: false,
+          inviteCode: invitationResponse.data.token,
         }));
 
-        // 초대코드 자동 생성
-        try {
-          const invitationResponse = await groupAPI.createInvitation(groupId, {
-            phoneNumber: phoneNumber || '',
-            relation: state.relation,
-          });
-
-          if (invitationResponse.success) {
-            setState(prev => ({
-              ...prev,
-              inviteCode: invitationResponse.data.token,
-            }));
-          }
-        } catch (inviteErr) {
-          console.error('초대코드 생성 실패:', inviteErr);
-          setState(prev => ({
-            ...prev,
-            error: '초대코드 생성에 실패했습니다.',
-          }));
-        }
+        showSuccess('그룹이 생성되었습니다!');
+      } catch (inviteErr) {
+        setState((prev) => ({
+          ...prev,
+          error: getErrorMessage(inviteErr),
+        }));
       }
     } catch (err) {
-      console.error('그룹 생성 실패:', err);
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        error: '그룹 생성에 실패했습니다. 다시 시도해주세요.',
+        error: getErrorMessage(err),
         isLoading: false,
       }));
     }
-  };
+  }, [state.groupName, state.relation, state.notificationPreference, phoneNumber, setGroup]);
 
-  const handleCopyCode = () => {
+  const handleCopyCode = useCallback(() => {
     if (state.inviteCode) {
       // TODO: 실제 클립보드 복사 구현
-      // import { Clipboard } from 'react-native';
-      // Clipboard.setString(state.inviteCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  };
+  }, [state.inviteCode]);
+
+  const handleGroupNameChange = useCallback((text: string) => {
+    setState((prev) => ({ ...prev, groupName: text, error: null }));
+  }, []);
 
   if (state.inviteCode) {
     return (
@@ -150,6 +166,7 @@ export default function GroupCreateScreen() {
               styles.continueButton,
               pressed && styles.continueButtonPressed,
             ]}
+            onPress={() => router.replace('/')}
           >
             <Text style={styles.continueButtonText}>확인</Text>
           </Pressable>
@@ -168,6 +185,8 @@ export default function GroupCreateScreen() {
         <Text style={styles.title}>그룹 생성</Text>
         <Text style={styles.subtitle}>어르신을 초대할 그룹을 만들어주세요</Text>
 
+        {state.error ? <Text style={styles.errorText}>{state.error}</Text> : null}
+
         <View style={styles.formSection}>
           <Text style={styles.label}>그룹명</Text>
           <TextInput
@@ -175,10 +194,42 @@ export default function GroupCreateScreen() {
             placeholder="예: 김가족, 박할머니 가족"
             placeholderTextColor={colors.light.label.disabled}
             value={state.groupName}
-            onChangeText={text => setState(prev => ({ ...prev, groupName: text, error: null }))}
+            onChangeText={handleGroupNameChange}
             editable={!state.isLoading}
+            maxLength={50}
           />
-          {state.error && <Text style={styles.errorText}>{state.error}</Text>}
+        </View>
+
+        <View style={styles.formSection}>
+          <Text style={styles.label}>알림 설정</Text>
+          <View style={styles.preferencesContainer}>
+            {NOTIFICATION_PREFERENCES.map((pref) => (
+              <Pressable
+                key={pref.value}
+                style={[
+                  styles.preferenceButton,
+                  state.notificationPreference === pref.value && styles.preferenceButtonActive,
+                ]}
+                onPress={() =>
+                  setState((prev) => ({
+                    ...prev,
+                    notificationPreference: pref.value,
+                  }))
+                }
+                disabled={state.isLoading}
+              >
+                <Text
+                  style={[
+                    styles.preferenceButtonText,
+                    state.notificationPreference === pref.value &&
+                      styles.preferenceButtonTextActive,
+                  ]}
+                >
+                  {pref.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
 
         <Text style={styles.infoText}>
@@ -196,9 +247,11 @@ export default function GroupCreateScreen() {
           onPress={handleCreateGroup}
           disabled={state.isLoading || !state.groupName.trim()}
         >
-          <Text style={styles.createButtonText}>
-            {state.isLoading ? '생성 중...' : '그룹 생성'}
-          </Text>
+          {state.isLoading ? (
+            <ActivityIndicator color={colors.light.background.normal} />
+          ) : (
+            <Text style={styles.createButtonText}>그룹 생성</Text>
+          )}
         </Pressable>
       </View>
     </View>
@@ -228,9 +281,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: colors.light.label.assistive,
-    marginBottom: 40,
+    marginBottom: 32,
     letterSpacing: -0.32,
     lineHeight: 21,
+  },
+  errorText: {
+    fontSize: 14,
+    color: colors.status.error,
+    marginBottom: 16,
+    backgroundColor: colors.status.error + '10',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
   },
   formSection: {
     marginBottom: 24,
@@ -252,11 +314,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.light.line.neutral,
   },
-  errorText: {
+  preferencesContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  preferenceButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.light.line.neutral,
+    backgroundColor: colors.light.fill.normal,
+    alignItems: 'center',
+  },
+  preferenceButtonActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
+  },
+  preferenceButtonText: {
     fontSize: 14,
-    color: colors.status.error,
-    marginTop: 8,
+    fontWeight: '500',
+    color: colors.light.label.normal,
     letterSpacing: -0.28,
+  },
+  preferenceButtonTextActive: {
+    color: colors.light.background.normal,
   },
   infoText: {
     fontSize: 14,

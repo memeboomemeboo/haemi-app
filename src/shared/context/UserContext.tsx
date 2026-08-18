@@ -1,5 +1,9 @@
+/**
+ * 전역 사용자 상태 관리
+ */
+
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import type { UserRole, Group, Relation } from '@/entities/group';
+import type { UserRole, Relation, Group } from '@/shared/types';
 
 interface UserContextType {
   token: string | null;
