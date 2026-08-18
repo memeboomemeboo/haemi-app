@@ -211,6 +211,15 @@ export default function MemoryRegisterScreen() {
     confirmAction?.();
   };
 
+  const handleRegisterDialogRequestClose = () => {
+    if (registerDialog.onConfirm) {
+      confirmRegisterDialog();
+      return;
+    }
+
+    closeRegisterDialog();
+  };
+
   const handlePost = () => {
     if (!hasPhoto) {
       openRegisterDialog({
@@ -587,7 +596,12 @@ export default function MemoryRegisterScreen() {
         </View>
       </Modal>
 
-      <Modal transparent visible={registerDialog.visible} animationType="fade" onRequestClose={closeRegisterDialog}>
+      <Modal
+        transparent
+        visible={registerDialog.visible}
+        animationType="fade"
+        onRequestClose={handleRegisterDialogRequestClose}
+      >
         <View style={styles.registerDialogLayer}>
           <View style={styles.registerDialog}>
             <Text style={styles.registerDialogTitle}>{registerDialog.title}</Text>
