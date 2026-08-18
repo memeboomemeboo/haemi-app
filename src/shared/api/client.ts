@@ -2,7 +2,6 @@
  * 공통 API 클라이언트
  */
 
-import type { ApiResponse } from '@/shared/types';
 import { ApiError, NetworkError, UnauthorizedError } from './errors';
 
 const API_BASE_URL = `${process.env.EXPO_PUBLIC_API_URL}/api/v1`;
@@ -148,3 +147,11 @@ export async function del<T>(
 ): Promise<T> {
   return fetchApi<T>(endpoint, { ...options, method: 'DELETE' });
 }
+
+export const apiClient = {
+  get,
+  post,
+  patch,
+  put,
+  delete: del,
+};

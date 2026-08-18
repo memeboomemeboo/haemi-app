@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { groupService, authService, getErrorMessage } from '@/shared/api';
+import { authService, getErrorMessage, get } from '@/shared/api';
 import { useUserContext } from '@/shared/context/UserContext';
-import type { Group, GetMeResponse } from '@/shared/types';
+import type { Group } from '@/shared/types';
 
 interface UserGroupState {
   group: Group | null;
@@ -51,24 +51,10 @@ export const useUserGroup = () => {
           return;
         }
 
-        // 2. groupId가 있으면 그룹 상세 정보 조회
-        const groupResponse = await fetch(
-          `${process.env.EXPO_PUBLIC_API_URL}/api/v1/groups/${groupId}`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        // 2. groupId가 있으면 그룹 상세 정보 조회 (동일한 토큰 사용)
+        const groupResponse = await get<any>(`/groups/${groupId}`);
 
-        if (!groupResponse.ok) {
-          throw new Error(`그룹 조회 실패: ${groupResponse.status}`);
-        }
-
-        const groupData = await groupResponse.json();
-        const group = groupData.data ?? null;
+        const group = groupResponse?.data ?? null;
 
         console.log('[useUserGroup] 그룹 정보:', group);
 

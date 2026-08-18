@@ -57,7 +57,7 @@ export async function getFamilyMemoryFeed({
     size: String(size),
   });
 
-  const response = await fetch(`${HAEMI_API_BASE_URL}/api/v1/albums/${albumId}/feed?${searchParams}`, {
+  const response = await fetch(`${HAEMI_API_BASE_URL}/albums/${albumId}/feed?${searchParams}`, {
     headers: getAuthHeaders(),
   });
 
@@ -76,7 +76,7 @@ export async function createFamilyMemoryPost({ albumId, data, photos = [] }: Cre
     } as unknown as Blob);
   });
 
-  const response = await fetch(`${HAEMI_API_BASE_URL}/api/v1/albums/${albumId}/posts`, {
+  const response = await fetch(`${HAEMI_API_BASE_URL}/albums/${albumId}/posts`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: formData,
@@ -88,7 +88,7 @@ export async function createFamilyMemoryPost({ albumId, data, photos = [] }: Cre
 export async function toggleFamilyMemoryLike(albumId: string, postId: string, memberId: string) {
   const searchParams = new URLSearchParams({ memberId });
   const response = await fetch(
-    `${HAEMI_API_BASE_URL}/api/v1/albums/${albumId}/posts/${postId}/like?${searchParams}`,
+    `${HAEMI_API_BASE_URL}/albums/${albumId}/posts/${postId}/like?${searchParams}`,
     {
       method: 'POST',
       headers: getAuthHeaders(),
