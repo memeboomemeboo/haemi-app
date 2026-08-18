@@ -38,7 +38,7 @@ export default function RootScreen() {
     );
   }
 
-  // 👨 3️⃣ 관계 확인 (로그인 및 역할 선택했으나 관계 미선택)
+  // 관계 확인 (로그인 및 역할 선택했으나 관계 미선택)
   if (!relation) {
     return (
       <RelationSelectScreen
@@ -49,7 +49,7 @@ export default function RootScreen() {
     );
   }
 
-  // 📊 4️⃣ 그룹 로딩 중
+  // 그룹 로딩 중
   if (groupLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
@@ -58,7 +58,7 @@ export default function RootScreen() {
     );
   }
 
-  // 👨‍👩‍👧 5️⃣ 그룹 선택 (역할과 관계는 있지만 그룹이 없음)
+  // 그룹 선택 (역할과 관계는 있지만 그룹이 없음)
   if (!group) {
     if (role === 'GUARDIAN') {
       return <GroupCreateScreen />;
@@ -67,6 +67,6 @@ export default function RootScreen() {
     }
   }
 
-  // 🏠 6️⃣ 모든 것이 준비됨 → 홈 화면
+  // 모든 것이 준비됨 → 홈 화면
   return <HomeScreen />;
 }
