@@ -33,12 +33,6 @@ type FamilyMember = {
   relation: string;
 };
 
-const FAMILY_MEMBERS = Array.from({ length: 5 }, (_, index) => ({
-  id: `family-${index + 1}`,
-  name: '박승아',
-  relation: '손녀',
-})) satisfies FamilyMember[];
-
 export default function MemberEditScreen() {
   const router = useRouter();
   const { group } = useUserContext();
@@ -47,7 +41,7 @@ export default function MemberEditScreen() {
   const [familyCount, setFamilyCount] = useState('');
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const initializedRef = useRef(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   // 사용자 정보 로드
@@ -84,12 +78,6 @@ export default function MemberEditScreen() {
       setFamilyCount(`${group.members.length}명`);
     }
   }, [group]);
-
-  const deleteFamilyMember = (memberId: string) => {
-    const nextMembers = familyMembers.filter((member) => member.id !== memberId);
-    setFamilyMembers(nextMembers);
-    setFamilyCount(`${nextMembers.length}명`);
-  };
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -208,7 +196,6 @@ export default function MemberEditScreen() {
       <FamilyEditModal
         visible={activeModal === 'family'}
         members={familyMembers}
-        onDeleteMember={deleteFamilyMember}
         onClose={() => setActiveModal(null)}
       />
     </View>
@@ -221,6 +208,7 @@ function InfoRow({
   onChangeText,
   onIconPress,
   secureTextEntry,
+  editable,
 }: {
   label: string;
   value: string;
@@ -296,12 +284,10 @@ function PasswordEditModal({ visible, onClose }: { visible: boolean; onClose: ()
 function FamilyEditModal({
   visible,
   members,
-  onDeleteMember,
   onClose,
 }: {
   visible: boolean;
   members: FamilyMember[];
-  onDeleteMember: (memberId: string) => void;
   onClose: () => void;
 }) {
   return (
@@ -329,15 +315,7 @@ function FamilyEditModal({
                     <Text style={styles.familyRelation}>{member.relation}</Text>
                   </View>
                 </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`${member.name} 삭제`}
-                  hitSlop={8}
-                  style={({ pressed }) => pressed && styles.pressed}
-                  onPress={() => onDeleteMember(member.id)}
-                >
-                  <Trash color={LINE_NORMAL} size={24} />
-                </Pressable>
+                <Trash color={LINE_NORMAL} size={24} />
               </View>
             ))}
           </View>
