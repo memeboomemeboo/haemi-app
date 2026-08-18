@@ -4,6 +4,7 @@
 
 // API 클라이언트
 export {
+  apiClient,
   setAuthToken,
   getAuthToken,
   fetchApi,
