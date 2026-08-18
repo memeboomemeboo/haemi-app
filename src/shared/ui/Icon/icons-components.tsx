@@ -27,3 +27,4 @@ export const Map: React.FC<IndividualIconProps> = (props) => <Icon name="Map" {.
 export const People: React.FC<IndividualIconProps> = (props) => <Icon name="People" {...props} />;
 export const CheckMark: React.FC<IndividualIconProps> = (props) => <Icon name="CheckMark" {...props} />;
 export const Close: React.FC<IndividualIconProps> = (props) => <Icon name="Close" {...props} />;
+export const Trash: React.FC<IndividualIconProps> = (props) => <Icon name="Trash" {...props} />;

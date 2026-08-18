@@ -36,6 +36,7 @@ import {
   HeartOutline,
   More,
   MoreVertical,
+  Close,
   Picture,
   Sent,
 } from '@/shared/ui';
@@ -369,7 +370,7 @@ function FeedScreen() {
     editVoiceRecordingStartedAtRef.current = null;
   };
 
-  const pickEditPhoto = async () => {
+  const pickEditPhoto = async (photoIndex?: number) => {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -378,10 +379,17 @@ function FeedScreen() {
         return;
       }
 
+      const currentPhotoUris = editPhotoDraft.photoUris.length > 0
+        ? editPhotoDraft.photoUris
+        : editPhotoDraft.photoUri
+          ? [editPhotoDraft.photoUri]
+          : [];
+      const remainingPhotoCount = Math.max(1, 2 - currentPhotoUris.length);
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsMultipleSelection: true,
-        selectionLimit: 2,
+        allowsMultipleSelection: photoIndex === undefined,
+        selectionLimit: photoIndex === undefined ? remainingPhotoCount : 1,
         quality: 0.9,
       });
 
@@ -391,10 +399,40 @@ function FeedScreen() {
           .filter(Boolean)
           .slice(0, 2);
 
-        setEditPhotoDraft({
-          hasPhoto: nextPhotoUris.length > 0,
-          photoUri: nextPhotoUris[0] ?? null,
-          photoUris: nextPhotoUris,
+        if (photoIndex === undefined) {
+          const normalizedPhotoUris = [...currentPhotoUris, ...nextPhotoUris].slice(0, 2);
+
+          setEditPhotoDraft({
+            hasPhoto: normalizedPhotoUris.length > 0,
+            photoUri: normalizedPhotoUris[0] ?? null,
+            photoUris: normalizedPhotoUris,
+          });
+          return;
+        }
+
+        const selectedPhotoUri = nextPhotoUris[0];
+
+        if (!selectedPhotoUri) {
+          return;
+        }
+
+        setEditPhotoDraft((current) => {
+          const currentPhotoUris = current.photoUris.length > 0
+            ? current.photoUris
+            : current.photoUri
+              ? [current.photoUri]
+              : [];
+          const nextPhotoUriList = [...currentPhotoUris];
+
+          nextPhotoUriList[photoIndex] = selectedPhotoUri;
+
+          const normalizedPhotoUris = nextPhotoUriList.filter(Boolean).slice(0, 2);
+
+          return {
+            hasPhoto: normalizedPhotoUris.length > 0,
+            photoUri: normalizedPhotoUris[0] ?? null,
+            photoUris: normalizedPhotoUris,
+          };
         });
       }
     } catch {
@@ -402,8 +440,28 @@ function FeedScreen() {
     }
   };
 
-  const removeEditPhoto = () => {
-    setEditPhotoDraft({ hasPhoto: false, photoUri: null, photoUris: [] });
+  const removeEditPhoto = (photoIndex?: number) => {
+    if (photoIndex === undefined) {
+      setEditPhotoDraft({ hasPhoto: false, photoUri: null, photoUris: [] });
+      return;
+    }
+
+    setEditPhotoDraft((current) => {
+      const currentPhotoUris = current.photoUris.length > 0
+        ? current.photoUris
+        : current.photoUri
+          ? [current.photoUri]
+          : [];
+      const normalizedPhotoUris = currentPhotoUris
+        .filter((_, index) => index !== photoIndex)
+        .slice(0, 2);
+
+      return {
+        hasPhoto: normalizedPhotoUris.length > 0,
+        photoUri: normalizedPhotoUris[0] ?? null,
+        photoUris: normalizedPhotoUris,
+      };
+    });
   };
 
   const ensureEditRecordingPermission = async () => {
@@ -698,8 +756,8 @@ function MemoryCard({
   onSubmitComment: () => void;
   onStartEdit: () => void;
   onChangeEditDraft: (value: string) => void;
-  onPickEditPhoto: () => void;
-  onRemoveEditPhoto: () => void;
+  onPickEditPhoto: (photoIndex?: number) => void;
+  onRemoveEditPhoto: (photoIndex?: number) => void;
   onToggleEditVoiceRecording: () => void;
   onRemoveEditVoice: () => void;
   onSaveEdit: () => void;
@@ -828,48 +886,41 @@ function MemoryCard({
 
       {isEditing ? (
         <View style={styles.editPhotoSection}>
-          {displayedPhoto.hasPhoto ? (
-            <View style={styles.editPhotoMedia}>
+          <View style={styles.editPhotoRow}>
+            {photoSources.length < 2 && (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="추억 사진 변경"
-                style={({ pressed }) => [styles.editPhotoButton, pressed && styles.pressed]}
-                onPress={onPickEditPhoto}
+                accessibilityLabel="추억 사진 추가"
+                style={({ pressed }) => [styles.editPhotoUpload, pressed && styles.pressed]}
+                onPress={() => onPickEditPhoto()}
               >
-                <PhotoGrid sources={photoSources} />
+                <Picture size={28} color={LINE_NORMAL} />
+                <Text style={styles.editPhotoUploadText}>이미지를 업로드하세요</Text>
+                <Text style={styles.editPhotoUploadCountText}>{photoSources.length}/2</Text>
               </Pressable>
-            </View>
-          ) : (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="추억 사진 추가"
-              style={({ pressed }) => [styles.editPhotoUpload, pressed && styles.pressed]}
-              onPress={onPickEditPhoto}
-            >
-              <Picture size={32} color={LINE_NORMAL} />
-              <Text style={styles.editPhotoUploadText}>사진을 추가하세요</Text>
-            </Pressable>
-          )}
-          {displayedPhoto.hasPhoto && (
-            <View style={styles.editPhotoActionRow}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="추억 사진 변경"
-                style={({ pressed }) => [styles.editPhotoSubButton, pressed && styles.pressed]}
-                onPress={onPickEditPhoto}
-              >
-                <Text style={styles.editPhotoSubButtonText}>변경</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="추억 사진 삭제"
-                style={({ pressed }) => [styles.editPhotoSubButton, pressed && styles.pressed]}
-                onPress={onRemoveEditPhoto}
-              >
-                <Text style={styles.editPhotoSubButtonText}>삭제</Text>
-              </Pressable>
-            </View>
-          )}
+            )}
+            {photoSources.map((source, index) => (
+              <View key={`${source.uri}-${index}`} style={styles.editPhotoFrame}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${index + 1}번 추억 사진 변경`}
+                  style={({ pressed }) => [styles.editPhotoTile, pressed && styles.pressed]}
+                  onPress={() => onPickEditPhoto(index)}
+                >
+                  <Image source={source} style={styles.editPhotoImage} contentFit="cover" />
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${index + 1}번 추억 사진 삭제`}
+                  hitSlop={6}
+                  style={styles.editPhotoRemoveButton}
+                  onPress={() => onRemoveEditPhoto(index)}
+                >
+                  <Close size={14} color={TEXT_ASSISTIVE} />
+                </Pressable>
+              </View>
+            ))}
+          </View>
         </View>
       ) : (
         photoSources.length > 0 && <PhotoGrid sources={photoSources} />
@@ -1014,7 +1065,12 @@ function MemoryCard({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="추억 수정"
-              style={[styles.actionMenuItem, styles.actionMenuEditItem]}
+              style={({ hovered, pressed }) => [
+                styles.actionMenuItem,
+                styles.actionMenuEditItem,
+                hovered && styles.actionMenuHoveredItem,
+                pressed && styles.pressed,
+              ]}
               onPress={handleEditInfo}
             >
               <Text style={styles.actionMenuText}>수정</Text>
@@ -1022,7 +1078,11 @@ function MemoryCard({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="추억 삭제"
-              style={styles.actionMenuItem}
+              style={({ hovered, pressed }) => [
+                styles.actionMenuItem,
+                hovered && styles.actionMenuHoveredItem,
+                pressed && styles.pressed,
+              ]}
               onPress={handleDeleteMemory}
             >
               <Text style={styles.actionMenuText}>삭제</Text>
@@ -1068,6 +1128,9 @@ function RealVoiceMemoPlayer({
   durationSeconds: number;
   voiceSegments: VoiceMemoSegment[];
 }) {
+  const pauseRequestedRef = useRef(false);
+  const wasPlayingRef = useRef(false);
+  const [hasCompleted, setHasCompleted] = useState(false);
   const playlist = useAudioPlaylist({
     sources: voiceSegments.map((segment) => ({ uri: segment.uri })),
     updateInterval: 100,
@@ -1080,14 +1143,32 @@ function RealVoiceMemoPlayer({
     duration,
     getVoiceSegmentOffset(voiceSegments, status.currentIndex) + status.currentTime,
   );
-  const progressPercent = `${Math.min(100, (elapsedSeconds / duration) * 100)}%` as `${number}%`;
+  const displayedElapsedSeconds = hasCompleted ? duration : elapsedSeconds;
+  const progressPercent = `${Math.min(100, (displayedElapsedSeconds / duration) * 100)}%` as `${number}%`;
 
   useEffect(() => () => {
     playlist.pause();
   }, [playlist]);
 
+  useEffect(() => {
+    if (wasPlayingRef.current && !status.playing) {
+      if (pauseRequestedRef.current) {
+        pauseRequestedRef.current = false;
+      } else {
+        setHasCompleted(true);
+      }
+    }
+
+    if (status.playing && hasCompleted) {
+      setHasCompleted(false);
+    }
+
+    wasPlayingRef.current = status.playing;
+  }, [hasCompleted, status.playing]);
+
   const togglePlayback = async () => {
     if (status.playing) {
+      pauseRequestedRef.current = true;
       playlist.pause();
       return;
     }
@@ -1097,7 +1178,8 @@ function RealVoiceMemoPlayer({
       playsInSilentMode: true,
     });
 
-    if (elapsedSeconds >= duration) {
+    if (hasCompleted || elapsedSeconds >= duration) {
+      setHasCompleted(false);
       playlist.skipTo(0);
       await playlist.seekTo(0);
     }
@@ -1341,7 +1423,12 @@ function CommentActionMenu({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="댓글 수정"
-              style={[styles.actionMenuItem, styles.actionMenuEditItem]}
+              style={({ hovered, pressed }) => [
+                styles.actionMenuItem,
+                styles.actionMenuEditItem,
+                hovered && styles.actionMenuHoveredItem,
+                pressed && styles.pressed,
+              ]}
               onPress={handleEdit}
             >
               <Text style={styles.actionMenuText}>수정</Text>
@@ -1349,7 +1436,11 @@ function CommentActionMenu({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="댓글 삭제"
-              style={styles.actionMenuItem}
+              style={({ hovered, pressed }) => [
+                styles.actionMenuItem,
+                hovered && styles.actionMenuHoveredItem,
+                pressed && styles.pressed,
+              ]}
               onPress={handleDelete}
             >
               <Text style={styles.actionMenuText}>삭제</Text>
@@ -1409,6 +1500,8 @@ const styles = StyleSheet.create({
   fixedTop: {
     paddingHorizontal: 16,
     backgroundColor: '#ffffff',
+    position: 'relative',
+    zIndex: 20,
   },
   header: {
     paddingHorizontal: 10,
@@ -1507,15 +1600,15 @@ const styles = StyleSheet.create({
   },
   actionMenu: {
     position: 'absolute',
-    width: 104,
+    width: 123,
     height: 72,
     borderRadius: 8,
     backgroundColor: '#ffffff',
     shadowColor: '#000000',
-    shadowOpacity: 0.24,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 12,
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
     overflow: 'hidden',
   },
   actionMenuItem: {
@@ -1525,9 +1618,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   actionMenuEditItem: {
-    backgroundColor: '#fff3f0',
     borderBottomWidth: 1,
-    borderBottomColor: '#fed7cd',
+    borderBottomColor: '#f5f5f5',
+  },
+  actionMenuHoveredItem: {
+    backgroundColor: '#fff3f0',
   },
   actionMenuText: {
     color: ORANGE,
@@ -1601,21 +1696,22 @@ const styles = StyleSheet.create({
   },
   editActionRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 8,
   },
   editCancelButton: {
-    width: 56,
-    height: 30,
-    borderRadius: 5,
+    flex: 1,
+    height: 38,
+    borderRadius: 8,
     backgroundColor: '#fed7cd',
     alignItems: 'center',
     justifyContent: 'center',
   },
   editSaveButton: {
-    width: 56,
-    height: 30,
-    borderRadius: 5,
+    flex: 1,
+    height: 38,
+    borderRadius: 8,
     backgroundColor: ORANGE,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1748,7 +1844,7 @@ const styles = StyleSheet.create({
     minWidth: 56,
     borderRadius: 5,
     paddingHorizontal: 10,
-    backgroundColor: ORANGE,
+    backgroundColor: TEXT_ASSISTIVE,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1757,7 +1853,7 @@ const styles = StyleSheet.create({
     minWidth: 48,
     borderRadius: 5,
     paddingHorizontal: 10,
-    backgroundColor: '#fff3f0',
+    backgroundColor: '#e8e8e9',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1768,7 +1864,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   editVoiceSecondaryButtonText: {
-    color: ORANGE,
+    color: TEXT_MUTED,
     fontSize: 13,
     lineHeight: 17,
     fontWeight: '600',
@@ -1785,72 +1881,77 @@ const styles = StyleSheet.create({
     backgroundColor: FILL,
   },
   editPhotoSection: {
+    width: '100%',
+  },
+  editPhotoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  editPhotoMedia: {
+  editPhotoFrame: {
+    position: 'relative',
     flex: 1,
     minWidth: 0,
+    height: 123,
   },
-  editPhotoButton: {
-    position: 'relative',
-    overflow: 'hidden',
+  editPhotoTile: {
+    width: '100%',
+    height: '100%',
     borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#ffffff',
+    shadowColor: '#000000',
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 2,
   },
-  editPhotoOverlay: {
+  editPhotoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  editPhotoRemoveButton: {
     position: 'absolute',
-    right: 10,
-    bottom: 10,
+    top: -8,
+    right: -8,
+    zIndex: 2,
+    width: 28,
     height: 28,
-    paddingHorizontal: 12,
     borderRadius: 14,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  editPhotoOverlayText: {
-    color: '#ffffff',
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '600',
+    shadowColor: '#000000',
+    shadowOpacity: 0.07,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 2,
   },
   editPhotoUpload: {
     flex: 1,
+    minWidth: 0,
     height: 123,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: LINE,
-    backgroundColor: FILL,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
   },
   editPhotoUploadText: {
     color: LINE_NORMAL,
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 16,
     fontWeight: '500',
+    letterSpacing: -0.24,
   },
-  editPhotoActionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  editPhotoSubButton: {
-    height: 28,
-    minWidth: 48,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff3f0',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  editPhotoSubButtonText: {
-    color: ORANGE,
-    fontSize: 13,
-    lineHeight: 17,
-    fontWeight: '600',
+  editPhotoUploadCountText: {
+    color: TEXT_ASSISTIVE,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '500',
+    letterSpacing: -0.24,
   },
   reactionRow: {
     flexDirection: 'row',

@@ -28,6 +28,7 @@ export {
   People,
   CheckMark,
   Close,
+  Trash,
   type IconName,
   type IconProps,
   type IllustrationName,
