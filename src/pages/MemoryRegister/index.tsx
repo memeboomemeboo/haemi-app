@@ -278,7 +278,7 @@ export default function MemoryRegisterScreen() {
     closeRegisterDialog();
   };
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!hasPhoto) {
       openRegisterDialog({
         title: '사진을 업로드해주세요',
