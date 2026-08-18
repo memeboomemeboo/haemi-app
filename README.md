@@ -1,56 +1,100 @@
-# Welcome to your Expo app 👋
+<div align="center">
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+<img src="assets/images/haemi-logo.png" alt="해미 로고" width="120" />
 
-## Get started
+# 해미 (Haemi)
 
-1. Install dependencies
+**기억을 잇는 가족 앱**
 
-   ```bash
-   npm install
-   ```
+치매 가족과 함께하는 기억 기록 · 퀴즈 · 감정 리포트 플랫폼
 
-2. Start the app
+[![Expo](https://img.shields.io/badge/Expo-000020?style=flat-square&logo=expo&logoColor=white)](https://expo.dev)
+[![React Native](https://img.shields.io/badge/React_Native-20232A?style=flat-square&logo=react&logoColor=61DAFB)](https://reactnative.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 
-   ```bash
-   npx expo start
-   ```
+</div>
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 소개
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+**해미**는 치매 환자와 가족이 함께 소중한 기억을 기록하고, 퀴즈로 인지 훈련을 하며, 감정 변화를 추적할 수 있는 모바일 앱입니다.
 
-## Get a fresh project
+- **기억 앨범** — 가족 사진과 이야기를 함께 저장하고 공유
+- **기억 퀴즈** — 앨범 속 사진으로 만드는 개인화 인지 훈련
+- **감정 리포트** — 일상 감정을 기록하고 변화 흐름을 한눈에
+- **가족 기억** — 구성원 모두가 함께 쌓아가는 공유 추억
 
-When you're ready, run:
+---
+
+## 화면 구성
+
+| 홈 | 앨범 | 리포트 |
+|:---:|:---:|:---:|
+| 오늘의 퀴즈 & 앨범 | 기억 앨범 목록 | 감정 변화 그래프 |
+
+---
+
+## 기술 스택
+
+| 분야 | 기술 |
+|------|------|
+| 프레임워크 | React Native (Expo) |
+| 언어 | TypeScript (strict) |
+| 아키텍처 | Feature-Sliced Design (FSD) |
+| 라우팅 | Expo Router |
+| 애니메이션 | react-native-reanimated |
+| 스타일링 | React Native StyleSheet + Figma Design Tokens |
+
+---
+
+## 시작하기
+
+### 환경 요구사항
+
+- Node.js 18+
+- npm 또는 yarn
+- Expo CLI (`npm install -g expo-cli`)
+- iOS: Xcode 14+ / Android: Android Studio
+
+### 설치 및 실행
 
 ```bash
-npm run reset-project
+# 의존성 설치
+npm install
+
+# 개발 서버 시작
+npm run start
+
+# 플랫폼별 실행
+npm run ios       # iOS 시뮬레이터
+npm run android   # Android 에뮬레이터
+npm run web       # 웹 브라우저
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-### Other setup steps
+## 디렉토리 구조
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Feature-Sliced Design(FSD) 아키텍처를 따릅니다.
 
-## Learn more
+```
+src/
+├── app/          # 앱 초기화, 라우팅 설정
+├── pages/        # 화면 컴포넌트 (Home, Album, Report, Quiz …)
+├── widgets/      # 복합 UI 컴포넌트
+├── features/     # 기능 모듈 (비즈니스 로직)
+├── entities/     # 도메인 엔티티
+└── shared/
+    ├── ui/       # 공용 UI 컴포넌트 & 아이콘 시스템
+    ├── hooks/    # 커스텀 훅 (useTheme 등)
+    ├── constants/
+    ├── lib/
+    └── types/
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## 라이선스
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+MIT © Haemi Team
