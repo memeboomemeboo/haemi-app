@@ -33,7 +33,7 @@ const TAB_ROUTES: Record<NavigationTab, Href> = {
   Quiz: '/quiz',
 };
 
-const TABS: NavigationTab[] = ['Home', 'Album', 'Memory', 'Report', 'Quiz'];
+const TABS: NavigationTab[] = ['Home', 'Album', 'Memory', 'Report'];
 
 const ACTIVE_COLOR = '#fd6941';
 const INACTIVE_COLOR = '#dadbdc';
@@ -73,9 +73,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab })
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#ffffff',
-    height: 73,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    height: 103,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.03,
@@ -85,10 +83,10 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 32,
-    paddingHorizontal: 20,
+    paddingHorizontal: 45,
+    paddingBottom: 18,
   },
   tabButton: {
     alignItems: 'center',
