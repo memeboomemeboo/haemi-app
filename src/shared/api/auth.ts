@@ -74,4 +74,9 @@ export const authService = {
     await setClientToken(null);
     await setClientRefreshToken(null);
   },
+
+  async updateProfile(data: { name?: string; password?: string }): Promise<ApiResponse<AuthUser>> {
+    return post<ApiResponse<AuthUser>>('/auth/profile', data);
+  },
+
 };
