@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Arrow, BottomNavigation, Profile, Trash } from '@/shared/ui';
+import { Arrow, BottomNavigation, Profile } from '@/shared/ui';
 import { authService } from '@/shared/api/auth';
 import { useUserContext } from '@/shared/context/UserContext';
 
@@ -315,7 +315,6 @@ function FamilyEditModal({
                     <Text style={styles.familyRelation}>{member.relation}</Text>
                   </View>
                 </View>
-                <Trash color={LINE_NORMAL} size={24} />
               </View>
             ))}
           </View>
