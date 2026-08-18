@@ -68,8 +68,6 @@ export default function GroupJoinScreen() {
         throw new Error(response.message || '참여에 실패했습니다.');
       }
 
-      setGroup(response.data);
-
       setState((prev) => ({
         ...prev,
         joined: true,

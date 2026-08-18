@@ -17,11 +17,6 @@ export default function AlbumScreen() {
   const [filter, setFilter] = useState<AlbumFilter>('all');
   const albumState = useAlbumItems();
 
-  const renderAlbumContent = (items: AlbumItem[]) => {
-    const isEmpty = items.length === 0;
-    return isEmpty ? <AlbumEmptyState /> : <AlbumGrid items={items} />;
-  };
-
   return (
     <View style={styles.container}>
       {/* 스크롤과 무관하게 고정되는 영역: 해미 상단바 + 타이틀 + 필터 탭 */}

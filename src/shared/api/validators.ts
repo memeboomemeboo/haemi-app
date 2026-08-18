@@ -83,9 +83,11 @@ export const TotpSetupApiResponseSchema = ApiResponseSchema(TotpSetupResponseSch
 export const validateResponse = <T>(schema: z.ZodSchema<T>, data: unknown): T => {
   try {
     return schema.parse(data);
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
-      const details = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
+      const details = error.issues
+        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+        .join(', ');
       throw new Error(`Invalid API response: ${details}`);
     }
     throw error;

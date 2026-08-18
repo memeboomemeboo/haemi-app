@@ -13,24 +13,22 @@ export const useUserGroup = () => {
   const { token } = useUserContext();
   const [state, setState] = useState<UserGroupState>({
     group: null,
-    isLoading: true,
+    isLoading: false,
     error: null,
   });
 
   useEffect(() => {
     if (!token) {
-      setState({
-        group: null,
-        isLoading: false,
-        error: null,
-      });
       return;
     }
 
+    let isMounted = true;
+
     const loadUserGroup = async () => {
       try {
-        // 1. 사용자 정보 조회 (groupId 포함)
         const meResponse = await authService.getMe();
+
+        if (!isMounted) return;
 
         if (!meResponse.success) {
           throw new Error(meResponse.message || '사용자 정보를 불러올 수 없습니다.');
@@ -44,36 +42,43 @@ export const useUserGroup = () => {
         }
 
         if (!groupId) {
-          setState({
-            group: null,
-            isLoading: false,
-            error: null,
-          });
+          if (isMounted) {
+            setState({
+              group: null,
+              isLoading: false,
+              error: null,
+            });
+          }
           return;
         }
 
-        // 2. groupId가 있으면 그룹 상세 정보 조회 (동일한 토큰 사용)
         const groupResponse = await get<any>(`/groups/${groupId}`);
 
-        const group = groupResponse?.data ?? null;
-
-        setState({
-          group,
-          isLoading: false,
-          error: null,
-        });
+        if (isMounted) {
+          setState({
+            group: groupResponse?.data ?? null,
+            isLoading: false,
+            error: null,
+          });
+        }
       } catch (err) {
-        const errorMessage = getErrorMessage(err);
-        console.warn('[useUserGroup] 그룹 로드 실패:', errorMessage);
-        setState({
-          group: null,
-          isLoading: false,
-          error: errorMessage,
-        });
+        if (isMounted) {
+          const errorMessage = getErrorMessage(err);
+          console.warn('[useUserGroup] 그룹 로드 실패:', errorMessage);
+          setState({
+            group: null,
+            isLoading: false,
+            error: errorMessage,
+          });
+        }
       }
     };
 
     loadUserGroup();
+
+    return () => {
+      isMounted = false;
+    };
   }, [token]);
 
   return {
