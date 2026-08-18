@@ -2,6 +2,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { useEffect } from 'react';
 import HomeScreen from '@/pages/Home';
 import ElderHomeScreen from '@/pages/ElderHome';
+import ElderSignupScreen from '@/pages/ElderSignup';
 import GroupCreateScreen from '@/pages/GroupCreate';
 import GroupJoinScreen from '@/pages/GroupJoin';
 import RoleSelectScreen from '@/pages/RoleSelect';

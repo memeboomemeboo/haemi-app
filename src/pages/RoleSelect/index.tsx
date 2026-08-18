@@ -1,5 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { colors } from '@/shared/constants';
 import type { UserRole } from '@/entities/group';
@@ -10,13 +11,21 @@ interface RoleSelectProps {
 
 export default function RoleSelectScreen({ onRoleSelect }: RoleSelectProps) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 
   const handleContinue = () => {
-    if (selectedRole) {
-      console.log('Selected role:', selectedRole);
-      onRoleSelect(selectedRole);
+    if (!selectedRole) return;
+
+    // 어르신 선택 시 별도의 회원가입 화면으로 이동
+    if (selectedRole === 'ELDER') {
+      router.push('/elder-signup');
+      return;
     }
+
+    // 가족 선택 시 기존 흐름
+    console.log('Selected role:', selectedRole);
+    onRoleSelect(selectedRole);
   };
 
   return (
