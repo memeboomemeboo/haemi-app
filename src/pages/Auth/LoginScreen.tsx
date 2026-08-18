@@ -2,7 +2,7 @@ import { View, ScrollView, StyleSheet, Text, TextInput, Pressable, ActivityIndic
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { colors } from '@/shared/constants';
-import { authService, getErrorMessage } from '@/shared/api';
+import { authService, getErrorMessage, isApiError } from '@/shared/api';
 import { useToast } from '@/shared/hooks';
 import { useUserContext } from '@/shared/context/UserContext';
 import type { LoginRequest } from '@/shared/types';
@@ -76,6 +76,16 @@ export default function LoginScreen({ onLoginSuccess, onSignupPress }: LoginScre
         setError(response.message || '로그인에 실패했습니다.');
       }
     } catch (err) {
+      if (isApiError(err) && err.statusCode === 401) {
+        setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+        return;
+      }
+
+      if (isApiError(err) && err.statusCode === 403) {
+        setError('계정이 비활성 상태입니다. 이메일 인증 여부를 확인해주세요.');
+        return;
+      }
+
       const errorMessage = getErrorMessage(err);
       setError(errorMessage);
     } finally {
