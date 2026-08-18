@@ -2,8 +2,8 @@ import { View, ScrollView, StyleSheet, Text, TextInput, Pressable, ActivityIndic
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { colors } from '@/shared/constants';
-import { authService } from '@/shared/api/auth';
-import { setCurrentAuthToken } from '@/shared/lib/auth';
+import { authService, getErrorMessage, isApiError } from '@/shared/api';
+import type { LoginRequest } from '@/shared/types';
 
 interface LoginScreenProps {
   onLoginSuccess: (token: string) => void;
@@ -27,21 +27,21 @@ export default function LoginScreen({ onLoginSuccess, onSignupPress }: LoginScre
     setError('');
 
     try {
-      const response = await authService.login({
+      const request: LoginRequest = {
         email: email.trim(),
         password,
-      });
+      };
+
+      const response = await authService.login(request);
 
       if (response.success) {
-        // 토큰 저장
-        setCurrentAuthToken(response.data.accessToken);
+        authService.setToken(response.data.accessToken);
         onLoginSuccess(response.data.accessToken);
       } else {
         setError(response.message || '로그인에 실패했습니다.');
       }
-    } catch (err: any) {
-      const message = err.response?.data?.message || err.message || '로그인에 실패했습니다.';
-      setError(message);
+    } catch (err) {
+      setError(getErrorMessage(err));
     } finally {
       setIsLoading(false);
     }

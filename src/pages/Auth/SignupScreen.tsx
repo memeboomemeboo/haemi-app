@@ -2,12 +2,20 @@ import { View, ScrollView, StyleSheet, Text, TextInput, Pressable, ActivityIndic
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { colors } from '@/shared/constants';
-import { authService } from '@/shared/api/auth';
+import { authService, getErrorMessage } from '@/shared/api';
+import type { SignUpRequest, UserRole } from '@/shared/types';
 
 interface SignupScreenProps {
   onSignupSuccess: () => void;
   onLoginPress: () => void;
 }
+
+const PASSWORD_REGEX = {
+  minLength: /.{8,}/,
+  hasLetter: /[a-zA-Z]/,
+  hasNumber: /[0-9]/,
+  hasSpecial: /[!@#$%^&*]/,
+};
 
 export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupScreenProps) {
   const insets = useSafeAreaInsets();
@@ -15,43 +23,43 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<'FAMILY' | 'ELDER' | 'INSTITUTION_ADMIN'>('FAMILY');
+  const [role, setRole] = useState<UserRole>('FAMILY');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const validatePassword = (pwd: string): string => {
-    if (pwd.length < 8) return '비밀번호는 8자 이상이어야 합니다.';
-    if (!/[a-zA-Z]/.test(pwd)) return '영문자를 포함해야 합니다.';
-    if (!/[0-9]/.test(pwd)) return '숫자를 포함해야 합니다.';
-    if (!/[!@#$%^&*]/.test(pwd)) return '특수문자를 포함해야 합니다.';
+    if (!PASSWORD_REGEX.minLength.test(pwd)) {
+      return '비밀번호는 8자 이상이어야 합니다.';
+    }
+    if (!PASSWORD_REGEX.hasLetter.test(pwd)) {
+      return '영문자를 포함해야 합니다.';
+    }
+    if (!PASSWORD_REGEX.hasNumber.test(pwd)) {
+      return '숫자를 포함해야 합니다.';
+    }
+    if (!PASSWORD_REGEX.hasSpecial.test(pwd)) {
+      return '특수문자를 포함해야 합니다.';
+    }
     return '';
   };
 
-  const handleSignup = async () => {
-    // 유효성 검사
-    if (!name.trim()) {
-      setError('이름을 입력해주세요.');
-      return;
-    }
-
-    if (!password.trim()) {
-      setError('비밀번호를 입력해주세요.');
-      return;
-    }
+  const validateForm = (): string | null => {
+    if (!name.trim()) return '이름을 입력해주세요.';
+    if (!password.trim()) return '비밀번호를 입력해주세요.';
 
     const passwordError = validatePassword(password);
-    if (passwordError) {
-      setError(passwordError);
-      return;
-    }
+    if (passwordError) return passwordError;
 
-    if (password !== passwordConfirm) {
-      setError('비밀번호가 일치하지 않습니다.');
-      return;
-    }
+    if (password !== passwordConfirm) return '비밀번호가 일치하지 않습니다.';
+    if (!email.trim()) return '이메일을 입력해주세요.';
 
-    if (!email.trim()) {
-      setError('이메일을 입력해주세요.');
+    return null;
+  };
+
+  const handleSignup = async () => {
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -59,21 +67,22 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
     setError('');
 
     try {
-      const response = await authService.signup({
+      const request: SignUpRequest = {
         email: email.trim(),
         password,
         name: name.trim(),
         role,
-      });
+      };
+
+      const response = await authService.signup(request);
 
       if (response.success) {
         onSignupSuccess();
       } else {
         setError(response.message || '회원가입에 실패했습니다.');
       }
-    } catch (err: any) {
-      const message = err.response?.data?.message || err.message || '회원가입에 실패했습니다.';
-      setError(message);
+    } catch (err) {
+      setError(getErrorMessage(err));
     } finally {
       setIsLoading(false);
     }

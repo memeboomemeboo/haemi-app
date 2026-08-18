@@ -1,128 +1,70 @@
-// 기본 API URL
-const API_BASE_URL = `${process.env.EXPO_PUBLIC_API_URL}/api/v1`;
+/**
+ * 인증 API
+ */
 
-if (!process.env.EXPO_PUBLIC_API_URL) {
-  console.warn('⚠️ EXPO_PUBLIC_API_URL not set');
-}
-
-export interface SignUpRequest {
-  email: string;
-  password: string;
-  name: string;
-  role: 'FAMILY' | 'ELDER' | 'INSTITUTION_ADMIN';
-}
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-  totpCode?: string;
-}
-
-export interface AuthResponse {
-  success: boolean;
-  data: {
-    memberId: string;
-    email: string;
-    name: string;
-    role: string;
-    accessToken: string;
-    refreshToken?: string;
-  };
-  message: string;
-}
-
-const getHeaders = () => {
-  return {
-    'Content-Type': 'application/json',
-  };
-};
+import { post, get, setAuthToken as setClientToken } from './client';
+import type {
+  SignUpRequest,
+  LoginRequest,
+  AuthResponse,
+  TotpSetupResponse,
+  TotpVerifyResponse,
+  RefreshTokenRequest,
+  AuthUser,
+} from '@/shared/types';
+import type { ApiResponse } from '@/shared/types';
 
 export const authService = {
-  // 회원가입
-  async signup(data: SignUpRequest): Promise<AuthResponse> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        let errorMessage = `회원가입 실패: ${response.status}`;
-        try {
-          const error = await response.json();
-          errorMessage = error?.message || error?.data?.message || errorMessage;
-        } catch {
-          // JSON parsing failed
-        }
-        throw new Error(errorMessage);
-      }
-
-      return response.json();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error('❌ signup error:', message);
-      throw err;
-    }
+  async signup(data: SignUpRequest): Promise<ApiResponse<AuthResponse>> {
+    return post<ApiResponse<AuthResponse>>('/auth/signup', data, {
+      skipAuth: true,
+    });
   },
 
-  // 로그인
-  async login(data: LoginRequest): Promise<AuthResponse> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        let errorMessage = `로그인 실패: ${response.status}`;
-        try {
-          const error = await response.json();
-          errorMessage = error?.message || error?.data?.message || errorMessage;
-        } catch {
-          // JSON parsing failed
-        }
-        throw new Error(errorMessage);
-      }
-
-      return response.json();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error('login error:', message);
-      throw err;
-    }
+  async login(data: LoginRequest): Promise<ApiResponse<AuthResponse>> {
+    return post<ApiResponse<AuthResponse>>('/auth/login', data, {
+      skipAuth: true,
+    });
   },
 
-  // 로그아웃
+  async getMe(): Promise<ApiResponse<AuthUser>> {
+    return get<ApiResponse<AuthUser>>('/auth/me');
+  },
+
   async logout(): Promise<void> {
     try {
-      await fetch(`${API_BASE_URL}/auth/logout`, {
-        method: 'POST',
-        headers: getHeaders(),
-      });
-    } catch (err) {
-      console.error('logout error:', err);
-      throw err;
+      await post('/auth/logout', {});
+    } finally {
+      setClientToken(null);
     }
   },
 
-  // 현재 사용자 정보
-  async getMe(): Promise<AuthResponse> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/me`, {
-        method: 'GET',
-        headers: getHeaders(),
-      });
+  async setupTotp(): Promise<ApiResponse<TotpSetupResponse>> {
+    return post<ApiResponse<TotpSetupResponse>>('/auth/totp/setup', {});
+  },
 
-      if (!response.ok) {
-        throw new Error(`사용자 정보 조회 실패: ${response.status}`);
-      }
+  async verifyTotp(secret: string, code: string): Promise<ApiResponse<TotpVerifyResponse>> {
+    return post<ApiResponse<TotpVerifyResponse>>('/auth/totp/verify', {
+      secret,
+      code,
+    });
+  },
 
-      return response.json();
-    } catch (err) {
-      console.error('getMe error:', err);
-      throw err;
-    }
+  async refreshToken(refreshToken: string): Promise<ApiResponse<AuthResponse>> {
+    return post<ApiResponse<AuthResponse>>('/auth/refresh', {
+      refreshToken,
+    } as RefreshTokenRequest, {
+      skipAuth: true,
+    });
+  },
+
+  // 토큰 설정 (login 후 호출)
+  setToken(token: string) {
+    setClientToken(token);
+  },
+
+  // 토큰 초기화 (logout 후 호출)
+  clearToken() {
+    setClientToken(null);
   },
 };
