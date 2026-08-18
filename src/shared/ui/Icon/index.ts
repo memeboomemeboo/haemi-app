@@ -25,4 +25,5 @@ export {
   People,
   CheckMark,
   Close,
+  Trash,
 } from './icons-components';
