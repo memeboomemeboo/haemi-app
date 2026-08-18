@@ -24,8 +24,8 @@ if (!process.env.EXPO_PUBLIC_API_URL) {
   console.warn('⚠️ EXPO_PUBLIC_API_URL not set');
 }
 
-// 프로덕션에서만 SecureStore 사용, 개발환경에서는 AsyncStorage
-const useSecureStorage = !__DEV__;
+// 프로덕션에서만 SecureStore 사용 (존재 여부 확인)
+const useSecureStorage = !__DEV__ && Boolean(SecureStore);
 
 let cachedToken: string | null = null;
 let isRefreshingToken = false;

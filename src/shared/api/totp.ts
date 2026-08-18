@@ -19,8 +19,8 @@ if (!__DEV__) {
 const BACKUP_CODES_KEY = 'totp_backup_codes';
 const USED_BACKUP_CODES_KEY = 'totp_used_backup_codes';
 
-// 프로덕션에서만 SecureStore 사용
-const useSecureStorage = !__DEV__;
+// 프로덕션에서만 SecureStore 사용 (존재 여부 확인)
+const useSecureStorage = !__DEV__ && Boolean(SecureStore);
 
 const setBackupStorage = async (key: string, value: string) => {
   if (useSecureStorage) {

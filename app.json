@@ -12,16 +12,7 @@
       "bundleIdentifier": "com.suane0311.haemi",
       "infoPlist": {
         "NSAppTransportSecurity": {
-          "NSExceptionDomains": {
-            "54.180.61.149": {
-              "NSIncludesSubdomains": true,
-              "NSTemporaryExceptionAllowsInsecureHTTPLoads": true
-            },
-            "localhost": {
-              "NSIncludesSubdomains": true,
-              "NSTemporaryExceptionAllowsInsecureHTTPLoads": true
-            }
-          }
+          "NSExceptionDomains": {}
         }
       }
     },
