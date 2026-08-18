@@ -151,19 +151,40 @@ export default function ElderSignupScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: Math.max(insets.top, 20) }]}>
+      {/* Progress Indicator */}
+      <View style={styles.progressContainer}>
+        <View style={[styles.progressStep, state.step === 'code' && styles.progressStepActive]}>
+          <Text style={[styles.progressNumber, state.step === 'code' && styles.progressNumberActive]}>
+            1
+          </Text>
+          <Text style={[styles.progressLabel, state.step === 'code' && styles.progressLabelActive]}>
+            코드
+          </Text>
+        </View>
+        <View style={styles.progressBar} />
+        <View style={[styles.progressStep, state.step === 'info' && styles.progressStepActive]}>
+          <Text style={[styles.progressNumber, state.step === 'info' && styles.progressNumberActive]}>
+            2
+          </Text>
+          <Text style={[styles.progressLabel, state.step === 'info' && styles.progressLabelActive]}>
+            정보
+          </Text>
+        </View>
+      </View>
+
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Title */}
+        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>
-            {state.step === 'code' ? '초대코드 입력' : '정보 입력'}
+            {state.step === 'code' ? '초대코드 확인' : '정보 입력'}
           </Text>
           <Text style={styles.subtitle}>
             {state.step === 'code'
-              ? '가족으로부터 받은 초대코드를 입력해주세요.'
+              ? '가족으로부터 받은 6자리 초대코드를 입력해주세요.'
               : '어르신의 이름과 전화번호를 입력해주세요.'}
           </Text>
         </View>
@@ -171,7 +192,7 @@ export default function ElderSignupScreen() {
         {/* Error Message */}
         {state.error && (
           <View style={styles.errorBanner}>
-            <Text style={styles.errorText}>{state.error}</Text>
+            <Text style={styles.errorText}>⚠️ {state.error}</Text>
           </View>
         )}
 
@@ -182,15 +203,17 @@ export default function ElderSignupScreen() {
               <Text style={styles.label}>초대코드</Text>
               <TextInput
                 style={styles.input}
-                placeholder="6자리 코드 입력"
-                placeholderTextColor="#999"
+                placeholder="예) ABC123"
+                placeholderTextColor="#bbb"
                 maxLength={6}
                 value={state.code}
-                onChangeText={(code) => setState((prev) => ({ ...prev, code, error: null }))}
+                onChangeText={(code) => setState((prev) => ({ ...prev, code: code.toUpperCase(), error: null }))}
                 editable={!state.isLoading}
                 keyboardType="default"
                 autoFocus
+                textContentType="none"
               />
+              <Text style={styles.inputHint}>{state.code.length}/6</Text>
             </View>
           </View>
         )}
@@ -203,13 +226,14 @@ export default function ElderSignupScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="예) 김영희"
-                placeholderTextColor="#999"
+                placeholderTextColor="#bbb"
                 value={state.name}
                 onChangeText={(name) => setState((prev) => ({ ...prev, name, error: null }))}
                 editable={!state.isLoading}
                 maxLength={50}
                 autoFocus
               />
+              <Text style={styles.inputHint}>{state.name.length}/50</Text>
             </View>
 
             <View style={styles.inputGroup}>
@@ -217,7 +241,7 @@ export default function ElderSignupScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="010-1234-5678"
-                placeholderTextColor="#999"
+                placeholderTextColor="#bbb"
                 value={state.phoneNumber}
                 onChangeText={(phoneNumber) =>
                   setState((prev) => ({ ...prev, phoneNumber, error: null }))
@@ -226,75 +250,71 @@ export default function ElderSignupScreen() {
                 keyboardType="phone-pad"
                 maxLength={13}
               />
+              <Text style={styles.inputHint}>예) 010-1234-5678</Text>
             </View>
           </View>
         )}
 
-        {/* Step 1: Next Button */}
-        {state.step === 'code' && (
-          <>
-            <Pressable
-              onPress={handleCodeNext}
-              disabled={state.isLoading}
-              style={({ pressed }) => [
-                styles.signupButton,
-                {
-                  opacity: pressed || state.isLoading ? 0.6 : 1,
-                },
-              ]}
-            >
-              <Text style={styles.signupButtonText}>다음</Text>
-            </Pressable>
+        {/* Buttons */}
+        <View style={styles.buttonContainer}>
+          {state.step === 'code' && (
+            <>
+              <Pressable
+                onPress={handleCodeNext}
+                disabled={state.isLoading || state.code.length !== 6}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  (state.code.length !== 6 || state.isLoading) && styles.primaryButtonDisabled,
+                  pressed && styles.primaryButtonPressed,
+                ]}
+              >
+                <Text style={styles.primaryButtonText}>다음으로</Text>
+              </Pressable>
 
-            <Pressable
-              onPress={() => router.back()}
-              disabled={state.isLoading}
-              style={({ pressed }) => [
-                styles.backButton,
-                {
-                  opacity: pressed || state.isLoading ? 0.5 : 1,
-                },
-              ]}
-            >
-              <Text style={styles.backButtonText}>돌아가기</Text>
-            </Pressable>
-          </>
-        )}
+              <Pressable
+                onPress={() => router.back()}
+                disabled={state.isLoading}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  pressed && styles.secondaryButtonPressed,
+                ]}
+              >
+                <Text style={styles.secondaryButtonText}>돌아가기</Text>
+              </Pressable>
+            </>
+          )}
 
-        {/* Step 2: Signup Button */}
-        {state.step === 'info' && (
-          <>
-            <Pressable
-              onPress={handleSignup}
-              disabled={state.isLoading}
-              style={({ pressed }) => [
-                styles.signupButton,
-                {
-                  opacity: pressed || state.isLoading ? 0.6 : 1,
-                },
-              ]}
-            >
-              {state.isLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.signupButtonText}>가입</Text>
-              )}
-            </Pressable>
+          {state.step === 'info' && (
+            <>
+              <Pressable
+                onPress={handleSignup}
+                disabled={state.isLoading}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  state.isLoading && styles.primaryButtonDisabled,
+                  pressed && styles.primaryButtonPressed,
+                ]}
+              >
+                {state.isLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>가입 완료</Text>
+                )}
+              </Pressable>
 
-            <Pressable
-              onPress={() => setState((prev) => ({ ...prev, step: 'code', error: null }))}
-              disabled={state.isLoading}
-              style={({ pressed }) => [
-                styles.backButton,
-                {
-                  opacity: pressed || state.isLoading ? 0.5 : 1,
-                },
-              ]}
-            >
-              <Text style={styles.backButtonText}>이전</Text>
-            </Pressable>
-          </>
-        )}
+              <Pressable
+                onPress={() => setState((prev) => ({ ...prev, step: 'code', error: null }))}
+                disabled={state.isLoading}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  pressed && styles.secondaryButtonPressed,
+                ]}
+              >
+                <Text style={styles.secondaryButtonText}>이전</Text>
+              </Pressable>
+            </>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -312,6 +332,56 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 40,
   },
+  // Progress Indicator
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    backgroundColor: '#f9f9f9',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line.alternative,
+  },
+  progressStep: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  progressStepActive: {
+    opacity: 1,
+  },
+  progressNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.line.alternative,
+    color: colors.label.alternative,
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    marginBottom: 6,
+  },
+  progressNumberActive: {
+    backgroundColor: colors.primary,
+    color: '#ffffff',
+  },
+  progressLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.label.alternative,
+  },
+  progressLabelActive: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  progressBar: {
+    width: 24,
+    height: 2,
+    backgroundColor: colors.line.alternative,
+    marginHorizontal: 12,
+  },
+  // Header
   header: {
     marginBottom: 32,
     marginTop: 20,
@@ -331,17 +401,21 @@ const styles = StyleSheet.create({
     letterSpacing: -0.32,
     color: colors.label.alternative,
   },
+  // Error Message
   errorBanner: {
-    backgroundColor: colors.status.error,
+    backgroundColor: '#fff5f5',
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffcccb',
     padding: 12,
     marginBottom: 24,
   },
   errorText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#ffffff',
+    color: colors.status.error,
   },
+  // Form
   form: {
     marginBottom: 32,
   },
@@ -358,35 +432,54 @@ const styles = StyleSheet.create({
   },
   input: {
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.line.alternative,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
     fontSize: 16,
     color: colors.label.normal,
+    marginBottom: 6,
   },
-  signupButton: {
+  inputHint: {
+    fontSize: 12,
+    color: colors.label.alternative,
+    paddingHorizontal: 4,
+  },
+  // Buttons
+  buttonContainer: {
+    gap: 12,
+  },
+  primaryButton: {
     backgroundColor: colors.primary,
     borderRadius: 8,
     paddingVertical: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
   },
-  signupButtonText: {
+  primaryButtonDisabled: {
+    backgroundColor: colors.line.alternative,
+    opacity: 0.5,
+  },
+  primaryButtonPressed: {
+    opacity: 0.8,
+  },
+  primaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#ffffff',
   },
-  backButton: {
+  secondaryButton: {
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.line.alternative,
     paddingVertical: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  backButtonText: {
+  secondaryButtonPressed: {
+    backgroundColor: '#f5f5f5',
+  },
+  secondaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.label.neutral,
