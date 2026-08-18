@@ -44,9 +44,10 @@ export function useAsyncData<T>(
     }
   }, [fetcher, options]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     load();
-  }, [load]);
+  }, []);
 
   return {
     data,

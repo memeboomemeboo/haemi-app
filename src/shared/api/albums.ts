@@ -6,6 +6,7 @@ export interface AlbumPhoto {
   uploadedAt: string;
   fileName: string;
   size: number;
+  uploadedBy?: string;
 }
 
 export interface AlbumMember {
@@ -38,15 +39,6 @@ export interface PhotoUploadRequest {
   mimeType: string;
   base64Data?: string;
   uri?: string;
-}
-
-export interface AlbumPhoto {
-  id: string;
-  url: string;
-  uploadedAt: string;
-  fileName: string;
-  size: number;
-  uploadedBy?: string;
 }
 
 export interface AlbumPhotoCreateRequest {
