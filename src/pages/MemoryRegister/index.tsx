@@ -12,22 +12,31 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 
-import { Alarm, Arrow, BottomNavigation, Close, Picture } from '@/shared/ui';
-
-const logoSource = require('../../../assets/images/haemi-logo-small.png');
-const samplePhoto = require('../../../assets/images/memory-register-sample.png');
+import { addFamilyMemoryItem } from '@/entities/family-memory';
+import { colors } from '@/shared/constants';
+import { Arrow, BottomNavigation, Close, Picture } from '@/shared/ui';
+import { HomeHeader } from '@/widgets/HomeHeader';
 
 const ORANGE = '#fd6941';
 const ORANGE_SOFT = '#fed7cd';
 const TEXT = '#3c3e3f';
 const TEXT_MUTED = '#5a5c5d';
 const TEXT_ASSISTIVE = '#76787a';
+const TEXT_PLACEHOLDER = '#b8babc';
 const LINE_NORMAL = '#c1c2c3';
+const UPLOAD_ICON = '#dadbdc';
 const FILL = '#f7f7f7';
+const BUTTON_TEXT = colors.light.label.buttonText;
 const MEMO_MAX_LENGTH = 200;
+const MEMO_MIN_HEIGHT = 132;
+const MEMO_COUNTER_SPACE = 34;
+const MEMO_DEFAULT_LINES = 4;
+const MEMO_CHARS_PER_LINE = 22;
+const MEMO_LINE_HEIGHT = 23;
+const MAX_PHOTO_COUNT = 2;
 const MORE_SVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 10C3.9 10 3 10.9 3 12C3 13.1 3.9 14 5 14C6.1 14 7 13.1 7 12C7 10.9 6.1 10 5 10ZM19 10C17.9 10 17 10.9 17 12C17 13.1 17.9 14 19 14C20.1 14 21 13.1 21 12C21 10.9 20.1 10 19 10ZM12 10C10.9 10 10 10.9 10 12C10 13.1 10.9 14 12 14C13.1 14 14 13.1 14 12C14 10.9 13.1 10 12 10Z" fill="#C1C2C3"/></svg>`;
 const RECORD_BUTTON_SVG = `<svg width="37" height="37" viewBox="0 0 37 37" fill="none" xmlns="http://www.w3.org/2000/svg"><g filter="url(#filter0_f_507_2025)"><circle cx="18.5" cy="18.5" r="16.5" fill="#FD6941"/></g><defs><filter id="filter0_f_507_2025" x="0" y="0" width="37" height="37" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="1" result="effect1_foregroundBlur_507_2025"/></filter></defs></svg>`;
 const STOP_RECORD_SVG = `<svg width="33" height="33" viewBox="0 0 33 33" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="33" height="33" rx="16.5" fill="#FD6941"/><rect x="10" y="10" width="13" height="13" rx="3" fill="white"/></svg>`;
@@ -48,6 +57,13 @@ type VoiceMenuPosition = {
   left: number;
 };
 
+type RegisterDialogState = {
+  visible: boolean;
+  title: string;
+  message?: string;
+  onConfirm?: () => void;
+};
+
 const formatDuration = (seconds: number) => {
   const totalSeconds = Math.max(0, Math.floor(seconds));
   const minutes = Math.floor(totalSeconds / 60);
@@ -56,23 +72,39 @@ const formatDuration = (seconds: number) => {
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
+const getMemoLineCount = (value: string) => {
+  if (value.length === 0) {
+    return 1;
+  }
+
+  return value.split('\n').reduce((lineCount, line) => {
+    const textLength = Array.from(line).length;
+    return lineCount + Math.max(1, Math.ceil(textLength / MEMO_CHARS_PER_LINE));
+  }, 0);
+};
+
 export default function MemoryRegisterScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const memoInputRef = useRef<TextInput>(null);
   const voiceMenuAnchorRef = useRef<View>(null);
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [hasPhoto, setHasPhoto] = useState(true);
-  const [memo, setMemo] = useState('가족끼리 나들이에 갔던 날이에요');
+  const [photoUris, setPhotoUris] = useState<string[]>([]);
+  const [memo, setMemo] = useState('');
   const [isMemoFocused, setIsMemoFocused] = useState(false);
   const [voiceState, setVoiceState] = useState<VoiceMemoState>('idle');
   const [voiceElapsedSeconds, setVoiceElapsedSeconds] = useState(0);
   const [voicePlaybackSeconds, setVoicePlaybackSeconds] = useState(0);
   const [isVoicePlaying, setIsVoicePlaying] = useState(false);
+  const [voiceRecordingUri, setVoiceRecordingUri] = useState<string | null>(null);
   const [recordingStartedAt, setRecordingStartedAt] = useState<number | null>(null);
   const [isVoiceMenuOpen, setIsVoiceMenuOpen] = useState(false);
   const [voiceMenuPosition, setVoiceMenuPosition] = useState<VoiceMenuPosition>({ top: 0, left: 0 });
+  const [registerDialog, setRegisterDialog] = useState<RegisterDialogState>({
+    visible: false,
+    title: '',
+  });
 
-  const photoSource = photoUri ? { uri: photoUri } : samplePhoto;
+  const hasPhoto = photoUris.length > 0;
   const isRecorded = voiceState === 'recorded';
   const isRecording = voiceState === 'recording';
   const recordedDuration = Math.max(voiceElapsedSeconds, 1);
@@ -81,6 +113,9 @@ export default function MemoryRegisterScreen() {
   const voiceEndTime = voiceState === 'idle' ? '0:00' : formatDuration(voiceElapsedSeconds);
   const waveformPhase = Math.floor(voiceElapsedSeconds * 8);
   const memoLength = Array.from(memo).length;
+  const memoExtraLines = Math.max(0, getMemoLineCount(memo) - MEMO_DEFAULT_LINES);
+  const memoInputHeight = MEMO_MIN_HEIGHT - MEMO_COUNTER_SPACE + memoExtraLines * MEMO_LINE_HEIGHT;
+  const memoBoxHeight = MEMO_MIN_HEIGHT + memoExtraLines * MEMO_LINE_HEIGHT;
 
   useEffect(() => {
     if (!isRecording || recordingStartedAt === null) {
@@ -95,7 +130,7 @@ export default function MemoryRegisterScreen() {
   }, [isRecording, recordingStartedAt]);
 
   useEffect(() => {
-    if (!isRecorded || !isVoicePlaying) {
+    if (!isRecorded || !isVoicePlaying || voiceRecordingUri) {
       return undefined;
     }
 
@@ -113,9 +148,16 @@ export default function MemoryRegisterScreen() {
     }, 100);
 
     return () => clearInterval(timerId);
-  }, [isRecorded, isVoicePlaying, recordedDuration]);
+  }, [isRecorded, isVoicePlaying, recordedDuration, voiceRecordingUri]);
 
   const pickImage = async () => {
+    const remainingPhotoCount = MAX_PHOTO_COUNT - photoUris.length;
+
+    if (remainingPhotoCount <= 0) {
+      Alert.alert('사진은 2장까지 업로드할 수 있어요');
+      return;
+    }
+
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -126,58 +168,127 @@ export default function MemoryRegisterScreen() {
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        selectionLimit: remainingPhotoCount,
         quality: 0.9,
       });
 
       if (!result.canceled) {
-        setPhotoUri(result.assets[0].uri);
-        setHasPhoto(true);
+        const selectedPhotoUris = result.assets
+          .map((asset) => asset.uri)
+          .filter(Boolean)
+          .slice(0, remainingPhotoCount);
+
+        setPhotoUris((current) => [...current, ...selectedPhotoUris].slice(0, MAX_PHOTO_COUNT));
       }
     } catch {
       Alert.alert('사진을 불러오지 못했어요', '잠시 후 다시 시도해주세요.');
     }
   };
 
-  const handleRemovePhoto = () => {
-    setPhotoUri(null);
-    setHasPhoto(false);
+  const handleRemovePhoto = (index: number) => {
+    setPhotoUris((current) => current.filter((_, currentIndex) => currentIndex !== index));
+  };
+
+  const openRegisterDialog = (dialog: Omit<RegisterDialogState, 'visible'>) => {
+    setRegisterDialog({
+      ...dialog,
+      visible: true,
+    });
+  };
+
+  const closeRegisterDialog = () => {
+    setRegisterDialog((current) => ({
+      ...current,
+      visible: false,
+    }));
+  };
+
+  const confirmRegisterDialog = () => {
+    const confirmAction = registerDialog.onConfirm;
+
+    closeRegisterDialog();
+    confirmAction?.();
   };
 
   const handlePost = () => {
-    if (memo.trim().length === 0 && !hasPhoto) {
-      Alert.alert('추억 내용을 입력해주세요');
+    if (!hasPhoto) {
+      openRegisterDialog({
+        title: '사진을 업로드해주세요',
+        message: '추억을 등록하려면 사진이 필요해요.',
+      });
       return;
     }
 
-    Alert.alert('추억이 등록되었습니다.');
-    router.back();
+    if (memo.trim().length === 0 && !isRecorded) {
+      openRegisterDialog({
+        title: '추억 내용을 입력해주세요',
+        message: '메모를 작성하거나 음성 메모를 녹음해주세요.',
+      });
+      return;
+    }
+
+    addFamilyMemoryItem({
+      memo,
+      hasPhoto,
+      photoUri: photoUris[0] ?? null,
+      photoUris,
+      hasVoiceMemo: isRecorded,
+      voiceDurationSeconds: isRecorded ? Math.max(1, Math.round(recordedDuration)) : 0,
+      voiceUri: isRecorded ? voiceRecordingUri : null,
+    });
+
+    openRegisterDialog({
+      title: '추억이 등록되었습니다.',
+      message: '가족 추억 페이지에서 등록한 추억을 확인할 수 있어요.',
+      onConfirm: () => router.replace('/family-memories'),
+    });
   };
 
   const handleMemoChange = (value: string) => {
     setMemo(Array.from(value).slice(0, MEMO_MAX_LENGTH).join(''));
   };
 
-  const handleRecordPress = () => {
+  const stopVoiceRecording = async () => {
+    setRecordingStartedAt(null);
+    setVoiceElapsedSeconds((current) => Math.max(1, current));
+    setVoicePlaybackSeconds(0);
+    setIsVoicePlaying(false);
+    setVoiceRecordingUri(null);
+    setVoiceState('recorded');
+  };
+
+  const startVoiceRecording = async () => {
+    setVoiceElapsedSeconds(0);
+    setVoicePlaybackSeconds(0);
+    setIsVoicePlaying(false);
+    setVoiceRecordingUri(null);
+    setRecordingStartedAt(Date.now());
+    setVoiceState('recording');
+  };
+
+  const handleRecordPress = async () => {
     setIsVoiceMenuOpen(false);
 
     if (voiceState === 'idle') {
-      setVoiceElapsedSeconds(0);
-      setVoicePlaybackSeconds(0);
-      setIsVoicePlaying(false);
-      setRecordingStartedAt(Date.now());
-      setVoiceState('recording');
+      try {
+        await startVoiceRecording();
+      } catch {
+        Alert.alert('녹음을 시작하지 못했어요', '잠시 후 다시 시도해주세요.');
+      }
       return;
     }
 
     if (voiceState === 'recording') {
-      setRecordingStartedAt(null);
-      setVoicePlaybackSeconds(0);
-      setIsVoicePlaying(false);
-      setVoiceState('recorded');
+      try {
+        await stopVoiceRecording();
+      } catch {
+        Alert.alert('녹음을 저장하지 못했어요', '잠시 후 다시 시도해주세요.');
+      }
     }
   };
 
-  const handleToggleVoicePlayback = () => {
+  const handleToggleVoicePlayback = async () => {
     if (!isRecorded) {
       return;
     }
@@ -216,12 +327,14 @@ export default function MemoryRegisterScreen() {
     });
   };
 
-  const handleContinueRecording = () => {
+  const handleContinueRecording = async () => {
     setIsVoiceMenuOpen(false);
-    setVoicePlaybackSeconds(0);
-    setIsVoicePlaying(false);
-    setRecordingStartedAt(Date.now() - voiceElapsedSeconds * 1000);
-    setVoiceState('recording');
+
+    try {
+      await startVoiceRecording();
+    } catch {
+      Alert.alert('녹음을 시작하지 못했어요', '잠시 후 다시 시도해주세요.');
+    }
   };
 
   const handleDeleteVoice = () => {
@@ -229,83 +342,88 @@ export default function MemoryRegisterScreen() {
     setVoiceElapsedSeconds(0);
     setVoicePlaybackSeconds(0);
     setIsVoicePlaying(false);
+    setVoiceRecordingUri(null);
     setRecordingStartedAt(null);
     setVoiceState('idle');
   };
 
   return (
     <View style={styles.container}>
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <View style={styles.header}>
-          <Image source={logoSource} style={styles.logo} contentFit="contain" />
-          <Pressable accessibilityRole="button" accessibilityLabel="알림" hitSlop={8}>
-            <Alarm size={22} color="#dadbdc" />
+      <View style={[styles.fixedTop, { paddingTop: Math.max(insets.top, 20) }]}>
+        <HomeHeader style={styles.header} />
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.titleRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="뒤로"
+            hitSlop={8}
+            onPress={() => router.back()}
+          >
+            <Arrow size={22} color={TEXT} style={styles.backArrow} />
           </Pressable>
+          <Text style={styles.title}>추억 등록</Text>
         </View>
 
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.titleRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="뒤로"
-              hitSlop={8}
-              onPress={() => router.back()}
-            >
-              <Arrow size={26} color={TEXT} style={styles.backArrow} />
-            </Pressable>
-            <Text style={styles.title}>추억 등록</Text>
-          </View>
-
-          <View style={styles.form}>
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>사진</Text>
-              <View style={styles.photoRow}>
-                {hasPhoto && (
-                  <View style={styles.photoFrame}>
+        <View style={styles.form}>
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>사진</Text>
+            <View style={styles.photoRow}>
+                {photoUris.length < MAX_PHOTO_COUNT && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="이미지 업로드"
+                    style={({ pressed }) => [styles.uploadTile, pressed && styles.pressed]}
+                    onPress={pickImage}
+                  >
+                    <Picture size={34} color={UPLOAD_ICON} />
+                    <Text style={styles.uploadText}>이미지를 업로드하세요</Text>
+                    <Text style={styles.uploadCountText}>
+                      {photoUris.length}/{MAX_PHOTO_COUNT}
+                    </Text>
+                  </Pressable>
+                )}
+                {photoUris.map((photoUri, index) => (
+                  <View key={`${photoUri}-${index}`} style={styles.photoFrame}>
                     <View style={styles.photoTile}>
-                      <Image source={photoSource} style={styles.photoImage} contentFit="cover" />
+                      <Image source={{ uri: photoUri }} style={styles.photoImage} contentFit="cover" />
                     </View>
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel="선택한 이미지 삭제"
                       hitSlop={6}
                       style={styles.removePhotoButton}
-                      onPress={handleRemovePhoto}
+                      onPress={() => handleRemovePhoto(index)}
                     >
                       <Close size={14} color={TEXT_MUTED} />
                     </Pressable>
                   </View>
+                ))}
+                {photoUris.length === 0 && (
+                  <View style={styles.photoPlaceholder} />
                 )}
+            </View>
+          </View>
+
+          <View style={[styles.field, styles.voiceField]}>
+            <View style={styles.fieldHeader}>
+              <Text style={styles.fieldLabel}>음성 메모</Text>
+              <View ref={voiceMenuAnchorRef} collapsable={false}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="이미지 업로드"
-                  style={({ pressed }) => [styles.uploadTile, pressed && styles.pressed]}
-                  onPress={pickImage}
+                  accessibilityLabel="음성 메모 옵션"
+                  hitSlop={8}
+                  onPress={toggleVoiceMenu}
                 >
-                  <Picture size={40} color={LINE_NORMAL} />
-                  <Text style={styles.uploadText}>이미지를 업로드하세요</Text>
+                  <SvgXml xml={MORE_SVG} width={24} height={24} />
                 </Pressable>
               </View>
             </View>
-
-            <View style={[styles.field, styles.voiceField]}>
-              <View style={styles.fieldHeader}>
-                <Text style={styles.fieldLabel}>음성 메모</Text>
-                <View ref={voiceMenuAnchorRef} collapsable={false}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="음성 메모 옵션"
-                    hitSlop={8}
-                    onPress={toggleVoiceMenu}
-                  >
-                    <SvgXml xml={MORE_SVG} width={24} height={24} />
-                  </Pressable>
-                </View>
-              </View>
               <View style={[styles.voiceBox, isRecording && styles.voiceBoxRecording, isRecorded && styles.voiceBoxRecorded]}>
                 {isRecording ? (
                   <View style={styles.recordingContent}>
@@ -382,18 +500,17 @@ export default function MemoryRegisterScreen() {
                     </Pressable>
                   </View>
                 )}
-              </View>
-
             </View>
+          </View>
 
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>메모</Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="메모 입력"
-                style={[styles.memoBox, isMemoFocused && styles.memoBoxFocused]}
-                onPress={() => memoInputRef.current?.focus()}
-              >
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>메모</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="메모 입력"
+              style={[styles.memoBox, { height: memoBoxHeight }, isMemoFocused && styles.memoBoxFocused]}
+              onPress={() => memoInputRef.current?.focus()}
+            >
                 <TextInput
                   ref={memoInputRef}
                   multiline
@@ -403,42 +520,41 @@ export default function MemoryRegisterScreen() {
                   onFocus={() => setIsMemoFocused(true)}
                   onBlur={() => setIsMemoFocused(false)}
                   placeholder="가족과 나누고 싶은 추억을 적어주세요"
-                  placeholderTextColor={TEXT_ASSISTIVE}
-                  style={styles.memoInput}
+                  placeholderTextColor={TEXT_PLACEHOLDER}
+                  style={[styles.memoInput, { height: memoInputHeight }, memoLength === 0 && styles.memoInputEmpty]}
                   textAlignVertical="top"
                   cursorColor={ORANGE}
                   selectionColor={ORANGE_SOFT}
-                  scrollEnabled
+                  scrollEnabled={false}
                 />
                 <Text style={styles.countText}>
                   {memoLength}/{MEMO_MAX_LENGTH}
                 </Text>
-              </Pressable>
-            </View>
-          </View>
-        </ScrollView>
-
-        <View style={styles.actionArea}>
-          <View style={styles.buttonRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="취소"
-              style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
-              onPress={() => router.back()}
-            >
-              <Text style={styles.cancelButtonText}>취소</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="게시"
-              style={({ pressed }) => [styles.postButton, pressed && styles.pressed]}
-              onPress={handlePost}
-            >
-              <Text style={styles.postButtonText}>게시</Text>
             </Pressable>
           </View>
         </View>
-      </SafeAreaView>
+      </ScrollView>
+
+      <View style={styles.actionArea}>
+        <View style={styles.buttonRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="취소"
+            style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.cancelButtonText}>취소</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="게시"
+            style={({ pressed }) => [styles.postButton, pressed && styles.pressed]}
+            onPress={handlePost}
+          >
+            <Text style={styles.postButtonText}>게시</Text>
+          </Pressable>
+        </View>
+      </View>
 
       <BottomNavigation activeTab="Memory" />
 
@@ -470,6 +586,25 @@ export default function MemoryRegisterScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal transparent visible={registerDialog.visible} animationType="fade" onRequestClose={closeRegisterDialog}>
+        <View style={styles.registerDialogLayer}>
+          <View style={styles.registerDialog}>
+            <Text style={styles.registerDialogTitle}>{registerDialog.title}</Text>
+            {registerDialog.message && (
+              <Text style={styles.registerDialogMessage}>{registerDialog.message}</Text>
+            )}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="모달 확인"
+              style={({ pressed }) => [styles.registerDialogButton, pressed && styles.pressed]}
+              onPress={confirmRegisterDialog}
+            >
+              <Text style={styles.registerDialogButtonText}>확인</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -479,20 +614,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
-  safeArea: {
-    flex: 1,
+  fixedTop: {
+    paddingHorizontal: 16,
+    backgroundColor: '#ffffff',
   },
   header: {
-    paddingHorizontal: 30,
-    paddingTop: 14,
-    paddingBottom: 26,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  logo: {
-    width: 62,
-    height: 24,
+    paddingHorizontal: 10,
+    marginBottom: 26,
   },
   scroll: {
     flex: 1,
@@ -548,11 +676,15 @@ const styles = StyleSheet.create({
   },
   photoRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   photoFrame: {
     position: 'relative',
-    marginTop: -4,
+    width: 168,
+    height: 127,
+  },
+  photoPlaceholder: {
     width: 168,
     height: 127,
   },
@@ -606,6 +738,13 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: '500',
     letterSpacing: -0.28,
+  },
+  uploadCountText: {
+    color: TEXT_PLACEHOLDER,
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '500',
+    letterSpacing: -0.3,
   },
   voiceBox: {
     height: 112,
@@ -768,7 +907,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.36,
   },
   memoBox: {
-    height: 132,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: 'transparent',
@@ -783,12 +921,15 @@ const styles = StyleSheet.create({
     height: '100%',
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 34,
-    color: TEXT_ASSISTIVE,
+    paddingBottom: 0,
+    color: TEXT_MUTED,
     fontSize: 18,
     lineHeight: 23,
     fontWeight: '500',
     letterSpacing: -0.36,
+  },
+  memoInputEmpty: {
+    fontWeight: '400',
   },
   countText: {
     position: 'absolute',
@@ -839,12 +980,68 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   postButtonText: {
-    color: ORANGE_SOFT,
+    color: BUTTON_TEXT,
     fontSize: 20,
     lineHeight: 26,
     fontWeight: '500',
     letterSpacing: -0.4,
     includeFontPadding: false,
+  },
+  registerDialogLayer: {
+    flex: 1,
+    paddingHorizontal: 32,
+    backgroundColor: 'rgba(0, 0, 0, 0.28)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  registerDialog: {
+    width: '100%',
+    maxWidth: 336,
+    borderRadius: 10,
+    paddingHorizontal: 18,
+    paddingTop: 24,
+    paddingBottom: 18,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 10,
+  },
+  registerDialogTitle: {
+    color: TEXT,
+    fontSize: 18,
+    lineHeight: 23,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: -0.36,
+  },
+  registerDialogMessage: {
+    alignSelf: 'stretch',
+    marginTop: 8,
+    color: TEXT_ASSISTIVE,
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '500',
+    textAlign: 'center',
+    letterSpacing: -0.28,
+  },
+  registerDialogButton: {
+    width: '100%',
+    height: 38,
+    marginTop: 20,
+    borderRadius: 5,
+    backgroundColor: ORANGE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  registerDialogButtonText: {
+    color: BUTTON_TEXT,
+    fontSize: 16,
+    lineHeight: 21,
+    fontWeight: '600',
+    letterSpacing: -0.32,
   },
   pressed: {
     opacity: 0.72,
