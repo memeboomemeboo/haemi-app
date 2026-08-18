@@ -263,16 +263,19 @@ export default function MemoryRegisterScreen() {
     setVoiceElapsedSeconds((current) => Math.max(1, current));
     setVoicePlaybackSeconds(0);
     setIsVoicePlaying(false);
-    setVoiceRecordingUri(null);
     setVoiceState('recorded');
   };
 
-  const startVoiceRecording = async () => {
-    setVoiceElapsedSeconds(0);
+  const startVoiceRecording = async (continueFromCurrent: boolean = false) => {
+    const initialElapsedSeconds = continueFromCurrent ? voiceElapsedSeconds : 0;
+
+    setVoiceElapsedSeconds(initialElapsedSeconds);
     setVoicePlaybackSeconds(0);
     setIsVoicePlaying(false);
-    setVoiceRecordingUri(null);
-    setRecordingStartedAt(Date.now());
+    if (!continueFromCurrent) {
+      setVoiceRecordingUri(null);
+    }
+    setRecordingStartedAt(Date.now() - initialElapsedSeconds * 1000);
     setVoiceState('recording');
   };
 
@@ -340,7 +343,7 @@ export default function MemoryRegisterScreen() {
     setIsVoiceMenuOpen(false);
 
     try {
-      await startVoiceRecording();
+      await startVoiceRecording(true);
     } catch {
       Alert.alert('녹음을 시작하지 못했어요', '잠시 후 다시 시도해주세요.');
     }
