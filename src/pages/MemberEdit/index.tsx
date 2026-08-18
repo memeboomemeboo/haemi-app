@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -9,10 +9,14 @@ import {
   Text,
   TextInput,
   View,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Arrow, BottomNavigation, Profile, Trash } from '@/shared/ui';
+import { authService } from '@/shared/api/auth';
+import { useUserContext } from '@/shared/context/UserContext';
 
 const ORANGE = '#fd6941';
 const ORANGE_SOFT = '#fed7cd';
@@ -37,24 +41,83 @@ const FAMILY_MEMBERS = Array.from({ length: 5 }, (_, index) => ({
 
 export default function MemberEditScreen() {
   const router = useRouter();
+  const { group } = useUserContext();
   const [activeModal, setActiveModal] = useState<EditModal>(null);
-  const [name, setName] = useState('박승아');
-  const [familyCount, setFamilyCount] = useState('5명');
-  const [password, setPassword] = useState('*********');
-  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(FAMILY_MEMBERS);
+  const [name, setName] = useState('');
+  const [familyCount, setFamilyCount] = useState('');
+  const [password, setPassword] = useState('');
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // 사용자 정보 로드
+  useEffect(() => {
+    const loadUserInfo = async () => {
+      try {
+        setIsLoading(true);
+        const response = await authService.getMe();
+        if (response.success && response.data) {
+          setName(response.data.name || '');
+        }
+      } catch (error) {
+        Alert.alert('정보 로드 실패', '사용자 정보를 불러오지 못했어요.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUserInfo();
+  }, []);
+
+  // 그룹 정보로부터 가족 수 설정
+  useEffect(() => {
+    if (group?.members) {
+      setFamilyMembers(
+        group.members.map((member) => ({
+          id: member.memberId,
+          name: member.relation,
+          relation: member.relation,
+        }))
+      );
+      setFamilyCount(`${group.members.length}명`);
+    }
+  }, [group]);
 
   const deleteFamilyMember = (memberId: string) => {
     setFamilyMembers((current) => {
       const nextMembers = current.filter((member) => member.id !== memberId);
-
       setFamilyCount(`${nextMembers.length}명`);
       return nextMembers;
     });
   };
 
-  const handleSave = () => {
-    router.back();
+  const handleSave = async () => {
+    if (!name.trim()) {
+      Alert.alert('이름을 입력해주세요');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await authService.updateProfile({
+        name: name.trim(),
+      });
+      Alert.alert('저장 완료', '정보가 수정되었습니다.');
+      router.back();
+    } catch (error) {
+      Alert.alert('저장 실패', '정보 수정에 실패했어요. 다시 시도해주세요.');
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={ORANGE} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -116,8 +179,20 @@ export default function MemberEditScreen() {
                 </View>
               </View>
 
-              <Pressable style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]} onPress={handleSave}>
-                <Text style={styles.saveButtonText}>저장</Text>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.saveButton,
+                  pressed && !isSaving && styles.pressed,
+                  isSaving && styles.saveButtonDisabled
+                ]}
+                onPress={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <ActivityIndicator size="small" color={FILL} />
+                ) : (
+                  <Text style={styles.saveButtonText}>저장</Text>
+                )}
               </Pressable>
             </View>
           </View>
@@ -480,6 +555,9 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     fontWeight: '600',
     letterSpacing: -0.36,
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
   },
   modalScrim: {
     flex: 1,
