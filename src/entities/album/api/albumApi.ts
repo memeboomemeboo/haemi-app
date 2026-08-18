@@ -1,4 +1,4 @@
-import { getAlbumById, type AlbumPhoto } from '@/shared/api/albums';
+import { getOrCreateAlbum, type AlbumPhoto } from '@/shared/api/albums';
 import type { AlbumItem } from '../model/types';
 
 /**
@@ -16,10 +16,6 @@ function transformPhotoToItem(photo: AlbumPhoto): AlbumItem {
 }
 
 export async function fetchAlbumItems(albumId?: string): Promise<AlbumItem[]> {
-  if (!albumId) {
-    return [];
-  }
-
-  const album = await getAlbumById(albumId);
+  const album = await getOrCreateAlbum(albumId);
   return album.recentPhotos.map(transformPhotoToItem);
 }

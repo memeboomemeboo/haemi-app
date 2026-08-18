@@ -1,5 +1,8 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchApi, get, patch, post } from './client';
 import type { ApiResponse } from '@/shared/types';
+
+const ALBUM_ID_STORAGE_PREFIX = 'haemi_album_id';
 
 export interface AlbumPersonTag {
   memberId: string;
@@ -51,20 +54,51 @@ export interface AlbumPhotoUpload {
   mimeType: string;
 }
 
-export interface AlbumPersonOption {
-  personId: string;
-  name: string;
+export interface AlbumMemberOption {
+  memberId: string;
   relation: string;
 }
 
-export async function createAlbum(): Promise<Album> {
-  const homeResponse = await get<ApiResponse<HomeContext>>('/home');
+interface AlbumGroup {
+  members: AlbumMemberOption[];
+}
+
+async function getHomeContext(): Promise<HomeContext> {
+  const response = await get<ApiResponse<HomeContext>>('/home');
+  return response.data;
+}
+
+function getAlbumIdStorageKey(groupId: string): string {
+  return `${ALBUM_ID_STORAGE_PREFIX}:${groupId}`;
+}
+
+async function createAlbum(homeContext: HomeContext): Promise<Album> {
   const response = await post<ApiResponse<Album>>('/albums', {
-    elderProfileId: homeResponse.data.elderId,
-    groupId: homeResponse.data.groupId,
+    elderProfileId: homeContext.elderId,
+    groupId: homeContext.groupId,
   });
 
   return response.data;
+}
+
+export async function getOrCreateAlbum(albumId?: string): Promise<Album> {
+  const homeContext = await getHomeContext();
+  const storageKey = getAlbumIdStorageKey(homeContext.groupId);
+
+  if (albumId) {
+    await AsyncStorage.setItem(storageKey, albumId);
+    return getAlbumById(albumId);
+  }
+
+  const storedAlbumId = await AsyncStorage.getItem(storageKey);
+
+  if (storedAlbumId) {
+    return getAlbumById(storedAlbumId);
+  }
+
+  const album = await createAlbum(homeContext);
+  await AsyncStorage.setItem(storageKey, album.albumId);
+  return album;
 }
 
 export async function getAlbumById(albumId: string): Promise<Album> {
@@ -72,13 +106,11 @@ export async function getAlbumById(albumId: string): Promise<Album> {
   return response.data;
 }
 
-export async function getAlbumPersonOptions(): Promise<AlbumPersonOption[]> {
-  const homeResponse = await get<ApiResponse<HomeContext>>('/home');
-  const response = await get<ApiResponse<AlbumPersonOption[]>>(
-    `/groups/${homeResponse.data.groupId}/persons`
-  );
+export async function getAlbumMemberOptions(): Promise<AlbumMemberOption[]> {
+  const homeContext = await getHomeContext();
+  const response = await get<ApiResponse<AlbumGroup>>(`/groups/${homeContext.groupId}`);
 
-  return response.data;
+  return response.data.members;
 }
 
 export async function uploadAlbumPhoto(albumId: string, photo: AlbumPhotoUpload) {

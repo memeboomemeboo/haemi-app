@@ -15,8 +15,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  createAlbum,
-  getAlbumPersonOptions,
+  getAlbumMemberOptions,
+  getOrCreateAlbum,
   updateAlbumPhotoMemo,
   uploadAlbumPhoto,
 } from '@/shared/api/albums';
@@ -34,12 +34,24 @@ import {
 import { HomeHeader } from '@/widgets/HomeHeader';
 
 const MEMO_MAX_LENGTH = 200;
+const RELATION_LABELS: Record<string, string> = {
+  SPOUSE: '배우자',
+  SON: '아들',
+  DAUGHTER: '딸',
+  GRANDSON: '손자',
+  GRANDDAUGHTER: '손녀',
+  GRANDCHILD: '손주',
+  BROTHER: '남자 형제',
+  SISTER: '여자 형제',
+  SIBLING: '형제자매',
+  OTHER: '가족',
+};
 
 export default function AlbumRegisterScreen() {
   const router = useRouter();
   const { albumId: existingAlbumId } = useLocalSearchParams<{ albumId?: string }>();
   const insets = useSafeAreaInsets();
-  const personOptionsState = useAsyncData(getAlbumPersonOptions);
+  const memberOptionsState = useAsyncData(getAlbumMemberOptions);
 
   const [photo, setPhoto] = useState<{
     uri: string;
@@ -56,13 +68,13 @@ export default function AlbumRegisterScreen() {
 
   // + 버튼 위치를 측정해 바로 아래에 드롭다운을 띄운다 (Figma 109-568)
   const openFamilyPicker = () => {
-    if (personOptionsState.isError) {
+    if (memberOptionsState.isError) {
       Alert.alert('가족 목록을 불러오지 못했어요', '잠시 후 다시 시도해주세요.');
       return;
     }
 
-    chipAddRef.current?.measureInWindow((x, y, width, height) => {
-      setPickerPosition({ top: y + height + 6, left: x + width / 2 - 52 });
+    chipAddRef.current?.measureInWindow((x, y, _width, height) => {
+      setPickerPosition({ top: y + height + 6, left: x });
       setShowFamilyPicker(true);
     });
   };
@@ -94,17 +106,17 @@ export default function AlbumRegisterScreen() {
     }
   };
 
-  const toggleFamilyMember = (personId: string) => {
+  const toggleFamilyMember = (memberId: string) => {
     setFamily((current) =>
-      current.includes(personId)
-        ? current.filter((selectedPersonId) => selectedPersonId !== personId)
-        : [...current, personId]
+      current.includes(memberId)
+        ? current.filter((selectedMemberId) => selectedMemberId !== memberId)
+        : [...current, memberId]
     );
   };
 
   const handleSave = async () => {
     try {
-      const albumId = existingAlbumId || (await createAlbum()).albumId;
+      const albumId = (await getOrCreateAlbum(existingAlbumId)).albumId;
 
       if (photo) {
         const [uploadedPhoto] = await uploadAlbumPhoto(albumId, photo);
@@ -200,12 +212,14 @@ export default function AlbumRegisterScreen() {
           <View style={styles.fullField}>
             <Text style={styles.fieldLabel}>가족</Text>
             <View style={styles.chipsRow}>
-              {family.map((personId) => {
-                const person = personOptionsState.data?.find((option) => option.personId === personId);
+              {family.map((memberId) => {
+                const member = memberOptionsState.data?.find((option) => option.memberId === memberId);
 
-                return person ? (
-                  <View key={person.personId} style={styles.chip}>
-                    <Text style={styles.chipText}>{person.name}</Text>
+                return member ? (
+                  <View key={member.memberId} style={styles.chip}>
+                    <Text style={styles.chipText}>
+                      {RELATION_LABELS[member.relation] ?? '가족'}
+                    </Text>
                   </View>
                 ) : null;
               })}
@@ -214,7 +228,7 @@ export default function AlbumRegisterScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={showFamilyPicker ? '가족 선택 닫기' : '가족 추가'}
                   style={styles.chipAdd}
-                  disabled={personOptionsState.isLoading}
+                  disabled={memberOptionsState.isLoading}
                   onPress={openFamilyPicker}
                 >
                   {showFamilyPicker ? (
@@ -276,22 +290,24 @@ export default function AlbumRegisterScreen() {
         <Pressable style={styles.dropdownBackdrop} onPress={() => setShowFamilyPicker(false)}>
           <View style={[styles.dropdown, { top: pickerPosition.top, left: pickerPosition.left }]}>
             <View style={styles.dropdownInner}>
-              {(personOptionsState.data ?? []).map((person, index, people) => {
-                const isSelected = family.includes(person.personId);
+              {(memberOptionsState.data ?? []).map((member, index, members) => {
+                const isSelected = family.includes(member.memberId);
                 return (
                   <Pressable
-                    key={person.personId}
+                    key={member.memberId}
                     style={[
                       styles.dropdownRow,
                       isSelected && styles.dropdownRowSelected,
-                      index < people.length - 1 && styles.dropdownRowDivider,
+                      index < members.length - 1 && styles.dropdownRowDivider,
                     ]}
-                    onPress={() => toggleFamilyMember(person.personId)}
+                    onPress={() => toggleFamilyMember(member.memberId)}
                   >
                     <View style={styles.dropdownCheckSlot}>
                       {isSelected && <CheckMark size={13} color="#fd6035" />}
                     </View>
-                    <Text style={styles.dropdownRowText}>{person.name}</Text>
+                    <Text style={styles.dropdownRowText}>
+                      {RELATION_LABELS[member.relation] ?? '가족'}
+                    </Text>
                   </Pressable>
                 );
               })}
@@ -427,6 +443,7 @@ const styles = StyleSheet.create({
   },
   chipsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 8,
   },
