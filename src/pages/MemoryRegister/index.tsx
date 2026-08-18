@@ -1,3 +1,11 @@
+import {
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  useAudioPlaylist,
+  useAudioPlaylistStatus,
+  useAudioRecorder,
+} from 'expo-audio';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -16,6 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 
 import { addFamilyMemoryItem } from '@/entities/family-memory';
+import type { VoiceMemoSegment } from '@/entities/family-memory';
 import { colors } from '@/shared/constants';
 import { Arrow, BottomNavigation, Close, Picture } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
@@ -37,6 +46,10 @@ const MEMO_DEFAULT_LINES = 4;
 const MEMO_CHARS_PER_LINE = 22;
 const MEMO_LINE_HEIGHT = 23;
 const MAX_PHOTO_COUNT = 2;
+const VOICE_RECORDING_OPTIONS = {
+  ...RecordingPresets.HIGH_QUALITY,
+  directory: 'document' as const,
+};
 const MORE_SVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 10C3.9 10 3 10.9 3 12C3 13.1 3.9 14 5 14C6.1 14 7 13.1 7 12C7 10.9 6.1 10 5 10ZM19 10C17.9 10 17 10.9 17 12C17 13.1 17.9 14 19 14C20.1 14 21 13.1 21 12C21 10.9 20.1 10 19 10ZM12 10C10.9 10 10 10.9 10 12C10 13.1 10.9 14 12 14C13.1 14 14 13.1 14 12C14 10.9 13.1 10 12 10Z" fill="#C1C2C3"/></svg>`;
 const RECORD_BUTTON_SVG = `<svg width="37" height="37" viewBox="0 0 37 37" fill="none" xmlns="http://www.w3.org/2000/svg"><g filter="url(#filter0_f_507_2025)"><circle cx="18.5" cy="18.5" r="16.5" fill="#FD6941"/></g><defs><filter id="filter0_f_507_2025" x="0" y="0" width="37" height="37" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="1" result="effect1_foregroundBlur_507_2025"/></filter></defs></svg>`;
 const STOP_RECORD_SVG = `<svg width="33" height="33" viewBox="0 0 33 33" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="33" height="33" rx="16.5" fill="#FD6941"/><rect x="10" y="10" width="13" height="13" rx="3" fill="white"/></svg>`;
@@ -83,11 +96,46 @@ const getMemoLineCount = (value: string) => {
   }, 0);
 };
 
+const getVoiceSegmentsDuration = (segments: VoiceMemoSegment[]) => (
+  segments.reduce((total, segment) => total + segment.durationSeconds, 0)
+);
+
+const getVoiceSegmentOffset = (segments: VoiceMemoSegment[], segmentIndex: number) => (
+  segments
+    .slice(0, segmentIndex)
+    .reduce((total, segment) => total + segment.durationSeconds, 0)
+);
+
+const getVoicePlaybackTarget = (segments: VoiceMemoSegment[], targetSeconds: number) => {
+  const clampedSeconds = Math.max(0, targetSeconds);
+  let elapsedSeconds = 0;
+
+  for (let index = 0; index < segments.length; index += 1) {
+    const segmentDuration = Math.max(segments[index].durationSeconds, 1);
+
+    if (clampedSeconds <= elapsedSeconds + segmentDuration || index === segments.length - 1) {
+      return {
+        index,
+        offsetSeconds: Math.min(segmentDuration, Math.max(0, clampedSeconds - elapsedSeconds)),
+      };
+    }
+
+    elapsedSeconds += segmentDuration;
+  }
+
+  return {
+    index: 0,
+    offsetSeconds: 0,
+  };
+};
+
 export default function MemoryRegisterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const audioRecorder = useAudioRecorder(VOICE_RECORDING_OPTIONS);
   const memoInputRef = useRef<TextInput>(null);
   const voiceMenuAnchorRef = useRef<View>(null);
+  const recordingBaseSecondsRef = useRef(0);
   const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [memo, setMemo] = useState('');
   const [isMemoFocused, setIsMemoFocused] = useState(false);
@@ -96,6 +144,7 @@ export default function MemoryRegisterScreen() {
   const [voicePlaybackSeconds, setVoicePlaybackSeconds] = useState(0);
   const [isVoicePlaying, setIsVoicePlaying] = useState(false);
   const [voiceRecordingUri, setVoiceRecordingUri] = useState<string | null>(null);
+  const [voiceSegments, setVoiceSegments] = useState<VoiceMemoSegment[]>([]);
   const [recordingStartedAt, setRecordingStartedAt] = useState<number | null>(null);
   const [isVoiceMenuOpen, setIsVoiceMenuOpen] = useState(false);
   const [voiceMenuPosition, setVoiceMenuPosition] = useState<VoiceMenuPosition>({ top: 0, left: 0 });
@@ -103,13 +152,33 @@ export default function MemoryRegisterScreen() {
     visible: false,
     title: '',
   });
+  const voicePlaylist = useAudioPlaylist({
+    sources: voiceSegments.map((segment) => ({ uri: segment.uri })),
+    updateInterval: 100,
+  });
+  const voicePlaylistStatus = useAudioPlaylistStatus(voicePlaylist);
 
   const hasPhoto = photoUris.length > 0;
   const isRecorded = voiceState === 'recorded';
   const isRecording = voiceState === 'recording';
-  const recordedDuration = Math.max(voiceElapsedSeconds, 1);
-  const voiceProgressPercent = `${Math.min(100, Math.max(0, (voicePlaybackSeconds / recordedDuration) * 100))}%` as `${number}%`;
-  const voiceStartTime = isRecorded ? formatDuration(voicePlaybackSeconds) : '0:00';
+  const voiceSegmentsDuration = getVoiceSegmentsDuration(voiceSegments);
+  const recordedDuration = Math.max(
+    isRecording ? voiceElapsedSeconds : voiceSegmentsDuration,
+    voiceElapsedSeconds,
+    1,
+  );
+  const playlistPlaybackSeconds = getVoiceSegmentOffset(
+    voiceSegments,
+    voicePlaylistStatus.currentIndex,
+  ) + voicePlaylistStatus.currentTime;
+  const currentVoicePlaybackSeconds = voiceSegments.length > 0
+    ? Math.min(recordedDuration, playlistPlaybackSeconds)
+    : voicePlaybackSeconds;
+  const currentIsVoicePlaying = voiceSegments.length > 0
+    ? voicePlaylistStatus.playing
+    : isVoicePlaying;
+  const voiceProgressPercent = `${Math.min(100, Math.max(0, (currentVoicePlaybackSeconds / recordedDuration) * 100))}%` as `${number}%`;
+  const voiceStartTime = isRecorded ? formatDuration(currentVoicePlaybackSeconds) : '0:00';
   const voiceEndTime = voiceState === 'idle' ? '0:00' : formatDuration(voiceElapsedSeconds);
   const waveformPhase = Math.floor(voiceElapsedSeconds * 8);
   const memoLength = Array.from(memo).length;
@@ -129,26 +198,13 @@ export default function MemoryRegisterScreen() {
     return () => clearInterval(timerId);
   }, [isRecording, recordingStartedAt]);
 
-  useEffect(() => {
-    if (!isRecorded || !isVoicePlaying || voiceRecordingUri) {
-      return undefined;
+  useEffect(() => () => {
+    voicePlaylist.pause();
+
+    if (audioRecorder.isRecording) {
+      void audioRecorder.stop().catch(() => undefined);
     }
-
-    const timerId = setInterval(() => {
-      setVoicePlaybackSeconds((current) => {
-        const next = current + 0.1;
-
-        if (next >= recordedDuration) {
-          setIsVoicePlaying(false);
-          return recordedDuration;
-        }
-
-        return next;
-      });
-    }, 100);
-
-    return () => clearInterval(timerId);
-  }, [isRecorded, isVoicePlaying, recordedDuration, voiceRecordingUri]);
+  }, [audioRecorder, voicePlaylist]);
 
   const pickImage = async () => {
     const remainingPhotoCount = MAX_PHOTO_COUNT - photoUris.length;
@@ -245,6 +301,7 @@ export default function MemoryRegisterScreen() {
       hasVoiceMemo: isRecorded,
       voiceDurationSeconds: isRecorded ? Math.max(1, Math.round(recordedDuration)) : 0,
       voiceUri: isRecorded ? voiceRecordingUri : null,
+      voiceSegments: isRecorded ? voiceSegments : [],
     });
 
     openRegisterDialog({
@@ -258,22 +315,77 @@ export default function MemoryRegisterScreen() {
     setMemo(Array.from(value).slice(0, MEMO_MAX_LENGTH).join(''));
   };
 
+  const ensureRecordingPermission = async () => {
+    const permission = await requestRecordingPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert('권한이 필요해요', '음성 메모를 녹음하려면 마이크 권한을 허용해주세요.');
+      return false;
+    }
+
+    return true;
+  };
+
   const stopVoiceRecording = async () => {
+    const segmentStartedAt = recordingStartedAt ?? Date.now();
+
+    await audioRecorder.stop();
+
+    const recordedUri = audioRecorder.uri;
+    const segmentDurationSeconds = Math.max(
+      1,
+      audioRecorder.currentTime,
+      (Date.now() - segmentStartedAt) / 1000,
+    );
+
+    if (!recordedUri) {
+      throw new Error('Recording URI is empty.');
+    }
+
+    const nextSegment = {
+      uri: recordedUri,
+      durationSeconds: segmentDurationSeconds,
+    };
+    const nextElapsedSeconds = recordingBaseSecondsRef.current + segmentDurationSeconds;
+
+    await setAudioModeAsync({
+      allowsRecording: false,
+      playsInSilentMode: true,
+    });
+
+    setVoiceSegments((current) => [...current, nextSegment]);
+    setVoiceRecordingUri((current) => current ?? recordedUri);
     setRecordingStartedAt(null);
-    setVoiceElapsedSeconds((current) => Math.max(1, current));
+    setVoiceElapsedSeconds(Math.max(1, nextElapsedSeconds));
     setVoicePlaybackSeconds(0);
     setIsVoicePlaying(false);
     setVoiceState('recorded');
   };
 
   const startVoiceRecording = async (continueFromCurrent: boolean = false) => {
-    const initialElapsedSeconds = continueFromCurrent ? voiceElapsedSeconds : 0;
+    const hasPermission = await ensureRecordingPermission();
 
+    if (!hasPermission) {
+      return;
+    }
+
+    voicePlaylist.pause();
+    await setAudioModeAsync({
+      allowsRecording: true,
+      playsInSilentMode: true,
+    });
+    await audioRecorder.prepareToRecordAsync(VOICE_RECORDING_OPTIONS);
+    audioRecorder.record();
+
+    const initialElapsedSeconds = continueFromCurrent ? voiceSegmentsDuration : 0;
+
+    recordingBaseSecondsRef.current = initialElapsedSeconds;
     setVoiceElapsedSeconds(initialElapsedSeconds);
     setVoicePlaybackSeconds(0);
     setIsVoicePlaying(false);
     if (!continueFromCurrent) {
       setVoiceRecordingUri(null);
+      setVoiceSegments([]);
     }
     setRecordingStartedAt(Date.now() - initialElapsedSeconds * 1000);
     setVoiceState('recording');
@@ -301,23 +413,51 @@ export default function MemoryRegisterScreen() {
   };
 
   const handleToggleVoicePlayback = async () => {
-    if (!isRecorded) {
+    if (!isRecorded || voiceSegments.length === 0) {
       return;
     }
 
-    if (voicePlaybackSeconds >= recordedDuration) {
-      setVoicePlaybackSeconds(0);
+    if (currentVoicePlaybackSeconds >= recordedDuration) {
+      const { index, offsetSeconds } = getVoicePlaybackTarget(voiceSegments, 0);
+
+      voicePlaylist.skipTo(index);
+      await voicePlaylist.seekTo(offsetSeconds);
     }
 
-    setIsVoicePlaying((prev) => !prev);
+    await setAudioModeAsync({
+      allowsRecording: false,
+      playsInSilentMode: true,
+    });
+
+    if (currentIsVoicePlaying) {
+      voicePlaylist.pause();
+      setIsVoicePlaying(false);
+      return;
+    }
+
+    voicePlaylist.play();
+    setIsVoicePlaying(true);
   };
 
-  const handleReplayBackward = () => {
-    setVoicePlaybackSeconds((current) => Math.max(0, current - 10));
+  const seekVoicePlayback = async (targetSeconds: number) => {
+    if (voiceSegments.length === 0) {
+      return;
+    }
+
+    const clampedSeconds = Math.min(recordedDuration, Math.max(0, targetSeconds));
+    const { index, offsetSeconds } = getVoicePlaybackTarget(voiceSegments, clampedSeconds);
+
+    voicePlaylist.skipTo(index);
+    await voicePlaylist.seekTo(offsetSeconds);
+    setVoicePlaybackSeconds(clampedSeconds);
   };
 
-  const handleReplayForward = () => {
-    setVoicePlaybackSeconds((current) => Math.min(recordedDuration, current + 10));
+  const handleReplayBackward = async () => {
+    await seekVoicePlayback(currentVoicePlaybackSeconds - 10);
+  };
+
+  const handleReplayForward = async () => {
+    await seekVoicePlayback(currentVoicePlaybackSeconds + 10);
   };
 
   const closeVoiceMenu = () => {
@@ -349,13 +489,25 @@ export default function MemoryRegisterScreen() {
     }
   };
 
-  const handleDeleteVoice = () => {
+  const handleDeleteVoice = async () => {
     setIsVoiceMenuOpen(false);
+    voicePlaylist.pause();
+
+    if (audioRecorder.isRecording) {
+      await audioRecorder.stop().catch(() => undefined);
+      await setAudioModeAsync({
+        allowsRecording: false,
+        playsInSilentMode: true,
+      }).catch(() => undefined);
+    }
+
     setVoiceElapsedSeconds(0);
     setVoicePlaybackSeconds(0);
     setIsVoicePlaying(false);
     setVoiceRecordingUri(null);
+    setVoiceSegments([]);
     setRecordingStartedAt(null);
+    recordingBaseSecondsRef.current = 0;
     setVoiceState('idle');
   };
 
@@ -484,11 +636,11 @@ export default function MemoryRegisterScreen() {
                     </Pressable>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={isVoicePlaying ? '음성 일시정지' : '음성 재생'}
+                      accessibilityLabel={currentIsVoicePlaying ? '음성 일시정지' : '음성 재생'}
                       style={styles.soundButton}
                       onPress={handleToggleVoicePlayback}
                     >
-                      <SvgXml xml={isVoicePlaying ? SOUND_SVG : SOUND_START_SVG} width={46} height={46} />
+                      <SvgXml xml={currentIsVoicePlaying ? SOUND_SVG : SOUND_START_SVG} width={46} height={46} />
                     </Pressable>
                     <Pressable
                       accessibilityRole="button"
