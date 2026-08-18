@@ -85,6 +85,32 @@ export async function createFamilyMemoryPost({ albumId, data, photos = [] }: Cre
   return readResponse<FamilyMemoryPost>(response);
 }
 
+export async function updateFamilyMemoryPost(
+  albumId: string,
+  postId: string,
+  data: Partial<CreateFamilyMemoryPostRequest>
+) {
+  const response = await fetch(`${HAEMI_API_BASE_URL}/albums/${albumId}/posts/${postId}`, {
+    method: 'PATCH',
+    headers: {
+      ...getAuthHeaders(),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  return readResponse<FamilyMemoryPost>(response);
+}
+
+export async function deleteFamilyMemoryPost(albumId: string, postId: string) {
+  const response = await fetch(`${HAEMI_API_BASE_URL}/albums/${albumId}/posts/${postId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+
+  return readResponse<void>(response);
+}
+
 export async function toggleFamilyMemoryLike(albumId: string, postId: string, memberId: string) {
   const searchParams = new URLSearchParams({ memberId });
   const response = await fetch(

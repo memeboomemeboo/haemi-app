@@ -19,6 +19,7 @@ import {
   Text,
   TextInput,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -26,6 +27,7 @@ import {
   removeFamilyMemoryItem,
   updateFamilyMemoryItem,
   useFamilyMemoryItems,
+  fetchFamilyMemoryItems,
 } from '@/entities/family-memory';
 import type { FamilyMemoryItem, VoiceMemoSegment } from '@/entities/family-memory';
 import {
@@ -41,6 +43,7 @@ import {
   Sent,
 } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
+import { useUserContext } from '@/shared/context/UserContext';
 
 const ORANGE = '#fd6941';
 const ORANGE_LIGHT = '#ffad9c';
@@ -203,9 +206,30 @@ export default function FamilyMemoriesScreen() {
 }
 
 function FeedScreen() {
+  const { group } = useUserContext();
   const editVoiceRecorder = useAudioRecorder(VOICE_RECORDING_OPTIONS);
   const registeredMemories = useFamilyMemoryItems();
+  const [isLoadingFeed, setIsLoadingFeed] = useState(false);
   const editVoiceRecordingStartedAtRef = useRef<number | null>(null);
+
+  // 앨범 데이터 로드
+  useEffect(() => {
+    const loadMemories = async () => {
+      if (!group?.groupId) return;
+
+      setIsLoadingFeed(true);
+      try {
+        // TODO: groupId를 albumId로 사용 (실제로는 API에서 groupId로 albumId를 조회해야 함)
+        await fetchFamilyMemoryItems(group.groupId);
+      } catch (error) {
+        Alert.alert('추억을 불러오지 못했어요', '잠시 후 다시 시도해주세요.');
+      } finally {
+        setIsLoadingFeed(false);
+      }
+    };
+
+    loadMemories();
+  }, [group?.groupId]);
   const [removedMemoryIds, setRemovedMemoryIds] = useState<Record<string, boolean>>({});
   const [likedById, setLikedById] = useState<Record<string, boolean>>({});
   const [commentOpenById, setCommentOpenById] = useState<Record<string, boolean>>({});
@@ -566,7 +590,9 @@ function FeedScreen() {
     });
   };
 
-  const saveEdit = (item: MemoryFeedItem) => {
+  const saveEdit = async (item: MemoryFeedItem) => {
+    if (!group?.groupId) return;
+
     const nextBody = editDraft.trim();
     const nextVoiceDraft = {
       hasVoiceMemo: editVoiceDraft.hasVoiceMemo,
@@ -582,25 +608,41 @@ function FeedScreen() {
       return;
     }
 
-    updateFamilyMemoryItem(item.id, {
-      memo: nextBody,
-      hasPhoto: editPhotoDraft.hasPhoto,
-      photoUri: editPhotoDraft.photoUri,
-      photoUris: editPhotoDraft.photoUris,
-      hasVoiceMemo: nextVoiceDraft.hasVoiceMemo,
-      voiceDurationSeconds: nextVoiceDraft.voiceDurationSeconds,
-      voiceUri: nextVoiceDraft.voiceUri,
-      voiceSegments: nextVoiceDraft.voiceSegments,
-    });
-    setEditedBodyById((current) => ({ ...current, [item.id]: nextBody }));
-    setEditedPhotoById((current) => ({ ...current, [item.id]: editPhotoDraft }));
-    setEditedVoiceById((current) => ({ ...current, [item.id]: nextVoiceDraft }));
-    cancelEdit();
+    try {
+      await updateFamilyMemoryItem(
+        group.groupId,
+        item.id,
+        group.members?.[0]?.memberId || 'unknown',
+        '나',
+        group.members?.[0]?.relation || '친구',
+        {
+          memo: nextBody,
+          hasPhoto: editPhotoDraft.hasPhoto,
+          photoUri: editPhotoDraft.photoUri,
+          photoUris: editPhotoDraft.photoUris,
+          hasVoiceMemo: nextVoiceDraft.hasVoiceMemo,
+          voiceDurationSeconds: nextVoiceDraft.voiceDurationSeconds,
+          voiceUri: nextVoiceDraft.voiceUri,
+          voiceSegments: nextVoiceDraft.voiceSegments,
+        }
+      );
+      setEditedBodyById((current) => ({ ...current, [item.id]: nextBody }));
+      setEditedPhotoById((current) => ({ ...current, [item.id]: editPhotoDraft }));
+      setEditedVoiceById((current) => ({ ...current, [item.id]: nextVoiceDraft }));
+      cancelEdit();
+    } catch (error) {
+      Alert.alert('수정 실패', '추억을 수정하지 못했어요. 다시 시도해주세요.');
+    }
   };
 
-  const deleteMemory = (id: string) => {
-    removeFamilyMemoryItem(id);
-    setRemovedMemoryIds((current) => ({ ...current, [id]: true }));
+  const deleteMemory = async (id: string) => {
+    if (!group?.groupId) return;
+    try {
+      await removeFamilyMemoryItem(group.groupId, id);
+      setRemovedMemoryIds((current) => ({ ...current, [id]: true }));
+    } catch (error) {
+      Alert.alert('삭제 실패', '추억을 삭제하지 못했어요. 다시 시도해주세요.');
+    }
     setLikedById((current) => {
       const { [id]: _deletedLike, ...next } = current;
       return next;
@@ -628,6 +670,14 @@ function FeedScreen() {
       cancelEdit();
     }
   };
+
+  if (isLoadingFeed) {
+    return (
+      <View style={[styles.scroll, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={ORANGE} />
+      </View>
+    );
+  }
 
   return (
     <ScrollView

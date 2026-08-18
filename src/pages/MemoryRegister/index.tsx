@@ -28,6 +28,7 @@ import type { VoiceMemoSegment } from '@/entities/family-memory';
 import { colors } from '@/shared/constants';
 import { Arrow, BottomNavigation, Close, Picture } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
+import { useUserContext } from '@/shared/context/UserContext';
 
 const ORANGE = '#fd6941';
 const ORANGE_SOFT = '#fed7cd';
@@ -132,6 +133,7 @@ const getVoicePlaybackTarget = (segments: VoiceMemoSegment[], targetSeconds: num
 export default function MemoryRegisterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { group, relation } = useUserContext();
   const audioRecorder = useAudioRecorder(VOICE_RECORDING_OPTIONS);
   const memoInputRef = useRef<TextInput>(null);
   const voiceMenuAnchorRef = useRef<View>(null);
@@ -293,22 +295,43 @@ export default function MemoryRegisterScreen() {
       return;
     }
 
-    addFamilyMemoryItem({
-      memo,
-      hasPhoto,
-      photoUri: photoUris[0] ?? null,
-      photoUris,
-      hasVoiceMemo: isRecorded,
-      voiceDurationSeconds: isRecorded ? Math.max(1, Math.round(recordedDuration)) : 0,
-      voiceUri: isRecorded ? voiceRecordingUri : null,
-      voiceSegments: isRecorded ? voiceSegments : [],
-    });
+    if (!group?.groupId) {
+      openRegisterDialog({
+        title: '그룹 정보를 불러올 수 없어요',
+        message: '다시 시도해주세요.',
+      });
+      return;
+    }
 
-    openRegisterDialog({
-      title: '추억이 등록되었습니다.',
-      message: '가족 추억 페이지에서 등록한 추억을 확인할 수 있어요.',
-      onConfirm: () => router.replace('/family-memories'),
-    });
+    try {
+      await addFamilyMemoryItem(
+        group.groupId, // albumId로 사용
+        group.members?.[0]?.memberId || 'unknown', // memberId
+        '나', // memberName (실제로는 로그인한 사용자 정보 사용)
+        relation || '친구', // memberRelation
+        {
+          memo,
+          hasPhoto,
+          photoUri: photoUris[0] ?? null,
+          photoUris,
+          hasVoiceMemo: isRecorded,
+          voiceDurationSeconds: isRecorded ? Math.max(1, Math.round(recordedDuration)) : 0,
+          voiceUri: isRecorded ? voiceRecordingUri : null,
+          voiceSegments: isRecorded ? voiceSegments : [],
+        }
+      );
+
+      openRegisterDialog({
+        title: '추억이 등록되었습니다.',
+        message: '가족 추억 페이지에서 등록한 추억을 확인할 수 있어요.',
+        onConfirm: () => router.replace('/family-memories'),
+      });
+    } catch (error) {
+      openRegisterDialog({
+        title: '추억 등록에 실패했어요',
+        message: '잠시 후 다시 시도해주세요.',
+      });
+    }
   };
 
   const handleMemoChange = (value: string) => {
