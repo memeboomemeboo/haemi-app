@@ -1,6 +1,6 @@
 import { View, ScrollView, StyleSheet, Text, TextInput, Pressable, ActivityIndicator, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import * as Device from 'expo-device';
 import { colors } from '@/shared/constants';
 import { authService, elderService, groupService, getErrorMessage } from '@/shared/api';
@@ -22,7 +22,7 @@ const PASSWORD_REGEX = {
 };
 
 interface SignupState {
-  step: 'role' | 'family' | 'family-invite-share' | 'elder-code' | 'elder-info';
+  step: 'role' | 'family' | 'family-invite-share' | 'elder';
   email: string;
   password: string;
   passwordConfirm: string;
@@ -89,13 +89,9 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
     return null;
   };
 
-  const validateElderCode = (): string | null => {
+  const validateElderForm = (): string | null => {
     if (!state.code.trim()) return '초대코드를 입력해주세요.';
     if (state.code.trim().length !== 6) return '초대코드는 6자리입니다.';
-    return null;
-  };
-
-  const validateElderInfo = (): string | null => {
     if (!state.name.trim()) return '성함을 입력해주세요.';
     if (!state.phoneNumber.trim()) return '전화번호를 입력해주세요.';
     const phoneRegex = /^01[0-9]-?\d{3,4}-?\d{4}$/;
@@ -107,7 +103,7 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
     setState((prev) => ({
       ...prev,
       role: selectedRole,
-      step: selectedRole === 'FAMILY' ? 'family' : 'elder-code',
+      step: selectedRole === 'FAMILY' ? 'family' : 'elder',
       error: '',
     }));
   };
@@ -195,17 +191,8 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
     }
   };
 
-  const handleElderCodeNext = useCallback(() => {
-    const error = validateElderCode();
-    if (error) {
-      setState((prev) => ({ ...prev, error }));
-      return;
-    }
-    setState((prev) => ({ ...prev, step: 'elder-info', error: '' }));
-  }, [state.code, validateElderCode]);
-
   const handleElderSignup = async () => {
-    const validationError = validateElderInfo();
+    const validationError = validateElderForm();
     if (validationError) {
       setState((prev) => ({ ...prev, error: validationError }));
       return;
@@ -243,7 +230,7 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
 
       if (errorMessage.includes('EX-F001E-01')) {
         showError('존재하지 않는 초대코드입니다.');
-        setState((prev) => ({ ...prev, step: 'elder-code', isLoading: false }));
+        setState((prev) => ({ ...prev, isLoading: false, error: errorMessage }));
       } else if (errorMessage.includes('EX-F001E-02')) {
         showError('성함 불일치로 보류 중입니다. 가족분께 확인 후 다시 시도해주세요.');
         setState((prev) => ({ ...prev, isLoading: false, error: errorMessage }));
@@ -252,7 +239,7 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
         setState((prev) => ({ ...prev, isLoading: false, error: errorMessage }));
       } else if (errorMessage.includes('EX-F001E-04')) {
         showError('코드 시도 횟수를 초과했습니다. 새 코드를 받아주세요.');
-        setState((prev) => ({ ...prev, step: 'elder-code', isLoading: false }));
+        setState((prev) => ({ ...prev, isLoading: false, error: errorMessage }));
       } else {
         showError(errorMessage);
         setState((prev) => ({ ...prev, isLoading: false, error: errorMessage }));
@@ -262,28 +249,6 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
 
   return (
     <View style={styles.container}>
-      {/* Progress Indicator for Elder Flow */}
-      {(state.step === 'elder-code' || state.step === 'elder-info') && (
-        <View style={styles.progressContainer}>
-          <View style={[styles.progressStep, state.step === 'elder-code' && styles.progressStepActive]}>
-            <Text style={[styles.progressNumber, state.step === 'elder-code' && styles.progressNumberActive]}>
-              1
-            </Text>
-            <Text style={[styles.progressLabel, state.step === 'elder-code' && styles.progressLabelActive]}>
-              코드
-            </Text>
-          </View>
-          <View style={styles.progressBar} />
-          <View style={[styles.progressStep, state.step === 'elder-info' && styles.progressStepActive]}>
-            <Text style={[styles.progressNumber, state.step === 'elder-info' && styles.progressNumberActive]}>
-              2
-            </Text>
-            <Text style={[styles.progressLabel, state.step === 'elder-info' && styles.progressLabelActive]}>
-              정보
-            </Text>
-          </View>
-        </View>
-      )}
 
       <ScrollView
         style={styles.content}
@@ -291,7 +256,7 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>
-          {state.step === 'role' ? '해미에 가입' : state.step === 'family' ? '가족 가입' : state.step === 'elder-code' ? '초대코드 확인' : '정보 입력'}
+          {state.step === 'role' ? '해미에 가입' : state.step === 'family' ? '가족 가입' : state.step === 'family-invite-share' ? '어르신을 초대해주세요' : '어르신 가입'}
         </Text>
 
         {state.error ? <Text style={styles.errorText}>{state.error}</Text> : null}
@@ -433,17 +398,17 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
 
               <View style={styles.infoBox}>
                 <Text style={styles.infoText}>
-                  💡 어르신이 앱을 설치한 후 '어르신으로 가입' 을 선택하고 이 코드를 입력하면 됩니다.
+                  💡 어르신이 앱을 설치한 후 &lsquo;어르신으로 가입&rsquo; 을 선택하고 이 코드를 입력하면 됩니다.
                 </Text>
               </View>
             </View>
           </>
         )}
 
-        {/* Elder Code Input */}
-        {state.step === 'elder-code' && (
+        {/* Elder Signup Form */}
+        {state.step === 'elder' && (
           <>
-            <Text style={styles.subtitle}>가족으로부터 받은 6자리 초대코드를 입력해주세요.</Text>
+            <Text style={styles.subtitle}>초대코드, 성함, 전화번호를 입력해주세요</Text>
 
             <View style={styles.form}>
               <View style={styles.inputGroup}>
@@ -462,16 +427,7 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
                 />
                 <Text style={styles.inputHint}>{state.code.length}/6</Text>
               </View>
-            </View>
-          </>
-        )}
 
-        {/* Elder Info Input */}
-        {state.step === 'elder-info' && (
-          <>
-            <Text style={styles.subtitle}>어르신의 이름과 전화번호를 입력해주세요.</Text>
-
-            <View style={styles.form}>
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>성함</Text>
                 <TextInput
@@ -482,7 +438,6 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
                   onChangeText={(name) => setState((prev) => ({ ...prev, name, error: '' }))}
                   editable={!state.isLoading}
                   maxLength={50}
-                  autoFocus
                 />
                 <Text style={styles.inputHint}>{state.name.length}/50</Text>
               </View>
@@ -574,30 +529,7 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
           </>
         )}
 
-        {state.step === 'elder-code' && (
-          <>
-            <Pressable
-              style={({ pressed }) => [
-                styles.signupButton,
-                (state.code.length !== 6 || state.isLoading) && styles.signupButtonDisabled,
-                pressed && styles.signupButtonPressed,
-              ]}
-              onPress={handleElderCodeNext}
-              disabled={state.isLoading || state.code.length !== 6}
-            >
-              <Text style={styles.signupButtonText}>다음으로</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => setState((prev) => ({ ...prev, step: 'role', error: '', code: '' }))}
-              disabled={state.isLoading}
-            >
-              <Text style={styles.loginLink}>역할 다시 선택</Text>
-            </Pressable>
-          </>
-        )}
-
-        {state.step === 'elder-info' && (
+        {state.step === 'elder' && (
           <>
             <Pressable
               style={({ pressed }) => [
@@ -616,10 +548,10 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
             </Pressable>
 
             <Pressable
-              onPress={() => setState((prev) => ({ ...prev, step: 'elder-code', error: '' }))}
+              onPress={() => setState((prev) => ({ ...prev, step: 'role', error: '', code: '', name: '', phoneNumber: '' }))}
               disabled={state.isLoading}
             >
-              <Text style={styles.loginLink}>이전</Text>
+              <Text style={styles.loginLink}>역할 다시 선택</Text>
             </Pressable>
           </>
         )}
