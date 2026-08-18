@@ -20,6 +20,7 @@ export const Plus: React.FC<IndividualIconProps> = (props) => <Icon name="Plus" 
 export const Picture: React.FC<IndividualIconProps> = (props) => <Icon name="Picture" {...props} />;
 export const Comment: React.FC<IndividualIconProps> = (props) => <Icon name="Comment" {...props} />;
 export const More: React.FC<IndividualIconProps> = (props) => <Icon name="More" {...props} />;
+export const MoreVertical: React.FC<IndividualIconProps> = (props) => <Icon name="MoreVertical" {...props} />;
 export const Sent: React.FC<IndividualIconProps> = (props) => <Icon name="Sent" {...props} />;
 export const Calendar: React.FC<IndividualIconProps> = (props) => <Icon name="Calendar" {...props} />;
 export const Map: React.FC<IndividualIconProps> = (props) => <Icon name="Map" {...props} />;

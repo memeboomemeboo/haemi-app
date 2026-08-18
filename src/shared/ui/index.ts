@@ -21,6 +21,7 @@ export {
   Picture,
   Comment,
   More,
+  MoreVertical,
   Sent,
   Calendar,
   Map,
