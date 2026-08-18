@@ -1,3 +1,8 @@
+export type VoiceMemoSegment = {
+  uri: string;
+  durationSeconds: number;
+};
+
 export type FamilyMemoryItem = {
   id: string;
   authorName: string;
@@ -9,6 +14,7 @@ export type FamilyMemoryItem = {
   hasVoiceMemo: boolean;
   voiceDurationSeconds: number;
   voiceUri: string | null;
+  voiceSegments: VoiceMemoSegment[];
   createdAt: string;
 };
 
@@ -20,4 +26,5 @@ export type CreateFamilyMemoryItemParams = {
   hasVoiceMemo?: boolean;
   voiceDurationSeconds?: number;
   voiceUri?: string | null;
+  voiceSegments?: VoiceMemoSegment[];
 };

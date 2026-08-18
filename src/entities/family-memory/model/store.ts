@@ -33,8 +33,16 @@ export function addFamilyMemoryItem({
   hasVoiceMemo = false,
   voiceDurationSeconds = 0,
   voiceUri = null,
+  voiceSegments,
 }: CreateFamilyMemoryItemParams) {
   const nextPhotoUris = photoUris ?? (photoUri ? [photoUri] : []);
+  const nextVoiceSegments = voiceSegments ?? (voiceUri
+    ? [{ uri: voiceUri, durationSeconds: voiceDurationSeconds }]
+    : []);
+  const nextVoiceDurationSeconds = nextVoiceSegments.reduce(
+    (total, segment) => total + segment.durationSeconds,
+    0,
+  );
   const item: FamilyMemoryItem = {
     id: `local-memory-${Date.now()}-${nextLocalId}`,
     authorName: '딸',
@@ -44,8 +52,11 @@ export function addFamilyMemoryItem({
     photoUri: nextPhotoUris[0] ?? null,
     photoUris: nextPhotoUris,
     hasVoiceMemo,
-    voiceDurationSeconds,
-    voiceUri,
+    voiceDurationSeconds: hasVoiceMemo
+      ? Math.max(voiceDurationSeconds, nextVoiceDurationSeconds)
+      : 0,
+    voiceUri: nextVoiceSegments[0]?.uri ?? voiceUri,
+    voiceSegments: hasVoiceMemo ? nextVoiceSegments : [],
     createdAt: new Date().toISOString(),
   };
 
@@ -63,7 +74,7 @@ export function removeFamilyMemoryItem(id: string) {
 
 export function updateFamilyMemoryItem(
   id: string,
-  nextItem: Partial<Pick<FamilyMemoryItem, 'memo' | 'hasPhoto' | 'photoUri' | 'photoUris' | 'hasVoiceMemo' | 'voiceDurationSeconds' | 'voiceUri'>>,
+  nextItem: Partial<Pick<FamilyMemoryItem, 'memo' | 'hasPhoto' | 'photoUri' | 'photoUris' | 'hasVoiceMemo' | 'voiceDurationSeconds' | 'voiceUri' | 'voiceSegments'>>,
 ) {
   memoryItems = memoryItems.map((item) => (
     item.id === id
