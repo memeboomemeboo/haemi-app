@@ -39,8 +39,9 @@ export const useUserGroup = () => {
         const userData = meResponse.data as any;
         const groupId = userData.groupId;
 
-        console.log('[useUserGroup] 사용자 정보:', userData);
-        console.log('[useUserGroup] groupId:', groupId);
+        if (__DEV__) {
+          console.log('[useUserGroup] groupId 로드 완료');
+        }
 
         if (!groupId) {
           setState({
@@ -55,8 +56,6 @@ export const useUserGroup = () => {
         const groupResponse = await get<any>(`/groups/${groupId}`);
 
         const group = groupResponse?.data ?? null;
-
-        console.log('[useUserGroup] 그룹 정보:', group);
 
         setState({
           group,

@@ -21,9 +21,19 @@ export default function LoginScreen({ onLoginSuccess, onSignupPress }: LoginScre
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const isValidEmail = (emailStr: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(emailStr.trim());
+  };
+
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       setError('이메일과 비밀번호를 입력해주세요.');
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError('유효한 이메일 형식을 입력해주세요.');
       return;
     }
 
@@ -39,7 +49,14 @@ export default function LoginScreen({ onLoginSuccess, onSignupPress }: LoginScre
       const response = await authService.login(request);
 
       if (response.success) {
-        authService.setToken(response.data.accessToken);
+        // 토큰 및 리프레시 토큰 안전하게 저장
+        await authService.setToken(response.data.accessToken);
+        if (response.data.refreshToken) {
+          await authService.setRefreshToken(response.data.refreshToken);
+        }
+
+        // 즉시 비밀번호 초기화 (메모리 보안)
+        setPassword('');
 
         try {
           const meResponse = await authService.getMe();
@@ -47,7 +64,9 @@ export default function LoginScreen({ onLoginSuccess, onSignupPress }: LoginScre
             setRole(meResponse.data.role);
           }
         } catch (meErr) {
-          console.warn('Failed to fetch user role:', meErr);
+          if (__DEV__) {
+            console.warn('Failed to fetch user role:', meErr);
+          }
         }
 
         showSuccess('로그인에 성공했습니다!', {
@@ -60,6 +79,7 @@ export default function LoginScreen({ onLoginSuccess, onSignupPress }: LoginScre
       const errorMessage = getErrorMessage(err);
       setError(errorMessage);
     } finally {
+      setPassword(''); // 에러 발생해도 비밀번호 초기화
       setIsLoading(false);
     }
   };

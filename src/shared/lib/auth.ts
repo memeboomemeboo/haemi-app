@@ -5,25 +5,25 @@
 
 import { setAuthToken as setClientToken, getAuthToken as getClientToken } from '@/shared/api';
 
-export const getAuthToken = () => getClientToken();
+export const getAuthToken = async () => getClientToken();
 
-export const setCurrentAuthToken = (token: string) => {
-  setClientToken(token);
+export const setCurrentAuthToken = async (token: string) => {
+  await setClientToken(token);
 };
 
-export const clearAuthToken = () => {
-  setClientToken(null);
+export const clearAuthToken = async () => {
+  await setClientToken(null);
 };
 
 /**
  * 개발 환경에서 테스트 토큰 초기화
  * ⚠️ 프로덕션에서는 사용 금지
  */
-export const initializeTestToken = () => {
-  if (process.env.NODE_ENV === 'development') {
+export const initializeTestToken = async () => {
+  if (__DEV__) {
     const testToken = process.env.EXPO_PUBLIC_TEST_TOKEN;
     if (testToken) {
-      setCurrentAuthToken(testToken);
+      await setCurrentAuthToken(testToken);
     }
   }
 };

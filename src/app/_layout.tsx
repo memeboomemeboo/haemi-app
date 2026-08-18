@@ -14,7 +14,11 @@ export default function TabLayout() {
 
   // 앱 시작 시 테스트 토큰 설정 (개발용)
   useEffect(() => {
-    initializeTestToken();
+    initializeTestToken().catch((error) => {
+      if (__DEV__) {
+        console.warn('Failed to initialize test token:', error);
+      }
+    });
   }, []);
 
   return (

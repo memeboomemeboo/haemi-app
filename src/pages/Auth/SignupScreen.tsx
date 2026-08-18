@@ -45,15 +45,21 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
     return '';
   };
 
+  const isValidEmail = (emailStr: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(emailStr.trim());
+  };
+
   const validateForm = (): string | null => {
     if (!name.trim()) return '이름을 입력해주세요.';
+    if (!email.trim()) return '이메일을 입력해주세요.';
+    if (!isValidEmail(email)) return '유효한 이메일 형식을 입력해주세요.';
     if (!password.trim()) return '비밀번호를 입력해주세요.';
 
     const passwordError = validatePassword(password);
     if (passwordError) return passwordError;
 
     if (password !== passwordConfirm) return '비밀번호가 일치하지 않습니다.';
-    if (!email.trim()) return '이메일을 입력해주세요.';
 
     return null;
   };
@@ -79,6 +85,10 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
       const response = await authService.signup(request);
 
       if (response.success) {
+        // 즉시 비밀번호 초기화 (메모리 보안)
+        setPassword('');
+        setPasswordConfirm('');
+
         showSuccess('회원가입에 성공했습니다!', {
           onDismiss: onSignupSuccess,
         });
@@ -86,8 +96,12 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
         setError(response.message || '회원가입에 실패했습니다.');
       }
     } catch (err) {
-      setError(getErrorMessage(err));
+      const errorMessage = getErrorMessage(err);
+      setError(errorMessage);
     } finally {
+      // 에러 발생해도 비밀번호 초기화
+      setPassword('');
+      setPasswordConfirm('');
       setIsLoading(false);
     }
   };
@@ -162,10 +176,10 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
             onChangeText={setPassword}
             editable={!isLoading}
             secureTextEntry
-            maxLength={30}
+            maxLength={128}
           />
           <Text style={styles.hint}>
-            • 8자 이상 30자 이하{'\n'}
+            • 8자 이상{'\n'}
             • 영문자, 숫자, 특수문자(! @ # $ % ^ & *) 포함
           </Text>
         </View>

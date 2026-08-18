@@ -2,7 +2,7 @@
  * 인증 API
  */
 
-import { post, get, setAuthToken as setClientToken } from './client';
+import { post, get, setAuthToken as setClientToken, setRefreshToken as setClientRefreshToken } from './client';
 import type {
   SignUpRequest,
   LoginRequest,
@@ -35,7 +35,8 @@ export const authService = {
     try {
       await post('/auth/logout', {});
     } finally {
-      setClientToken(null);
+      await setClientToken(null);
+      await setClientRefreshToken(null);
     }
   },
 
@@ -59,12 +60,18 @@ export const authService = {
   },
 
   // 토큰 설정 (login 후 호출)
-  setToken(token: string) {
-    setClientToken(token);
+  async setToken(token: string) {
+    await setClientToken(token);
+  },
+
+  // 리프레시 토큰 설정
+  async setRefreshToken(token: string) {
+    await setClientRefreshToken(token);
   },
 
   // 토큰 초기화 (logout 후 호출)
-  clearToken() {
-    setClientToken(null);
+  async clearToken() {
+    await setClientToken(null);
+    await setClientRefreshToken(null);
   },
 };
