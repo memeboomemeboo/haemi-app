@@ -3,7 +3,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useCallback } from 'react';
 import * as Device from 'expo-device';
 import { colors } from '@/shared/constants';
-import { authService, elderService, getErrorMessage, setAuthToken, setRefreshToken } from '@/shared/api';
+import { authService, elderService, getErrorMessage } from '@/shared/api';
+import { setAuthToken, setRefreshToken } from '@/shared/api/client';
 import { useUserContext } from '@/shared/context/UserContext';
 import { useToast } from '@/shared/hooks';
 import type { SignUpRequest, UserRole } from '@/shared/types';
@@ -409,25 +410,9 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
 
       <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
         {state.step === 'role' && (
-          <>
-            <Pressable
-              style={({ pressed }) => [
-                styles.signupButton,
-                state.isLoading && styles.signupButtonDisabled,
-                pressed && styles.signupButtonPressed,
-              ]}
-              onPress={() => {}}
-              disabled={state.isLoading}
-            >
-              <Text style={styles.signupButtonText}>
-                {state.role === 'FAMILY' ? '가족으로 가입' : '어르신으로 가입'}
-              </Text>
-            </Pressable>
-
-            <Pressable onPress={onLoginPress} disabled={state.isLoading}>
-              <Text style={styles.loginLink}>이미 계정이 있으신가요? 로그인</Text>
-            </Pressable>
-          </>
+          <Pressable onPress={onLoginPress} disabled={state.isLoading}>
+            <Text style={styles.loginLink}>이미 계정이 있으신가요? 로그인</Text>
+          </Pressable>
         )}
 
         {state.step === 'family' && (
