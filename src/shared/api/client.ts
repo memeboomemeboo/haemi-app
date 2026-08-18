@@ -30,6 +30,11 @@ const useSecureStorage = !__DEV__ && Boolean(SecureStore);
 let cachedToken: string | null = null;
 let isRefreshingToken = false;
 let refreshTokenPromise: Promise<string | null> | null = null;
+let onUnauthorizedCallback: (() => void) | null = null;
+
+export const setOnUnauthorizedCallback = (callback: (() => void) | null) => {
+  onUnauthorizedCallback = callback;
+};
 
 const setTokenStorage = async (key: string, value: string | null) => {
   if (useSecureStorage) {
@@ -119,6 +124,9 @@ const refreshAuthToken = async (): Promise<string | null> => {
         if (response.status === 401) {
           await setAuthToken(null);
           await setRefreshToken(null);
+          if (onUnauthorizedCallback) {
+            onUnauthorizedCallback();
+          }
         }
         return null;
       }
@@ -139,6 +147,11 @@ const refreshAuthToken = async (): Promise<string | null> => {
     } catch (error) {
       if (__DEV__) {
         console.warn('Token refresh failed:', error);
+      }
+      await setAuthToken(null);
+      await setRefreshToken(null);
+      if (onUnauthorizedCallback) {
+        onUnauthorizedCallback();
       }
       return null;
     } finally {

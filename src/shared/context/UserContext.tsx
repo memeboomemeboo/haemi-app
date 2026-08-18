@@ -3,7 +3,7 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { getAuthToken, authService } from '@/shared/api';
+import { getAuthToken, authService, setOnUnauthorizedCallback } from '@/shared/api';
 import type { UserRole, Relation, Group } from '@/shared/types';
 
 interface UserContextType {
@@ -91,6 +91,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setPhoneNumberState(null);
     setGroupState(null);
   }, []);
+
+  // 토큰 갱신 실패 시 자동 로그아웃 콜백 등록
+  useEffect(() => {
+    setOnUnauthorizedCallback(logout);
+    return () => {
+      setOnUnauthorizedCallback(null);
+    };
+  }, [logout]);
 
   const value: UserContextType = {
     token,

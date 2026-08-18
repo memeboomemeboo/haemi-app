@@ -7,6 +7,7 @@ export {
   apiClient,
   setAuthToken,
   getAuthToken,
+  setOnUnauthorizedCallback,
   fetchApi,
   get,
   post,
