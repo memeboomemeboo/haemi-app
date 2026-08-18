@@ -1,9 +1,9 @@
-import { View, ScrollView, StyleSheet, Text, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import { View, ScrollView, StyleSheet, Text, TextInput, Pressable, ActivityIndicator, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useCallback } from 'react';
 import * as Device from 'expo-device';
 import { colors } from '@/shared/constants';
-import { authService, elderService, getErrorMessage } from '@/shared/api';
+import { authService, elderService, groupService, getErrorMessage } from '@/shared/api';
 import { setAuthToken, setRefreshToken } from '@/shared/api/client';
 import { useUserContext } from '@/shared/context/UserContext';
 import { useToast } from '@/shared/hooks';
@@ -22,7 +22,7 @@ const PASSWORD_REGEX = {
 };
 
 interface SignupState {
-  step: 'role' | 'family' | 'elder-code' | 'elder-info';
+  step: 'role' | 'family' | 'family-invite-share' | 'elder-code' | 'elder-info';
   email: string;
   password: string;
   passwordConfirm: string;
@@ -32,6 +32,9 @@ interface SignupState {
   role: UserRole;
   isLoading: boolean;
   error: string;
+  groupId?: string;
+  invitationCode?: string;
+  memberId?: string;
 }
 
 export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupScreenProps) {
@@ -128,17 +131,60 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
 
       const response = await authService.signup(request);
 
-      if (response.success) {
-        showSuccess('회원가입에 성공했습니다!', {
-          onDismiss: onSignupSuccess,
-        });
-      } else {
+      if (!response.success) {
         setState((prev) => ({
           ...prev,
           error: response.message || '회원가입에 실패했습니다.',
           isLoading: false,
         }));
+        return;
       }
+
+      const { data } = response;
+
+      // 토큰 저장
+      await setAuthToken(data.accessToken);
+      if (data.refreshToken) {
+        await setRefreshToken(data.refreshToken);
+      }
+
+      // UserContext에 토큰 저장
+      setToken(data.accessToken);
+      setUserRole('FAMILY');
+
+      // 그룹 생성
+      const groupResponse = await groupService.createGroup({
+        relation: 'SON',
+        notificationPreference: 'ALL',
+      });
+
+      if (!groupResponse.success || !groupResponse.data?.groupId) {
+        throw new Error('그룹 생성에 실패했습니다.');
+      }
+
+      const groupId = groupResponse.data.groupId;
+
+      // 초대 코드 생성 (임시 전화번호로 설정)
+      const invitationResponse = await groupService.createInvitation(groupId, {
+        phoneNumber: '', // 초대 코드 생성 시에는 전화번호 미필요
+        relation: 'SON',
+      });
+
+      if (!invitationResponse.success || !invitationResponse.data?.token) {
+        throw new Error('초대 코드 생성에 실패했습니다.');
+      }
+
+      // 초대 코드 공유 화면으로 이동
+      setState((prev) => ({
+        ...prev,
+        step: 'family-invite-share',
+        groupId,
+        invitationCode: invitationResponse.data.token,
+        memberId: data.memberId,
+        isLoading: false,
+      }));
+
+      showSuccess('회원가입에 성공했습니다!');
     } catch (err) {
       const errorMessage = getErrorMessage(err);
       setState((prev) => ({
@@ -356,6 +402,44 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
           </>
         )}
 
+        {/* Family Invitation Share Screen */}
+        {state.step === 'family-invite-share' && (
+          <>
+            <View style={styles.inviteSection}>
+              <Text style={styles.inviteTitle}>어르신을 초대해주세요</Text>
+              <Text style={styles.inviteSubtitle}>
+                가족의 어르신이 이 코드를 입력하고 가입하면,{'\n'}함께 추억을 나눌 수 있습니다.
+              </Text>
+
+              <View style={styles.codeContainer}>
+                <Text style={styles.codeLabel}>초대코드</Text>
+                <View style={styles.codeBox}>
+                  <Text style={styles.codeText}>{state.invitationCode}</Text>
+                  <Pressable
+                    onPress={() => {
+                      if (state.invitationCode) {
+                        Share.share({
+                          message: `해미 초대코드: ${state.invitationCode}\n\n이 코드를 입력하여 어르신 계정을 만들어주세요.`,
+                          title: '해미 초대코드',
+                        });
+                      }
+                    }}
+                    style={styles.copyButton}
+                  >
+                    <Text style={styles.copyButtonText}>복사</Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              <View style={styles.infoBox}>
+                <Text style={styles.infoText}>
+                  💡 어르신이 앱을 설치한 후 '어르신으로 가입' 을 선택하고 이 코드를 입력하면 됩니다.
+                </Text>
+              </View>
+            </View>
+          </>
+        )}
+
         {/* Elder Code Input */}
         {state.step === 'elder-code' && (
           <>
@@ -454,6 +538,38 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
               disabled={state.isLoading}
             >
               <Text style={styles.loginLink}>역할 다시 선택</Text>
+            </Pressable>
+          </>
+        )}
+
+        {state.step === 'family-invite-share' && (
+          <>
+            <Pressable
+              style={({ pressed }) => [
+                styles.signupButton,
+                state.isLoading && styles.signupButtonDisabled,
+                pressed && styles.signupButtonPressed,
+              ]}
+              onPress={async () => {
+                try {
+                  await Share.share({
+                    message: `해미 초대코드: ${state.invitationCode}\n\n이 코드를 입력하여 어르신 계정을 만들어주세요.`,
+                    title: '해미 초대코드',
+                  });
+                } catch (err) {
+                  if (__DEV__) console.error('Share failed:', err);
+                }
+              }}
+              disabled={state.isLoading}
+            >
+              <Text style={styles.signupButtonText}>공유하기</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={onSignupSuccess}
+              disabled={state.isLoading}
+            >
+              <Text style={styles.loginLink}>나중에</Text>
             </Pressable>
           </>
         )}
@@ -731,5 +847,79 @@ const styles = StyleSheet.create({
     color: colors.primary,
     textAlign: 'center',
     paddingVertical: 8,
+  },
+  inviteSection: {
+    marginVertical: 24,
+  },
+  inviteTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.light.label.strong,
+    marginBottom: 12,
+    textAlign: 'center',
+    letterSpacing: -0.48,
+  },
+  inviteSubtitle: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.light.label.assistive,
+    marginBottom: 32,
+    textAlign: 'center',
+    lineHeight: 20,
+    letterSpacing: -0.28,
+  },
+  codeContainer: {
+    marginBottom: 32,
+  },
+  codeLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.light.label.normal,
+    marginBottom: 8,
+    letterSpacing: -0.28,
+  },
+  codeBox: {
+    backgroundColor: colors.light.fill.normal,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  codeText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.primary,
+    letterSpacing: 2,
+  },
+  copyButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  copyButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.light.background.normal,
+    letterSpacing: -0.24,
+  },
+  infoBox: {
+    backgroundColor: colors.light.background.neutral,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.light.line.neutral,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  infoText: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.light.label.assistive,
+    lineHeight: 18,
+    letterSpacing: -0.26,
   },
 });
