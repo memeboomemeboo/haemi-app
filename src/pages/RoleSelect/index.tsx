@@ -37,10 +37,10 @@ export default function RoleSelectScreen({ onRoleSelect }: RoleSelectProps) {
           <Pressable
             style={({ pressed }) => [
               styles.optionCard,
-              selectedRole === 'GUARDIAN' && styles.optionCardSelected,
+              selectedRole === 'FAMILY' && styles.optionCardSelected,
               pressed && styles.optionCardPressed,
             ]}
-            onPress={() => setSelectedRole('GUARDIAN')}
+            onPress={() => setSelectedRole('FAMILY')}
           >
             <View style={styles.optionContent}>
               <View style={styles.roleIcon}>
@@ -51,7 +51,7 @@ export default function RoleSelectScreen({ onRoleSelect }: RoleSelectProps) {
                 어르신의 추억을 기록하고{'\n'}가족과 함께 공유합니다
               </Text>
             </View>
-            {selectedRole === 'GUARDIAN' && (
+            {selectedRole === 'FAMILY' && (
               <View style={styles.checkmark}>
                 <Text style={styles.checkmarkText}>✓</Text>
               </View>
@@ -102,7 +102,7 @@ export default function RoleSelectScreen({ onRoleSelect }: RoleSelectProps) {
           onPress={handleContinue}
         >
           <Text style={styles.confirmButtonText}>
-            {selectedRole === 'GUARDIAN' ? '보호자로 계속' : selectedRole === 'ELDER' ? '어르신으로 계속' : '역할 선택'}
+            {selectedRole === 'FAMILY' ? '보호자로 계속' : selectedRole === 'ELDER' ? '어르신으로 계속' : '역할 선택'}
           </Text>
         </Pressable>
       </View>

@@ -2,7 +2,8 @@
  * 전역 사용자 상태 관리
  */
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { getAuthToken, authService } from '@/shared/api';
 import type { UserRole, Relation, Group } from '@/shared/types';
 
 interface UserContextType {
@@ -11,6 +12,7 @@ interface UserContextType {
   relation: Relation | null;
   phoneNumber: string | null;
   group: Group | null;
+  isHydrating: boolean;
   setToken: (token: string | null) => void;
   setRole: (role: UserRole) => void;
   setRelation: (relation: Relation) => void;
@@ -27,6 +29,40 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [relation, setRelationState] = useState<Relation | null>(null);
   const [phoneNumber, setPhoneNumberState] = useState<string | null>(null);
   const [group, setGroupState] = useState<Group | null>(null);
+  const [isHydrating, setIsHydrating] = useState(true);
+
+  // 앱 시작 시 저장된 토큰 복구 (hydration)
+  useEffect(() => {
+    const hydrateToken = async () => {
+      try {
+        const savedToken = await getAuthToken();
+        if (savedToken) {
+          setTokenState(savedToken);
+          // 토큰이 유효한지 확인하고 사용자 정보 로드
+          try {
+            const meResponse = await authService.getMe();
+            if (meResponse.success && meResponse.data) {
+              setRoleState(meResponse.data.role || null);
+            }
+          } catch (error) {
+            // 토큰이 만료되었거나 유효하지 않음 - 로그아웃 처리
+            setTokenState(null);
+            if (__DEV__) {
+              console.warn('Failed to hydrate user:', error);
+            }
+          }
+        }
+      } catch (error) {
+        if (__DEV__) {
+          console.warn('Failed to get auth token during hydration:', error);
+        }
+      } finally {
+        setIsHydrating(false);
+      }
+    };
+
+    hydrateToken();
+  }, []);
 
   const setToken = useCallback((newToken: string | null) => {
     setTokenState(newToken);
@@ -62,6 +98,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     relation,
     phoneNumber,
     group,
+    isHydrating,
     setToken,
     setRole,
     setRelation,
