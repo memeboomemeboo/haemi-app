@@ -1,13 +1,13 @@
-import { useSyncExternalStore, useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
 import type { CreateFamilyMemoryItemParams, FamilyMemoryItem } from './types';
 import {
-  getFamilyMemoryFeed,
+  getGroupMemoryFeed,
   createFamilyMemoryPost,
   updateFamilyMemoryPost,
   deleteFamilyMemoryPost,
 } from '@/shared/api/family-memories';
-import type { FamilyMemoryPost } from '@/shared/types/family-memories';
+import type { FamilyMemoryPost, GroupMemory } from '@/shared/types/family-memories';
 
 type Listener = () => void;
 
@@ -51,12 +51,37 @@ function convertPostToItem(post: FamilyMemoryPost): FamilyMemoryItem {
   };
 }
 
-export async function fetchFamilyMemoryItems(albumId: string) {
+function convertGroupMemoryToItem(memory: GroupMemory): FamilyMemoryItem {
+  const images = (memory.media ?? [])
+    .filter((media) => media.type === 'IMAGE' && media.accessUrl)
+    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+    .map((media) => media.accessUrl as string);
+  const audio = (memory.media ?? []).find((media) => media.type === 'AUDIO' && media.accessUrl);
+
+  return {
+    id: memory.memoryId,
+    authorName: memory.authorName || '가족',
+    authorRelation: memory.authorRelation || '가족',
+    memo: memory.textContent || '',
+    hasPhoto: images.length > 0,
+    photoUri: images[0] ?? null,
+    photoUris: images,
+    hasVoiceMemo: Boolean(audio?.accessUrl),
+    voiceDurationSeconds: (audio?.durationMs ?? 0) / 1000,
+    voiceUri: audio?.accessUrl ?? null,
+    voiceSegments: audio?.accessUrl
+      ? [{ uri: audio.accessUrl, durationSeconds: (audio.durationMs ?? 0) / 1000 }]
+      : [],
+    createdAt: memory.createdAt || new Date().toISOString(),
+  };
+}
+
+export async function fetchFamilyMemoryItems(groupId: string) {
   try {
     isLoading = true;
     error = null;
-    const feed = await getFamilyMemoryFeed({ albumId, page: 0, size: 50 });
-    memoryItems = feed.posts.map(convertPostToItem);
+    const feed = await getGroupMemoryFeed(groupId, 0, 50);
+    memoryItems = feed.memories.map(convertGroupMemoryToItem);
     emitChange();
   } catch (err) {
     error = err instanceof Error ? err : new Error('Failed to fetch memories');

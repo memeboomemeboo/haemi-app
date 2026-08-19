@@ -219,7 +219,6 @@ function FeedScreen() {
 
       setIsLoadingFeed(true);
       try {
-        // TODO: groupId를 albumId로 사용 (실제로는 API에서 groupId로 albumId를 조회해야 함)
         await fetchFamilyMemoryItems(group.groupId);
       } catch (error) {
         Alert.alert('추억을 불러오지 못했어요', '잠시 후 다시 시도해주세요.');

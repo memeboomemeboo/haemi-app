@@ -1,10 +1,13 @@
 import type {
+  CreateFamilyMemoryPostRequest,
   CreateFamilyMemoryPostParams,
   FamilyMemoryApiResponse,
   FamilyMemoryFeed,
   FamilyMemoryPost,
+  GroupMemoryFeed,
   GetFamilyMemoryFeedParams,
 } from '@/shared/types/family-memories';
+import { apiClient } from '@/shared/api/client';
 
 // 기본 API URL (환경변수)
 const HAEMI_API_BASE_URL = `${process.env.EXPO_PUBLIC_API_URL}/api/v1`;
@@ -62,6 +65,19 @@ export async function getFamilyMemoryFeed({
   });
 
   return readResponse<FamilyMemoryFeed>(response);
+}
+
+export async function getGroupMemoryFeed(groupId: string, page = 0, size = 50) {
+  const searchParams = new URLSearchParams({ page: String(page), size: String(size) });
+  const response = await apiClient.get<FamilyMemoryApiResponse<GroupMemoryFeed>>(
+    `/groups/${encodeURIComponent(groupId)}/memories?${searchParams}`,
+  );
+
+  if (!response.data) {
+    throw new HaemiApiError(500, response.message || '추억 데이터를 불러오지 못했습니다.');
+  }
+
+  return response.data;
 }
 
 export async function createFamilyMemoryPost({ albumId, data, photos = [] }: CreateFamilyMemoryPostParams) {
