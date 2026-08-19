@@ -40,6 +40,17 @@ export interface AuthTokens {
   refreshToken?: string;
 }
 
+export interface SignUpResponse {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  status: 'PENDING_VERIFICATION' | 'ACTIVE';
+  groupId?: string;
+  totpEnabled: boolean;
+  createdAt: string;
+}
+
 export interface AuthResponse extends AuthUser, AuthTokens {
   totpEnabled?: boolean;
 }

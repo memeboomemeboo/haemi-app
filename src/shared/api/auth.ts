@@ -5,18 +5,19 @@
 import { post, get, setAuthToken as setClientToken, setRefreshToken as setClientRefreshToken } from './client';
 import type {
   SignUpRequest,
+  SignUpResponse,
   LoginRequest,
   AuthResponse,
   TotpSetupResponse,
   TotpVerifyResponse,
   RefreshTokenRequest,
   AuthUser,
+  ApiResponse,
 } from '@/shared/types';
-import type { ApiResponse } from '@/shared/types';
 
 export const authService = {
-  async signup(data: SignUpRequest): Promise<ApiResponse<AuthResponse>> {
-    return post<ApiResponse<AuthResponse>>('/auth/signup', data, {
+  async signup(data: SignUpRequest): Promise<ApiResponse<SignUpResponse>> {
+    return post<ApiResponse<SignUpResponse>>('/auth/signup', data, {
       skipAuth: true,
     });
   },

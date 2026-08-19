@@ -38,6 +38,31 @@ export type FamilyMemoryFeed = {
   hasNext: boolean;
 };
 
+export type GroupMemoryMedia = {
+  mediaId: string;
+  type: 'IMAGE' | 'AUDIO';
+  accessUrl?: string;
+  durationMs?: number;
+  displayOrder?: number;
+};
+
+export type GroupMemory = {
+  memoryId: string;
+  authorName?: string;
+  authorRelation?: string;
+  textContent?: string;
+  createdAt?: string;
+  media?: GroupMemoryMedia[];
+};
+
+export type GroupMemoryFeed = {
+  memories: GroupMemory[];
+  totalCount: number;
+  page: number;
+  size: number;
+  hasNext: boolean;
+};
+
 export type CreateFamilyMemoryPostRequest = {
   memberId: string;
   memberName: string;

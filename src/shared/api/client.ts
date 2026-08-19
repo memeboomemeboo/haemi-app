@@ -207,6 +207,15 @@ const handleResponse = async <T>(response: Response, retryRequest?: () => Promis
     }
 
     if (response.status === 401) {
+      if (!retryRequest) {
+        throw new ApiError(
+          response.status,
+          data?.message || 'Unauthorized',
+          data?.code,
+          data?.details
+        );
+      }
+
       await setAuthToken(null);
       await setRefreshToken(null);
       throw new UnauthorizedError();

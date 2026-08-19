@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import * as Device from 'expo-device';
 import { colors } from '@/shared/constants';
-import { authService, elderService, groupService, getErrorMessage } from '@/shared/api';
+import { authService, elderService, getErrorMessage } from '@/shared/api';
 import { setAuthToken, setRefreshToken } from '@/shared/api/client';
 import { useUserContext } from '@/shared/context/UserContext';
 import { useToast } from '@/shared/hooks';
@@ -136,51 +136,14 @@ export default function SignupScreen({ onSignupSuccess, onLoginPress }: SignupSc
         return;
       }
 
-      const { data } = response;
-
-      // 토큰 저장
-      await setAuthToken(data.accessToken);
-      if (data.refreshToken) {
-        await setRefreshToken(data.refreshToken);
-      }
-
-      // UserContext에 토큰 저장
-      setToken(data.accessToken);
-      setUserRole('FAMILY');
-
-      // 그룹 생성
-      const groupResponse = await groupService.createGroup({
-        relation: 'SON',
-        notificationPreference: 'ALL',
-      });
-
-      if (!groupResponse.success || !groupResponse.data?.groupId) {
-        throw new Error('그룹 생성에 실패했습니다.');
-      }
-
-      const groupId = groupResponse.data.groupId;
-
-      // 초대 코드 생성 (임시 전화번호로 설정)
-      const invitationResponse = await groupService.createInvitation(groupId, {
-        phoneNumber: '', // 초대 코드 생성 시에는 전화번호 미필요
-        relation: 'SON',
-      });
-
-      if (!invitationResponse.success || !invitationResponse.data?.token) {
-        throw new Error('초대 코드 생성에 실패했습니다.');
-      }
-
-      // 초대 코드 공유 화면으로 이동
       setState((prev) => ({
         ...prev,
-        step: 'family-invite-share',
-        groupId,
-        invitationCode: invitationResponse.data.token,
-        memberId: data.memberId,
         isLoading: false,
       }));
 
-      showSuccess('회원가입에 성공했습니다!');
+      showSuccess('회원가입에 성공했습니다. 이메일 인증 후 로그인해주세요.', {
+        onDismiss: onSignupSuccess,
+      });
     } catch (err) {
       const errorMessage = getErrorMessage(err);
       setState((prev) => ({
