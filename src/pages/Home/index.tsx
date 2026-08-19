@@ -1,6 +1,8 @@
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter, type Href } from 'expo-router';
 
+import { useHomeData, type HomeMemory } from '@/features/home';
 import { Alarm, Arrow, Comment, Picture, Report } from '@/shared/ui/Icon';
 import { BottomNavigation } from '@/shared/ui';
 
@@ -18,37 +20,6 @@ type Notice = {
   time: string;
 };
 
-const NOTICES: Notice[] = [
-  {
-    id: 'reply',
-    type: 'reply',
-    title: '어머니가 답을 보내셨어요',
-    description: '오늘의 회상 카드에 음성으로 답하셨어요',
-    time: '방금',
-  },
-  {
-    id: 'summary',
-    type: 'summary',
-    title: '오늘의 하루 요약이 도착했어요',
-    description: '어머니의 반응과 가족의 추억을 모았어요',
-    time: '어제',
-  },
-  {
-    id: 'photo',
-    type: 'photo',
-    title: '사진 28장이 추억 피드에 담겼어요',
-    description: '사진 동기화가 모두 완료됐어요',
-    time: '2일 전',
-  },
-  {
-    id: 'report',
-    type: 'report',
-    title: '이번 주 회상 리포트가 도착했어요',
-    description: '한 주 동안의 회상 활동을 확인해 보세요',
-    time: '월요일',
-  },
-];
-
 const NOTICE_ICONS: Record<NoticeType, typeof Comment> = {
   reply: Comment,
   summary: Alarm,
@@ -58,12 +29,18 @@ const NOTICE_ICONS: Record<NoticeType, typeof Comment> = {
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { data, isLoading, error, refetch } = useHomeData();
+  const todayReminiscence = data?.todayReminiscence;
+  const firstRecallCard = todayReminiscence?.cards?.[0];
+  const notices = buildNotices(data?.memories ?? [], data?.elderName ?? '어르신');
 
   return (
     <View style={styles.screen}>
       <ScrollView
         contentContainerStyle={[styles.content, { paddingTop: Math.max(insets.top + 7, 24) }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="#fd6941" />}
       >
         <View style={styles.header}>
           <Image source={logoSource} style={styles.logo} resizeMode="contain" />
@@ -73,8 +50,9 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.greeting}>
-          <Text style={styles.greetingTitle}>승아님, 안녕하세요</Text>
-          <Text style={styles.greetingDescription}>엄마와의 소중한 추억을 함께 만들어가요.</Text>
+          <Text style={styles.greetingTitle}>{data?.userName ?? '가족'}님, 안녕하세요</Text>
+          <Text style={styles.greetingDescription}>{data?.elderName ?? '어르신'}과의 소중한 추억을 함께 만들어가요.</Text>
+          {error && <Text style={styles.errorText}>일부 정보를 불러오지 못했어요. 아래로 당겨 다시 시도해 주세요.</Text>}
         </View>
 
         <View style={styles.summaryRow}>
@@ -83,40 +61,50 @@ export default function HomeScreen() {
               <Image source={logoSource} style={styles.cardLogo} resizeMode="contain" />
               <Text style={styles.connectionSuffix}>로</Text>
             </View>
-            <Text style={styles.connectionDescription}>엄마와 가족 연결</Text>
-            <Text style={styles.connectionDays}>128일째</Text>
+            <Text style={styles.connectionDescription}>{data?.elderName ?? '어르신'}과 가족 연결</Text>
+            <Text style={styles.connectionDays}>{data?.connectionDays ?? '-'}일째</Text>
             <Image source={familySource} style={styles.familyImage} resizeMode="contain" />
           </View>
 
           <View style={styles.metricsColumn}>
-            <MetricCard label="오늘의 추억" value="1개" icon="▣" />
-            <MetricCard label="이번 주 대화 시간" value="48분" icon="◷" />
+            <MetricCard label="오늘의 추억" value={`${data?.todayMemoryCount ?? 0}개`} icon="▣" />
+            <MetricCard label="이번 주 대화 시간" value={`${data?.weeklyConversationMinutes ?? 0}분`} icon="◷" />
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>오늘의 회상 카드</Text>
-          <View style={styles.recallCard}>
-            <Image source={memorySource} style={styles.memoryImage} />
-            <View style={styles.recallContent}>
-              <Text style={styles.recallTitle}>1978년 여름</Text>
-              <Text style={styles.recallDescription}>가족과 바다에 갔던 날</Text>
-              <Pressable style={styles.detailButton}>
-                <Text style={styles.detailButtonText}>자세히 보기</Text>
-              </Pressable>
+          {firstRecallCard ? (
+            <View style={styles.recallCard}>
+              <Image source={memorySource} style={styles.memoryImage} />
+              <View style={styles.recallContent}>
+                <Text style={styles.recallTitle}>오늘의 회상</Text>
+                <Text style={styles.recallDescription} numberOfLines={2}>
+                  {firstRecallCard.promptText}
+                </Text>
+                <Pressable style={styles.detailButton} onPress={() => router.push('/family-memories')}>
+                  <Text style={styles.detailButtonText}>자세히 보기</Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
+          ) : (
+            <View style={styles.emptyRecallContainer}>
+              <Text style={styles.emptyRecallText}>아직 오늘의 회상 카드가 없어요.</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.noticeSection}>
-          <Pressable style={styles.noticeHeading}>
+          <Pressable style={styles.noticeHeading} onPress={() => router.push('/family-memories')}>
             <Text style={styles.sectionTitle}>최근 알림</Text>
             <Arrow size={14} color="#3c3e3f" />
           </Pressable>
           <View style={styles.noticeList}>
-            {NOTICES.map((notice) => (
-              <NoticeRow key={notice.id} notice={notice} />
+            {notices.map((notice) => (
+              <NoticeRow key={notice.id} notice={notice} onPress={() => router.push(notice.route)} />
             ))}
+            {!isLoading && notices.length === 0 && <Text style={styles.emptyNotice}>새로운 알림이 없어요.</Text>}
+            {isLoading && !data && <ActivityIndicator color="#fd6941" />}
           </View>
         </View>
       </ScrollView>
@@ -136,11 +124,11 @@ function MetricCard({ label, value, icon }: { label: string; value: string; icon
   );
 }
 
-function NoticeRow({ notice }: { notice: Notice }) {
+function NoticeRow({ notice, onPress }: { notice: Notice & { route: Href }; onPress: () => void }) {
   const NoticeIcon = NOTICE_ICONS[notice.type];
 
   return (
-    <Pressable style={styles.noticeRow}>
+    <Pressable style={styles.noticeRow} onPress={onPress}>
       <View style={styles.noticeIcon}>
         <NoticeIcon size={20} color="#76787a" />
       </View>
@@ -151,6 +139,31 @@ function NoticeRow({ notice }: { notice: Notice }) {
       <Text style={styles.noticeTime}>{notice.time}</Text>
     </Pressable>
   );
+}
+
+function buildNotices(memories: HomeMemory[], elderName: string): (Notice & { route: Href })[] {
+  const memoryNotices = memories.slice(0, 3).map((memory) => ({
+    id: memory.memoryId,
+    type: (memory.media?.some((media) => media.type === 'IMAGE') ? 'photo' : 'summary') as NoticeType,
+    title: `${memory.authorName || '가족'}님이 추억을 남겼어요`,
+    description: memory.textContent || `${elderName}과 함께 볼 새로운 추억이에요`,
+    time: formatRelativeTime(memory.createdAt),
+    route: '/family-memories' as Href,
+  }));
+
+  return memoryNotices;
+}
+
+function formatRelativeTime(value?: string): string {
+  if (!value) return '';
+  const diff = Date.now() - new Date(value).getTime();
+  const minutes = Math.max(0, Math.floor(diff / 60_000));
+  if (minutes < 1) return '방금';
+  if (minutes < 60) return `${minutes}분 전`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}시간 전`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? '어제' : `${days}일 전`;
 }
 
 const styles = StyleSheet.create({
@@ -191,6 +204,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 18,
     letterSpacing: -0.28,
+  },
+  errorText: {
+    color: '#ee2a2b',
+    fontSize: 12,
+    lineHeight: 16,
   },
   summaryRow: {
     height: 202,
@@ -312,6 +330,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  emptyRecallContainer: {
+    height: 114,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyRecallText: {
+    color: '#76787a',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 18,
+    letterSpacing: -0.28,
+    textAlign: 'center',
+  },
   memoryImage: {
     width: 81,
     height: 81,
@@ -363,6 +394,12 @@ const styles = StyleSheet.create({
   },
   noticeList: {
     gap: 8,
+  },
+  emptyNotice: {
+    paddingVertical: 20,
+    color: '#76787a',
+    fontSize: 14,
+    textAlign: 'center',
   },
   noticeRow: {
     minHeight: 49,
