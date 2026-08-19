@@ -63,8 +63,12 @@ export default function ReportScreen() {
                   <View style={styles.countBadge}>
                     <Text style={styles.countText}>{word.count}</Text>
                   </View>
-                  <Text style={styles.wordName}>{word.name}</Text>
-                  <Text style={styles.relation}>· {word.relation}</Text>
+                  <Text numberOfLines={1} style={styles.wordName}>
+                    {word.name}
+                  </Text>
+                  <Text numberOfLines={1} style={styles.relation}>
+                    · {word.relation}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -158,10 +162,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  scrollContent: { paddingBottom: 24 },
+  scrollContent: { paddingBottom: 40 },
   introSection: { paddingHorizontal: 30, paddingTop: 29, paddingBottom: 40, borderBottomWidth: 4, borderBottomColor: fill.normal },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  reportTitle: { color: label.neutral, fontSize: 24, lineHeight: 31, fontWeight: '700', letterSpacing: -0.48 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 },
+  reportTitle: { flexShrink: 1, color: label.neutral, fontSize: 24, lineHeight: 31, fontWeight: '700', letterSpacing: -0.48 },
   person: { marginTop: 10, color: label.assistive, fontSize: 18, lineHeight: 23, fontWeight: '400', letterSpacing: -0.36 },
   monthCard: { marginTop: 20, height: 93, paddingHorizontal: 23, paddingVertical: 14, borderRadius: 10, backgroundColor: background.neutral },
   monthLabel: { color: colors.primary, fontSize: 18, lineHeight: 23, fontWeight: '500', letterSpacing: -0.36 },
@@ -169,15 +173,15 @@ const styles = StyleSheet.create({
   section: { paddingHorizontal: 30, paddingVertical: 40, borderBottomWidth: 4, borderBottomColor: fill.normal },
   lastSection: { borderBottomWidth: 0 },
   sectionTitle: { marginBottom: 20, color: label.neutral, fontSize: 20, lineHeight: 26, fontWeight: '700', letterSpacing: -0.4 },
-  wordRow: { height: 55, paddingLeft: 18, flexDirection: 'row', alignItems: 'center' },
+  wordRow: { minHeight: 55, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center' },
   wordDivider: { borderBottomWidth: 1.5, borderBottomColor: colors.palette.neutral[95] },
-  countBadge: { width: 20, height: 20, marginRight: 24, borderRadius: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary },
+  countBadge: { width: 20, height: 20, marginRight: 20, borderRadius: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary },
   countText: { color: background.normal, fontSize: 14, lineHeight: 18, fontWeight: '600', letterSpacing: -0.28 },
-  wordName: { width: 35, color: label.neutral, fontSize: 18, lineHeight: 23, fontWeight: '600', letterSpacing: -0.36 },
-  relation: { color: label.assistive, fontSize: 14, lineHeight: 18, fontWeight: '500', letterSpacing: -0.28 },
+  wordName: { minWidth: 48, marginRight: 8, color: label.neutral, fontSize: 18, lineHeight: 23, fontWeight: '600', letterSpacing: -0.36 },
+  relation: { flexShrink: 1, color: label.assistive, fontSize: 14, lineHeight: 18, fontWeight: '500', letterSpacing: -0.28 },
   placeBlock: { marginTop: 20 },
   placeLabel: { marginBottom: 6, color: label.assistive, fontSize: 16, lineHeight: 21, fontWeight: '500', letterSpacing: -0.32 },
-  tags: { flexDirection: 'row', gap: 8 },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tag: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 6, backgroundColor: '#fff3f0' },
   tagText: { color: colors.primary, fontSize: 14, lineHeight: 18, fontWeight: '600', letterSpacing: -0.28 },
   voiceList: { gap: 13 },
