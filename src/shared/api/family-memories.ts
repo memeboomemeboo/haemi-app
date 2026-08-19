@@ -5,6 +5,7 @@ import type {
   FamilyMemoryPost,
   GetFamilyMemoryFeedParams,
 } from '@/shared/types/family-memories';
+import { getAccessToken } from '@/shared/api/session';
 
 const HAEMI_API_BASE_URL = 'http://54.180.61.149:8080';
 
@@ -18,10 +19,6 @@ class HaemiApiError extends Error {
   }
 }
 
-function getAccessToken() {
-  return process.env.EXPO_PUBLIC_HAEMI_ACCESS_TOKEN;
-}
-
 async function readResponse<T>(response: Response): Promise<T> {
   const text = await response.text();
   const body = text ? (JSON.parse(text) as FamilyMemoryApiResponse<T>) : undefined;
@@ -33,8 +30,8 @@ async function readResponse<T>(response: Response): Promise<T> {
   return (body?.data ?? (body as T)) as T;
 }
 
-function getAuthHeaders(): Record<string, string> {
-  const token = getAccessToken();
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const token = await getAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -53,7 +50,7 @@ export async function getFamilyMemoryFeed({
   });
 
   const response = await fetch(`${HAEMI_API_BASE_URL}/api/v1/albums/${albumId}/feed?${searchParams}`, {
-    headers: getAuthHeaders(),
+    headers: await getAuthHeaders(),
   });
 
   return readResponse<FamilyMemoryFeed>(response);
@@ -73,7 +70,7 @@ export async function createFamilyMemoryPost({ albumId, data, photos = [] }: Cre
 
   const response = await fetch(`${HAEMI_API_BASE_URL}/api/v1/albums/${albumId}/posts`, {
     method: 'POST',
-    headers: getAuthHeaders(),
+    headers: await getAuthHeaders(),
     body: formData,
   });
 
@@ -86,7 +83,7 @@ export async function toggleFamilyMemoryLike(albumId: string, postId: string, me
     `${HAEMI_API_BASE_URL}/api/v1/albums/${albumId}/posts/${postId}/like?${searchParams}`,
     {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     }
   );
 

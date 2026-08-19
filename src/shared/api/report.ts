@@ -1,16 +1,16 @@
 import type {
   CognitiveMetricResult,
+  HomeContextResult,
   CognitiveReportPeriod,
   CognitiveReportResult,
   ReportDeliveryMethod,
 } from '@/shared/types/report';
+import { getAccessToken } from '@/shared/api/session';
 
 const DEFAULT_API_BASE_URL = 'http://54.180.61.149:8080';
 
 export const REPORT_API_BASE_URL =
   process.env.EXPO_PUBLIC_HAEMI_API_BASE_URL ?? DEFAULT_API_BASE_URL;
-
-export const REPORT_ACCESS_TOKEN = process.env.EXPO_PUBLIC_HAEMI_ACCESS_TOKEN;
 
 type ApiResponse<T> = {
   success?: boolean;
@@ -35,6 +35,7 @@ type RequestOptions = RequestInit & {
 
 async function requestReport<T>(path: string, { accessToken, query, headers, ...init }: RequestOptions = {}) {
   const url = new URL(path, REPORT_API_BASE_URL);
+  const resolvedAccessToken = accessToken ?? await getAccessToken();
 
   Object.entries(query ?? {}).forEach(([key, value]) => {
     if (value) {
@@ -47,7 +48,7 @@ async function requestReport<T>(path: string, { accessToken, query, headers, ...
     headers: {
       Accept: 'application/json',
       ...(init.body ? { 'Content-Type': 'application/json' } : undefined),
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined),
+      ...(resolvedAccessToken ? { Authorization: `Bearer ${resolvedAccessToken}` } : undefined),
       ...headers,
     },
   });
@@ -66,7 +67,7 @@ export function getReportMetrics({
   elderId,
   from,
   to,
-  accessToken = REPORT_ACCESS_TOKEN,
+  accessToken,
 }: {
   elderId: string;
   from: string;
@@ -83,25 +84,37 @@ export function generateReport({
   elderId,
   albumId,
   period,
+  from,
+  to,
   deliveryMethod,
-  accessToken = REPORT_ACCESS_TOKEN,
+  accessToken,
 }: {
   elderId: string;
   albumId?: string;
   period: CognitiveReportPeriod;
+  from?: string;
+  to?: string;
   deliveryMethod: ReportDeliveryMethod;
   accessToken?: string;
 }) {
   return requestReport<CognitiveReportResult>('/api/v1/cognitive-dashboard/reports', {
     method: 'POST',
     accessToken,
-    query: { elderId, albumId, period, deliveryMethod },
+    query: { elderId, albumId, period, from, to, deliveryMethod },
   });
+}
+
+export function getHomeContext(accessToken?: string) {
+  return requestReport<HomeContextResult>('/api/v1/home', { accessToken });
+}
+
+export function getReportPdfUrl(reportId: string) {
+  return new URL(`/api/v1/cognitive-dashboard/reports/${reportId}/pdf`, REPORT_API_BASE_URL).toString();
 }
 
 export function markReportViewed({
   reportId,
-  accessToken = REPORT_ACCESS_TOKEN,
+  accessToken,
 }: {
   reportId: string;
   accessToken?: string;

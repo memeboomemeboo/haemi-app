@@ -1,38 +1,44 @@
 export type CognitiveReportPeriod = 'WEEKLY' | 'MONTHLY';
 export type ReportDeliveryMethod = 'IN_APP' | 'EMAIL' | 'IN_APP_AND_EMAIL';
+export type CognitiveReportMode = 'STANDARD' | 'MEMORY_FOCUSED';
+
+export type HomeContextResult = {
+  memberId?: string;
+  role?: 'FAMILY' | 'ELDER' | 'INSTITUTION_ADMIN';
+  groupId?: string;
+  elderId?: string;
+  accessMode?: 'UNSET' | 'A' | 'B';
+  elderStatus?: 'ACTIVE' | 'DECLINING' | 'HOSPITALIZED' | 'DORMANT' | 'DECEASED' | 'MEMORIAL';
+};
 
 export type CognitiveMetricResult = {
   elderId?: string;
-  albumId?: string;
-  institutionId?: string;
   metricDate?: string;
-  trainingSessionCount?: number;
-  trainingAccuracyRate?: number;
-  averageResponseSeconds?: number;
-  reminiscenceReactionCount?: number;
-  memoryPostCount?: number;
-  mostReactedPhotoType?: string;
+  sessionCount?: number;
+  voiceDetectedCount?: number;
+  averageDwellMs?: number;
+  hintPlaybackCount?: number;
+  hintNoResponseCount?: number;
+  familyContributionCount?: number;
+  topMemoryTopic?: string;
+  topDwelledPhoto?: string;
 };
 
 export type CognitiveReportResult = {
   reportId?: string;
   elderId?: string;
-  albumId?: string;
   period?: CognitiveReportPeriod;
+  mode?: CognitiveReportMode;
   periodStart?: string;
   periodEnd?: string;
-  participationCount?: number;
-  averageAccuracyRate?: number;
-  averageResponseSeconds?: number;
-  memoryPostCount?: number;
-  reminiscenceParticipationCount?: number;
-  mostReactedPhotoType?: string;
-  accuracyChangeFromPrevious?: number;
-  responseTimeChangeFromPrevious?: number;
-  accuracyTrend?: { date?: string; accuracyRate?: number }[];
-  changeSummary?: string;
-  deliveryMethod?: ReportDeliveryMethod;
+  daysTogether?: number;
+  rememberedTopics?: string[];
+  topDwelledPhotos?: string[];
+  voiceResponseCount?: number;
+  familyContributionCount?: number;
+  activityMessage?: string;
+  summary?: string;
+  medicalDisclaimer?: string;
   pdfKey?: string;
-  viewedAt?: string;
   createdAt?: string;
 };
