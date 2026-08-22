@@ -1,140 +1,143 @@
-import { apiClient } from './client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { fetchApi, get, patch, post } from './client';
+import type { ApiResponse } from '@/shared/types';
 
-export interface AlbumPhoto {
-  id: string;
-  url: string;
-  uploadedAt: string;
-  fileName: string;
-  size: number;
-  uploadedBy?: string;
+const ALBUM_ID_STORAGE_PREFIX = 'haemi_album_id';
+
+export interface AlbumPersonTag {
+  memberId: string;
+  memberName: string;
 }
 
-export interface AlbumMember {
-  id: string;
-  name: string;
-  relation?: string;
-  profileImageUrl?: string;
+export interface AlbumPhoto {
+  photoId: string;
+  storageKey: string;
+  originalFilename: string;
+  contentType: string;
+  fileSize: number;
+  shotAt?: string;
+  timePeriod?: string;
+  locationText?: string;
+  memo?: string;
+  personTags: AlbumPersonTag[];
+  analysisStatus: string;
+  uploadedBy: string;
+  uploadedAt: string;
 }
 
 export interface Album {
-  id: string;
-  name: string;
-  description?: string;
-  coverImageUrl?: string;
+  albumId: string;
+  elderProfileId: string;
+  groupId: string;
+  ownerMemberId: string;
+  memberIds: string[];
   photoCount: number;
-  memberCount: number;
-  members: AlbumMember[];
+  recentPhotos: AlbumPhoto[];
   createdAt: string;
-  updatedAt: string;
 }
 
-export interface AlbumCreateRequest {
-  name: string;
-  description?: string;
-  memberIds?: string[];
+interface HomeContext {
+  elderId: string;
+  groupId: string;
 }
 
-export interface PhotoUploadRequest {
+export interface AlbumPhotoMemoRequest {
+  timePeriod?: string;
+  locationText?: string;
+  memo?: string;
+  personTags?: AlbumPersonTag[];
+}
+
+export interface AlbumPhotoUpload {
+  uri: string;
   fileName: string;
   mimeType: string;
-  base64Data?: string;
-  uri?: string;
 }
 
-export interface AlbumPhotoCreateRequest {
-  photos: PhotoUploadRequest[];
-  uploadedBy?: string;
-  description?: string;
+export interface AlbumMemberOption {
+  memberId: string;
+  relation: string;
 }
 
-/**
- * 앨범 목록 조회
- */
-export async function getAlbums(params?: { limit?: number; offset?: number }): Promise<Album[]> {
-  const queryString = params
-    ? `?${new URLSearchParams(
-        Object.entries(params)
-          .filter(([, v]) => v !== undefined)
-          .map(([k, v]) => [k, String(v)]) as [string, string][]
-      ).toString()}`
-    : '';
-
-  return apiClient.get<Album[]>(`/albums${queryString}`);
+interface AlbumGroup {
+  members: AlbumMemberOption[];
 }
 
-/**
- * 특정 앨범 조회
- */
+async function getHomeContext(): Promise<HomeContext> {
+  const response = await get<ApiResponse<HomeContext>>('/home');
+  return response.data;
+}
+
+function getAlbumIdStorageKey(groupId: string): string {
+  return `${ALBUM_ID_STORAGE_PREFIX}:${groupId}`;
+}
+
+async function createAlbum(homeContext: HomeContext): Promise<Album> {
+  const response = await post<ApiResponse<Album>>('/albums', {
+    elderProfileId: homeContext.elderId,
+    groupId: homeContext.groupId,
+  });
+
+  return response.data;
+}
+
+export async function getOrCreateAlbum(albumId?: string): Promise<Album> {
+  const homeContext = await getHomeContext();
+  const storageKey = getAlbumIdStorageKey(homeContext.groupId);
+
+  if (albumId) {
+    await AsyncStorage.setItem(storageKey, albumId);
+    return getAlbumById(albumId);
+  }
+
+  const storedAlbumId = await AsyncStorage.getItem(storageKey);
+
+  if (storedAlbumId) {
+    return getAlbumById(storedAlbumId);
+  }
+
+  const album = await createAlbum(homeContext);
+  await AsyncStorage.setItem(storageKey, album.albumId);
+  return album;
+}
+
 export async function getAlbumById(albumId: string): Promise<Album> {
-  return apiClient.get<Album>(`/albums/${albumId}`);
+  const response = await get<ApiResponse<Album>>(`/albums/${albumId}`);
+  return response.data;
 }
 
-/**
- * 앨범 생성
- */
-export async function createAlbum(data: AlbumCreateRequest): Promise<Album> {
-  return apiClient.post<Album>('/albums', data);
+export async function getAlbumMemberOptions(): Promise<AlbumMemberOption[]> {
+  const homeContext = await getHomeContext();
+  const response = await get<ApiResponse<AlbumGroup>>(`/groups/${homeContext.groupId}`);
+
+  return response.data.members;
 }
 
-/**
- * 앨범 수정
- */
-export async function updateAlbum(albumId: string, data: Partial<AlbumCreateRequest>): Promise<Album> {
-  return apiClient.put<Album>(`/albums/${albumId}`, data);
+export async function uploadAlbumPhoto(albumId: string, photo: AlbumPhotoUpload) {
+  const formData = new FormData();
+  formData.append('files', {
+    uri: photo.uri,
+    name: photo.fileName,
+    type: photo.mimeType,
+  } as unknown as Blob);
+
+  const response = await fetchApi<ApiResponse<AlbumPhoto[]>>(`/albums/${albumId}/photos`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  return response.data;
 }
 
-/**
- * 앨범 삭제
- */
-export async function deleteAlbum(albumId: string): Promise<void> {
-  await apiClient.delete<void>(`/albums/${albumId}`);
-}
-
-/**
- * 앨범 내 사진 목록 조회
- */
-export async function getAlbumPhotos(
+export async function updateAlbumPhotoMemo(
   albumId: string,
-  params?: { limit?: number; offset?: number }
-): Promise<AlbumPhoto[]> {
-  const queryString = params
-    ? `?${new URLSearchParams(
-        Object.entries(params)
-          .filter(([, v]) => v !== undefined)
-          .map(([k, v]) => [k, String(v)]) as [string, string][]
-      ).toString()}`
-    : '';
+  photoId: string,
+  data: AlbumPhotoMemoRequest
+): Promise<AlbumPhoto> {
+  const response = await patch<ApiResponse<AlbumPhoto>>(
+    `/albums/${albumId}/photos/${photoId}/memo`,
+    data
+  );
 
-  return apiClient.get<AlbumPhoto[]>(`/albums/${albumId}/photos${queryString}`);
-}
-
-/**
- * 앨범에 사진 업로드
- */
-export async function uploadAlbumPhotos(
-  albumId: string,
-  data: AlbumPhotoCreateRequest
-): Promise<AlbumPhoto[]> {
-  return apiClient.post<AlbumPhoto[]>(`/albums/${albumId}/photos`, data);
-}
-
-/**
- * 앨범에서 사진 삭제
- */
-export async function deleteAlbumPhoto(albumId: string, photoId: string): Promise<void> {
-  await apiClient.delete<void>(`/albums/${albumId}/photos/${photoId}`);
-}
-
-/**
- * 앨범에 가족 구성원 추가
- */
-export async function addAlbumMember(albumId: string, memberId: string): Promise<Album> {
-  return apiClient.post<Album>(`/albums/${albumId}/members`, { memberId });
-}
-
-/**
- * 앨범에서 가족 구성원 제거
- */
-export async function removeAlbumMember(albumId: string, memberId: string): Promise<Album> {
-  return apiClient.delete<Album>(`/albums/${albumId}/members/${memberId}`);
+  return response.data;
 }

@@ -8,7 +8,7 @@ export const AlbumEmptyState = () => {
       <Illustration name="emptyAlbum" width={85} height={70} />
       <View style={styles.textGroup}>
         <Text style={styles.title}>아직 등록된 사진이 없어요</Text>
-        <Text style={styles.subtitle}>첫 번째 기억을 저장해보세요</Text>
+        <Text style={styles.subtitle}>어르신께 추억을 전달드려보세요!</Text>
       </View>
     </View>
   );
@@ -16,9 +16,10 @@ export const AlbumEmptyState = () => {
 
 const styles = StyleSheet.create({
   container: {
-    width: 247,
+    width: 300,
+    maxWidth: '100%',
     alignItems: 'center',
-    gap: 43,
+    gap: 29,
   },
   textGroup: {
     alignItems: 'center',
