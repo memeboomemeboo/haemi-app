@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -23,8 +22,6 @@ import {
   HEART_XML,
   RING_XML,
 } from './assets';
-
-const logoSource = require('../../../assets/images/haemi-logo-small.png');
 
 const ORANGE = '#fd6941';
 const ORANGE_DEEP = '#fd6035';
@@ -142,10 +139,6 @@ export default function CaregiverHomeScreen() {
   return (
     <View style={styles.outer}>
       <SafeAreaView edges={['top']} style={[styles.phone, { width: screenWidth }]}>
-        <View style={styles.header}>
-          <Image source={logoSource} style={styles.logo} contentFit="contain" />
-        </View>
-
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
@@ -329,17 +322,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
     overflow: 'hidden',
-  },
-  header: {
-    height: 50,
-    paddingHorizontal: 30,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-  },
-  logo: {
-    width: 62,
-    height: 24,
   },
   scroll: {
     flex: 1,
