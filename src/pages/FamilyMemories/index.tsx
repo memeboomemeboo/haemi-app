@@ -1210,6 +1210,8 @@ function RealVoiceMemoPlayer({
     }
 
     if (status.playing && hasCompleted) {
+      // 재생 재시작 시 완료 표시를 현재 재생 상태와 동기화한다.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHasCompleted(false);
     }
 

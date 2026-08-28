@@ -68,6 +68,8 @@ export default function MemberEditScreen() {
     if (initializedRef.current) return;
     if (group?.members) {
       initializedRef.current = true;
+      // 최초로 불러온 그룹 구성원을 편집용 로컬 상태에 복사한다.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFamilyMembers(
         group.members.map((member) => ({
           id: member.memberId,

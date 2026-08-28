@@ -44,9 +44,11 @@ export function useAsyncData<T>(
     }
   }, [fetcher, options]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
+    // 마운트 시 한 번 수행하는 명시적 데이터 로딩 훅이다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {
