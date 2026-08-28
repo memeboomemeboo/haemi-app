@@ -3,6 +3,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Arrow, BottomNavigation, Profile } from '@/shared/ui';
 import { colors } from '@/shared/constants/tokens';
 import {
+  REPORT_COLORS,
+  REPORT_COPY,
   REPORT_METRIC_COLORS,
   REPORT_TONE_STYLES,
   type ReportTone,
@@ -29,8 +31,8 @@ export default function ReportScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>리포트</Text>
-          <Text style={styles.caption}>※관찰이 필요한 순으로 매주 월요일마다 정렬돼요.</Text>
+          <Text style={styles.title}>{REPORT_COPY.title}</Text>
+          <Text style={styles.caption}>{REPORT_COPY.caption}</Text>
         </View>
 
         <View style={styles.reportList}>
@@ -59,7 +61,7 @@ function ReportCard({
           <View style={styles.cardHeader}>
             <View style={styles.profileGroup}>
               <View style={styles.avatar}>
-                <Profile size={41} color="#fd8768" />
+                <Profile size={41} color={REPORT_COLORS.avatarIcon} />
               </View>
 
               <View style={styles.profileText}>
@@ -105,7 +107,7 @@ function ReportCard({
         accessibilityRole="button"
         onPress={onOpenDetail}
       >
-        <Text style={styles.detailText}>자세히 보기</Text>
+        <Text style={styles.detailText}>{REPORT_COPY.detailButton}</Text>
         <Arrow size={12} color={light.label.alternative} />
       </Pressable>
     </View>
@@ -226,7 +228,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fed7cd',
+    backgroundColor: REPORT_COLORS.avatarBackground,
   },
   profileText: {
     width: 140,

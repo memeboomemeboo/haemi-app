@@ -26,15 +26,41 @@ export type SupportGuide = {
   description: string;
 };
 
+export type ReportDetailProfile = {
+  name: string;
+  meta: string;
+  badge: string;
+  summary: string;
+};
+
+export type ReportDetailAttendanceCopy = {
+  title: string;
+  summary: string;
+  note: string;
+  streak: string;
+};
+
 const palette = colors.palette;
 const light = colors.light;
+
+export const REPORT_DETAIL_COLORS = {
+  avatarBackground: '#fed7cd',
+  avatarIcon: '#fd8768',
+  primarySoft: '#fed7cd',
+};
 
 export const REPORT_DETAIL_HEADER = {
   title: '박영호님 리포트',
   period: '9월 2주차',
 };
 
-export const REPORT_DETAIL_PROFILE = {
+export const REPORT_DETAIL_SECTION_TITLES = {
+  cognitive: '인지 영역별 상태',
+  highlight: '이번 주 하이라이트',
+  supportGuide: '서포트 가이드',
+};
+
+export const REPORT_DETAIL_PROFILE: ReportDetailProfile = {
   name: '박영호 님',
   meta: '85세 · 함께한 지 96일',
   badge: '관찰 필요',
@@ -42,9 +68,9 @@ export const REPORT_DETAIL_PROFILE = {
     '이번 주 참여가 지난주보다 줄었어요. 지연 회상 활동에서 어려움이 관찰됐어요. 아래 가이드를 참고하세요.',
 };
 
-export const REPORT_DETAIL_ATTENDANCE = {
+export const REPORT_DETAIL_ATTENDANCE: ReportDetailAttendanceCopy = {
   title: '출석 · 참여',
-  summary: '일주일 중5일 출석',
+  summary: '일주일 중 5일 출석',
   note: '※ 지난 주보다 1일 적어요',
   streak: '3일 연속',
 };

@@ -13,10 +13,14 @@ import {
   HIGHLIGHT_PICTURE_XML,
 } from '@/pages/ReportDetail/assets';
 import {
+  REPORT_DETAIL_COLORS,
+  REPORT_DETAIL_SECTION_TITLES,
   STATUS_COLORS,
   type AttendanceDay,
   type CognitiveStatus,
   type Highlight,
+  type ReportDetailAttendanceCopy,
+  type ReportDetailProfile,
   type SupportGuide,
 } from '@/pages/ReportDetail/constants';
 import { useReportDetail } from '@/pages/ReportDetail/model/useReportDetail';
@@ -52,10 +56,10 @@ export default function ReportDetailScreen() {
             accessibilityLabel="이전 화면으로 이동"
             hitSlop={10}
             onPress={goBack}
-          style={styles.backButton}
-        >
-          <Arrow size={20} color={light.label.neutral} />
-        </Pressable>
+            style={styles.backButton}
+          >
+            <Arrow size={20} color={light.label.neutral} />
+          </Pressable>
           <Text style={styles.headerTitle}>{header.title}</Text>
           <View style={styles.periodPill}>
             <Text style={styles.periodText}>{header.period}</Text>
@@ -80,13 +84,13 @@ export default function ReportDetailScreen() {
   );
 }
 
-function ProfileSummary({ profile }: { profile: ReturnType<typeof useReportDetail>['profile'] }) {
+function ProfileSummary({ profile }: { profile: ReportDetailProfile }) {
   return (
     <View style={styles.profileCard}>
       <View style={styles.profileHeader}>
         <View style={styles.profileGroup}>
           <View style={styles.avatar}>
-            <Profile size={41} color="#fd8768" />
+            <Profile size={41} color={REPORT_DETAIL_COLORS.avatarIcon} />
           </View>
           <View style={styles.profileTextGroup}>
             <Text style={styles.profileName}>{profile.name}</Text>
@@ -111,7 +115,7 @@ function AttendanceSection({
   copy,
 }: {
   attendance: AttendanceDay[];
-  copy: ReturnType<typeof useReportDetail>['attendanceCopy'];
+  copy: ReportDetailAttendanceCopy;
 }) {
   return (
     <View style={styles.section}>
@@ -157,7 +161,9 @@ function AttendanceSection({
 function CognitiveSection({ cognitiveStatus }: { cognitiveStatus: CognitiveStatus[] }) {
   return (
     <View style={styles.fullWidthSection}>
-      <Text style={[styles.sectionTitle, styles.sectionInsetTitle]}>인지 영역별 상태</Text>
+      <Text style={[styles.sectionTitle, styles.sectionInsetTitle]}>
+        {REPORT_DETAIL_SECTION_TITLES.cognitive}
+      </Text>
 
       <View style={styles.statusList}>
         {cognitiveStatus.map((item, index) => (
@@ -197,7 +203,7 @@ function CognitiveSection({ cognitiveStatus }: { cognitiveStatus: CognitiveStatu
 function HighlightSection({ highlights }: { highlights: Highlight[] }) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>이번 주 하이라이트</Text>
+      <Text style={styles.sectionTitle}>{REPORT_DETAIL_SECTION_TITLES.highlight}</Text>
 
       <View style={styles.highlightCard}>
         {highlights.map((item, index) => (
@@ -235,7 +241,9 @@ function HighlightIcon({ type }: { type: Highlight['icon'] }) {
 function SupportGuideSection({ guides }: { guides: SupportGuide[] }) {
   return (
     <View style={styles.fullWidthSection}>
-      <Text style={[styles.sectionTitle, styles.sectionInsetTitle]}>서포트 가이드</Text>
+      <Text style={[styles.sectionTitle, styles.sectionInsetTitle]}>
+        {REPORT_DETAIL_SECTION_TITLES.supportGuide}
+      </Text>
 
       <View style={styles.guideList}>
         {guides.map((item, index) => (
@@ -305,7 +313,7 @@ const styles = StyleSheet.create({
     height: 19,
     marginTop: 3,
     borderRadius: 100,
-    backgroundColor: '#fed7cd',
+    backgroundColor: REPORT_DETAIL_COLORS.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
@@ -358,7 +366,7 @@ const styles = StyleSheet.create({
     height: 41,
     borderRadius: 20.5,
     overflow: 'hidden',
-    backgroundColor: '#fed7cd',
+    backgroundColor: REPORT_DETAIL_COLORS.avatarBackground,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -442,7 +450,7 @@ const styles = StyleSheet.create({
     minWidth: 98,
     height: 19,
     borderRadius: 100,
-    backgroundColor: '#fed7cd',
+    backgroundColor: REPORT_DETAIL_COLORS.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,

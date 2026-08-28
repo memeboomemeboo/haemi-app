@@ -30,6 +30,18 @@ export type WeeklyReport = {
 const palette = colors.palette;
 const light = colors.light;
 
+export const REPORT_COPY = {
+  title: '리포트',
+  caption: '※관찰이 필요한 순으로 매주 월요일마다 정렬돼요.',
+  detailButton: '자세히 보기',
+};
+
+export const REPORT_COLORS = {
+  avatarBackground: '#fed7cd',
+  avatarIcon: '#fd8768',
+  primarySoft: '#fed7cd',
+};
+
 export const REPORTS: WeeklyReport[] = [
   {
     id: 'watch-needed',
@@ -91,7 +103,7 @@ export const REPORT_TONE_STYLES: Record<ReportTone, { backgroundColor: string; c
     color: light.background.normal,
   },
   primary: {
-    backgroundColor: '#fed7cd',
+    backgroundColor: REPORT_COLORS.primarySoft,
     color: light.primary,
   },
 };
