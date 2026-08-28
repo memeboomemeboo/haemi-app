@@ -1,5 +1,6 @@
 import type {
   CreateFamilyMemoryPostParams,
+  CreateFamilyMemoryPostRequest,
   FamilyMemoryApiResponse,
   FamilyMemoryFeed,
   FamilyMemoryPost,
