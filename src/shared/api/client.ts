@@ -4,6 +4,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ApiError, NetworkError, UnauthorizedError } from './errors';
+import { getOrCreateDeviceId } from '@/shared/lib/deviceId';
 
 // 프로덕션 빌드에서만 SecureStore import
 let SecureStore: any = null;
@@ -117,7 +118,7 @@ const refreshAuthToken = async (): Promise<string | null> => {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-store, no-cache, max-age=0',
         },
-        body: JSON.stringify({ refreshToken }),
+        body: JSON.stringify({ refreshToken, deviceId: await getOrCreateDeviceId() }),
       });
 
       if (!response.ok) {
@@ -132,7 +133,7 @@ const refreshAuthToken = async (): Promise<string | null> => {
       }
 
       const data = await response.json();
-      if (data.success && data.data?.accessToken) {
+      if (data.data?.accessToken) {
         const newAccessToken = data.data.accessToken;
         await setAuthToken(newAccessToken);
 
@@ -206,17 +207,11 @@ const handleResponse = async <T>(response: Response, retryRequest?: () => Promis
       throw new UnauthorizedError();
     }
 
-    if (response.status === 401) {
-      await setAuthToken(null);
-      await setRefreshToken(null);
-      throw new UnauthorizedError();
-    }
-
     throw new ApiError(
       response.status,
-      data?.message || `HTTP ${response.status}`,
-      data?.code,
-      data?.details
+      data?.error?.message || data?.message || `HTTP ${response.status}`,
+      data?.error?.code || data?.code,
+      data?.error?.details || data?.details
     );
   }
 

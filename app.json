@@ -12,7 +12,12 @@
       "bundleIdentifier": "com.suane0311.haemi",
       "infoPlist": {
         "NSAppTransportSecurity": {
-          "NSExceptionDomains": {}
+          "NSExceptionDomains": {
+            "54.180.61.149": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true
+            }
+          }
         }
       }
     },
@@ -24,6 +29,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
+      "usesCleartextTraffic": true,
       "package": "com.suane0311.haemi"
     },
     "web": {

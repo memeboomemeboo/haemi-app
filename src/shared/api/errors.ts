@@ -62,7 +62,9 @@ export class ConflictError extends ApiError {
 // 사용자 친화적 에러 메시지 매핑
 const ERROR_MESSAGE_MAP: Record<string, string> = {
   // 인증 에러
-  'INVALID_CREDENTIALS': '이메일 또는 비밀번호가 잘못되었습니다.',
+  'INVALID_CREDENTIALS': '아이디 또는 비밀번호/PIN이 잘못되었습니다.',
+  'LOGIN_ID_ALREADY_TAKEN': '이미 사용 중인 아이디입니다.',
+  'AUTH_ACCOUNT_LOCKED': '로그인 시도 횟수를 초과해 계정이 잠겼습니다.',
   'USER_NOT_FOUND': '등록되지 않은 계정입니다.',
   'ACCOUNT_LOCKED': '계정이 잠겼습니다. 관리자에게 문의하세요.',
   'UNAUTHORIZED': '인증이 필요합니다. 다시 로그인해주세요.',
