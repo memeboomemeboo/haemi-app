@@ -11,10 +11,61 @@ import type {
   TotpVerifyResponse,
   RefreshTokenRequest,
   AuthUser,
+  GuardianRegisterRequest,
+  GuardianRegisterResponse,
+  PinLoginRequest,
+  PasswordLoginRequest,
+  LoginIdAvailabilityResponse,
+  GuardianProfileResponse,
+  SwaggerApiResponse,
+  TokenResponse,
+  ApiResponse,
 } from '@/shared/types';
-import type { ApiResponse } from '@/shared/types';
+import { getOrCreateDeviceId } from '@/shared/lib';
 
 export const authService = {
+  async checkLoginIdAvailability(loginId: string): Promise<LoginIdAvailabilityResponse> {
+    const response = await get<SwaggerApiResponse<LoginIdAvailabilityResponse>>(
+      `/auth/login-id/availability?loginId=${encodeURIComponent(loginId)}`,
+      { skipAuth: true }
+    );
+    return response.data;
+  },
+
+  async requestEmailVerification(email: string): Promise<string> {
+    const response = await post<SwaggerApiResponse<string>>('/auth/email-verifications', { email }, {
+      skipAuth: true,
+    });
+    return response.data;
+  },
+
+  async confirmEmailVerification(verificationId: string, code: string): Promise<void> {
+    await post<SwaggerApiResponse<void>>(`/auth/email-verifications/${verificationId}/confirm`, { code }, {
+      skipAuth: true,
+    });
+  },
+
+  async registerGuardian(data: GuardianRegisterRequest): Promise<GuardianRegisterResponse> {
+    const response = await post<SwaggerApiResponse<GuardianRegisterResponse>>('/auth/guardians/register', data, {
+      skipAuth: true,
+    });
+    return response.data;
+  },
+
+  async loginWithPin(data: PinLoginRequest): Promise<TokenResponse> {
+    const response = await post<SwaggerApiResponse<TokenResponse>>('/auth/login', data, {
+      skipAuth: true,
+    });
+    return response.data;
+  },
+
+  async loginWithPassword(data: PasswordLoginRequest): Promise<TokenResponse> {
+    const response = await post<SwaggerApiResponse<TokenResponse>>('/auth/login', data, {
+      skipAuth: true,
+    });
+    return response.data;
+  },
+
   async signup(data: SignUpRequest): Promise<ApiResponse<AuthResponse>> {
     return post<ApiResponse<AuthResponse>>('/auth/signup', data, {
       skipAuth: true,
@@ -28,12 +79,22 @@ export const authService = {
   },
 
   async getMe(): Promise<ApiResponse<AuthUser>> {
-    return get<ApiResponse<AuthUser>>('/auth/me');
+    const response = await get<SwaggerApiResponse<GuardianProfileResponse>>('/guardian/profile');
+    return {
+      success: true,
+      message: '',
+      data: {
+        memberId: response.data.userId,
+        email: '',
+        name: response.data.name,
+        role: 'FAMILY',
+      },
+    };
   },
 
   async logout(): Promise<void> {
     try {
-      await post('/auth/logout', {});
+      await post('/auth/logout', { deviceId: await getOrCreateDeviceId() });
     } finally {
       await setClientToken(null);
       await setClientRefreshToken(null);
@@ -51,10 +112,11 @@ export const authService = {
     });
   },
 
-  async refreshToken(refreshToken: string): Promise<ApiResponse<AuthResponse>> {
-    return post<ApiResponse<AuthResponse>>('/auth/refresh', {
+  async refreshToken(refreshToken: string): Promise<SwaggerApiResponse<TokenResponse>> {
+    return post<SwaggerApiResponse<TokenResponse>>('/auth/refresh', {
       refreshToken,
-    } as RefreshTokenRequest, {
+      deviceId: await getOrCreateDeviceId(),
+    } as RefreshTokenRequest & { deviceId: string }, {
       skipAuth: true,
     });
   },
