@@ -44,10 +44,19 @@ export function useAsyncData<T>(
     }
   }, [fetcher, options]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    load();
-  }, []);
+    let isMounted = true;
+
+    void Promise.resolve().then(() => {
+      if (isMounted) {
+        void load();
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [load]);
 
   return {
     data,
