@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -38,11 +38,18 @@ export default function MemberEditScreen() {
   const { group } = useUserContext();
   const [activeModal, setActiveModal] = useState<EditModal>(null);
   const [name, setName] = useState('');
-  const [familyCount, setFamilyCount] = useState('');
-  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
-  const initializedRef = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const familyMembers = useMemo<FamilyMember[]>(
+    () =>
+      group?.members?.map((member) => ({
+        id: member.memberId,
+        name: member.relation,
+        relation: member.relation,
+      })) ?? [],
+    [group?.members]
+  );
+  const familyCount = `${familyMembers.length}명`;
 
   // 사용자 정보 로드
   useEffect(() => {
@@ -53,7 +60,7 @@ export default function MemberEditScreen() {
         if (response.success && response.data) {
           setName(response.data.name || '');
         }
-      } catch (error) {
+      } catch {
         Alert.alert('정보 로드 실패', '사용자 정보를 불러오지 못했어요.');
       } finally {
         setIsLoading(false);
@@ -62,22 +69,6 @@ export default function MemberEditScreen() {
 
     loadUserInfo();
   }, []);
-
-  // 그룹 정보로부터 가족 수 설정 (최초 1회만)
-  useEffect(() => {
-    if (initializedRef.current) return;
-    if (group?.members) {
-      initializedRef.current = true;
-      setFamilyMembers(
-        group.members.map((member) => ({
-          id: member.memberId,
-          name: member.relation,
-          relation: member.relation,
-        }))
-      );
-      setFamilyCount(`${group.members.length}명`);
-    }
-  }, [group]);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -92,7 +83,7 @@ export default function MemberEditScreen() {
       });
       Alert.alert('저장 완료', '정보가 수정되었습니다.');
       router.back();
-    } catch (error) {
+    } catch {
       Alert.alert('저장 실패', '정보 수정에 실패했어요. 다시 시도해주세요.');
     } finally {
       setIsSaving(false);
@@ -154,8 +145,9 @@ export default function MemberEditScreen() {
                   <InfoRow
                     label="가족"
                     value={familyCount}
-                    onChangeText={setFamilyCount}
+                    onChangeText={() => undefined}
                     onIconPress={() => setActiveModal('family')}
+                    editable={false}
                   />
                   <InfoRow
                     label="비밀번호"

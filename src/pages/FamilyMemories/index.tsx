@@ -1201,19 +1201,27 @@ function RealVoiceMemoPlayer({
   }, [playlist]);
 
   useEffect(() => {
+    let nextHasCompleted: boolean | null = null;
+
     if (wasPlayingRef.current && !status.playing) {
       if (pauseRequestedRef.current) {
         pauseRequestedRef.current = false;
       } else {
-        setHasCompleted(true);
+        nextHasCompleted = true;
       }
     }
 
     if (status.playing && hasCompleted) {
-      setHasCompleted(false);
+      nextHasCompleted = false;
     }
 
     wasPlayingRef.current = status.playing;
+
+    if (nextHasCompleted !== null) {
+      void Promise.resolve().then(() => {
+        setHasCompleted(nextHasCompleted);
+      });
+    }
   }, [hasCompleted, status.playing]);
 
   const togglePlayback = async () => {
