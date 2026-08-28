@@ -1201,21 +1201,27 @@ function RealVoiceMemoPlayer({
   }, [playlist]);
 
   useEffect(() => {
+    let nextHasCompleted: boolean | null = null;
+
     if (wasPlayingRef.current && !status.playing) {
       if (pauseRequestedRef.current) {
         pauseRequestedRef.current = false;
       } else {
-        setHasCompleted(true);
+        nextHasCompleted = true;
       }
     }
 
     if (status.playing && hasCompleted) {
-      // 재생 재시작 시 완료 표시를 현재 재생 상태와 동기화한다.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setHasCompleted(false);
+      nextHasCompleted = false;
     }
 
     wasPlayingRef.current = status.playing;
+
+    if (nextHasCompleted !== null) {
+      void Promise.resolve().then(() => {
+        setHasCompleted(nextHasCompleted);
+      });
+    }
   }, [hasCompleted, status.playing]);
 
   const togglePlayback = async () => {
