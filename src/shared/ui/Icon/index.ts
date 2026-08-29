@@ -21,4 +21,6 @@ export {
   Map,
   People,
   CheckMark,
+  Play,
+  Replay,
 } from './icons-components';

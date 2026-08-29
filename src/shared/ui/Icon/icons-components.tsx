@@ -23,3 +23,5 @@ export const Calendar: React.FC<IndividualIconProps> = (props) => <Icon name="Ca
 export const Map: React.FC<IndividualIconProps> = (props) => <Icon name="Map" {...props} />;
 export const People: React.FC<IndividualIconProps> = (props) => <Icon name="People" {...props} />;
 export const CheckMark: React.FC<IndividualIconProps> = (props) => <Icon name="CheckMark" {...props} />;
+export const Play: React.FC<IndividualIconProps> = (props) => <Icon name="Play" {...props} />;
+export const Replay: React.FC<IndividualIconProps> = (props) => <Icon name="Replay" {...props} />;

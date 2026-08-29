@@ -38,7 +38,10 @@ export default function AlbumScreen() {
           contentContainerStyle={styles.gridContent}
           showsVerticalScrollIndicator={false}
         >
-          <AlbumGrid items={items} />
+          <AlbumGrid
+            items={items}
+            onItemPress={(item) => router.push({ pathname: '/album/[id]', params: { id: item.id } })}
+          />
         </ScrollView>
       )}
 

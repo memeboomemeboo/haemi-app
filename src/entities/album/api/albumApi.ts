@@ -11,3 +11,10 @@ export async function fetchAlbumItems(): Promise<AlbumItem[]> {
   }
   return apiClient.get<AlbumItem[]>('/albums');
 }
+
+export async function fetchAlbumDetail(id: string): Promise<AlbumItem | null> {
+  if (USE_MOCK) {
+    return MOCK_ALBUM_ITEMS.find((item) => item.id === id) ?? null;
+  }
+  return apiClient.get<AlbumItem>(`/albums/${id}`);
+}

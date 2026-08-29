@@ -24,6 +24,8 @@ export {
   Map,
   People,
   CheckMark,
+  Play,
+  Replay,
   type IconName,
   type IconProps,
   type IllustrationName,
