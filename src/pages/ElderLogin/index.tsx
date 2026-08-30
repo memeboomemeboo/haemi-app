@@ -13,12 +13,12 @@ const logoSource = require('../../../assets/images/haemi-logo.png');
 const PIN_LENGTH = 6;
 const DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
-type KeypadCell = { type: 'digit'; value: string } | { type: 'rearrange' } | { type: 'delete' };
+type KeypadCell = { type: 'digit'; value: string } | { type: 'empty' } | { type: 'delete' };
 
 function buildKeypad(digits: string[]): KeypadCell[] {
   return [
     ...digits.slice(0, 9).map((value): KeypadCell => ({ type: 'digit', value })),
-    { type: 'rearrange' },
+    { type: 'empty' },
     { type: 'digit', value: digits[9] },
     { type: 'delete' },
   ];
@@ -58,10 +58,6 @@ export default function ElderLoginScreen() {
     setPin((current) => current.slice(0, -1));
   };
 
-  const handleRearrange = () => {
-    setDigits(shuffleArray(DIGITS));
-  };
-
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -93,7 +89,6 @@ export default function ElderLoginScreen() {
                 color={theme.colors.line.normal}
                 onDigitPress={handleDigitPress}
                 onDelete={handleDelete}
-                onRearrange={handleRearrange}
               />
             ))}
           </View>
@@ -109,14 +104,12 @@ function KeypadButton({
   color,
   onDigitPress,
   onDelete,
-  onRearrange,
 }: {
   cell: KeypadCell;
   styles: ReturnType<typeof createStyles>;
   color: string;
   onDigitPress: (digit: string) => void;
   onDelete: () => void;
-  onRearrange: () => void;
 }) {
   if (cell.type === 'digit') {
     return (
@@ -129,17 +122,8 @@ function KeypadButton({
     );
   }
 
-  if (cell.type === 'rearrange') {
-    return (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="숫자 재배열"
-        style={({ pressed }) => [styles.keyCell, pressed && styles.keyCellPressed]}
-        onPress={onRearrange}
-      >
-        <Text style={styles.keyRearrange}>재배열</Text>
-      </Pressable>
-    );
+  if (cell.type === 'empty') {
+    return <View style={styles.keyCell} />;
   }
 
   return (
@@ -236,11 +220,5 @@ const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
       fontWeight: '700',
       color: colors.label.neutral,
       letterSpacing: -0.64,
-    },
-    keyRearrange: {
-      fontSize: 16,
-      fontWeight: '400',
-      color: colors.line.normal,
-      letterSpacing: -0.32,
     },
   });
