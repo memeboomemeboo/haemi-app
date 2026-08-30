@@ -3,5 +3,6 @@ export { default as Album } from './Album';
 export { default as AlbumRegister } from './AlbumRegister';
 export { default as Quiz } from './Quiz';
 export { default as Report } from './Report';
+export { default as Setting } from './Setting';
 export { default as ElderLogin } from './ElderLogin';
 export { default as ElderHome } from './ElderHome';
