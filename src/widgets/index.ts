@@ -7,3 +7,7 @@ export { AlbumGrid } from './AlbumGrid';
 export { AlbumEmptyState } from './AlbumEmptyState';
 export { AlbumDetailPhotos } from './AlbumDetailPhotos';
 export { AlbumConversation } from './AlbumConversation';
+export { ElderHomeHeader } from './ElderHomeHeader';
+export { ElderActivityCard } from './ElderActivityCard';
+export { ElderMemoryCard } from './ElderMemoryCard';
+export { ElderDailyMessageCard } from './ElderDailyMessageCard';

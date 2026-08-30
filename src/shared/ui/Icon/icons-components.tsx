@@ -25,3 +25,8 @@ export const People: React.FC<IndividualIconProps> = (props) => <Icon name="Peop
 export const CheckMark: React.FC<IndividualIconProps> = (props) => <Icon name="CheckMark" {...props} />;
 export const Play: React.FC<IndividualIconProps> = (props) => <Icon name="Play" {...props} />;
 export const Replay: React.FC<IndividualIconProps> = (props) => <Icon name="Replay" {...props} />;
+export const Mail: React.FC<IndividualIconProps> = (props) => <Icon name="Mail" {...props} />;
+export const PlayTriangle: React.FC<IndividualIconProps> = (props) => (
+  <Icon name="PlayTriangle" {...props} />
+);
+export const Backspace: React.FC<IndividualIconProps> = (props) => <Icon name="Backspace" {...props} />;

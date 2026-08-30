@@ -42,6 +42,12 @@ export const ICON_SVG_MAP = {
 
   Replay: `<svg viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20.5 11.5C20.5 16.4706 16.4706 20.5 11.5 20.5C6.52944 20.5 2.5 16.4706 2.5 11.5C2.5 6.52944 6.52944 2.5 11.5 2.5C14.7825 2.5 17.6544 4.25661 19.2298 6.88462" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14.5 6.88462H19.2298V2.15385" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
 
+  Mail: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 6L12 13L21 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+
+  PlayTriangle: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 4.5L19 12L7 19.5V4.5Z" fill="currentColor"/></svg>`,
+
+  Backspace: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.5 5H21a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H8.5a1 1 0 0 1-.77-.36l-6-7a1 1 0 0 1 0-1.28l6-7A1 1 0 0 1 8.5 5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 10L18 14M18 10L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+
 } as const;
 
 export type IconSVGKey = keyof typeof ICON_SVG_MAP;

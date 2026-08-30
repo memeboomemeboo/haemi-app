@@ -23,4 +23,7 @@ export {
   CheckMark,
   Play,
   Replay,
+  Mail,
+  PlayTriangle,
+  Backspace,
 } from './icons-components';
