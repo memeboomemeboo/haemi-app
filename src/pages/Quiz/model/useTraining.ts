@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   enterTrainingSession,
   submitTrainingAnswer,
-  type TrainingQuestion,
   type TrainingSession,
 } from '@/shared/api/training';
 
@@ -46,7 +45,7 @@ export const useTraining = () => {
 
   const retry = useCallback(() => setRetryCount((c) => c + 1), []);
 
-  const question: TrainingQuestion | null = session?.currentQuestion ?? null;
+  const question = session?.currentQuestion ?? null;
   const currentNumber = session?.currentQuestionNumber ?? 1;
   const total = session?.totalQuestionCount ?? 1;
   const progressPercent = `${(currentNumber / total) * 100}%` as `${number}%`;
@@ -105,6 +104,5 @@ export const useTraining = () => {
     selectOption,
     goToNext,
     retry,
-    feedback: session?.feedback ?? null,
   };
 };
