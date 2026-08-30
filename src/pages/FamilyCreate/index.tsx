@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { colors, spacing, typography } from '@/shared/constants';
 import {
   ActivityIndicator,
   Alert,
@@ -16,11 +17,6 @@ import * as Clipboard from 'expo-clipboard';
 
 import { myPageService } from '@/shared/api';
 import { Arrow, BottomNavigation, Profile } from '@/shared/ui';
-
-const C = {
-  primary: '#fd6941', text: '#3c3e3f', alternative: '#5a5c5d', assistive: '#76787a',
-  line: '#e8e8e9', field: '#f7f7f7', button: '#dddedf', soft: '#fed7cd', white: '#ffffff',
-};
 
 export default function FamilyCreateScreen() {
   const router = useRouter();
@@ -90,7 +86,7 @@ export default function FamilyCreateScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <View style={styles.header}>
           <Pressable accessibilityRole="button" accessibilityLabel="뒤로 가기" hitSlop={10} onPress={() => router.back()}>
-            <Arrow size={22} color={C.text} style={styles.backArrow} />
+            <Arrow size={22} color={colors.light.label.neutral} style={styles.backArrow} />
           </Pressable>
           <Text style={styles.title}>가족 생성</Text>
         </View>
@@ -102,16 +98,16 @@ export default function FamilyCreateScreen() {
 
           <View style={styles.form}>
             <Field label="가족 이름">
-              <TextInput style={styles.input} placeholder="이름" placeholderTextColor="#c1c2c3" value={familyName} onChangeText={setFamilyName} maxLength={30} editable={!familyId} />
+              <TextInput style={styles.input} placeholder="이름" placeholderTextColor={colors.light.line.normal} value={familyName} onChangeText={setFamilyName} maxLength={30} editable={!familyId} />
             </Field>
             <Field label="초대코드">
               <View style={styles.codeRow}>
                 <Pressable accessibilityRole="button" accessibilityLabel="초대 코드 복사" style={styles.codeBox} onPress={copyCode}>
                   <Text style={styles.code}>{inviteCode}</Text>
-                  <MaterialIcons name="content-copy" size={19} color="#c1c2c3" />
+                  <MaterialIcons name="content-copy" size={19} color={colors.light.line.normal} />
                 </Pressable>
                 <Pressable style={styles.codeButton} onPress={generateCode} disabled={isCreating || Boolean(familyId)}>
-                  {isCreating && !familyId ? <ActivityIndicator size="small" color={C.alternative} /> : <Text style={styles.codeButtonText}>{familyId ? '생성 완료' : '코드 생성'}</Text>}
+                  {isCreating && !familyId ? <ActivityIndicator size="small" color={colors.light.label.alternative} /> : <Text style={styles.codeButtonText}>{familyId ? '생성 완료' : '코드 생성'}</Text>}
                 </Pressable>
               </View>
             </Field>
@@ -136,7 +132,7 @@ export default function FamilyCreateScreen() {
         </ScrollView>
         <View style={styles.createFooter}>
           <Pressable style={({ pressed }) => [styles.createButton, pressed && styles.pressed]} onPress={createFamily} disabled={isCreating}>
-            {isCreating ? <ActivityIndicator color={C.white} /> : <Text style={styles.createText}>가족 생성</Text>}
+            {isCreating ? <ActivityIndicator color={colors.light.background.normal} /> : <Text style={styles.createText}>가족 생성</Text>}
           </Pressable>
         </View>
       </SafeAreaView>
@@ -150,26 +146,26 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function MemberCard({ name, meta, filled }: { name: string; meta: string; filled: boolean }) {
-  return <View style={[styles.memberCard, filled && styles.memberCardFilled]}><Profile size={30} color="#ff8062" /><View><Text style={styles.memberName}>{name}</Text><Text style={styles.memberMeta}>{meta}</Text></View></View>;
+  return <View style={[styles.memberCard, filled && styles.memberCardFilled]}><Profile size={30} color={colors.primary} /><View><Text style={styles.memberName}>{name}</Text><Text style={styles.memberMeta}>{meta}</Text></View></View>;
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: C.white }, safeArea: { flex: 1 },
+  screen: { flex: 1, backgroundColor: colors.light.background.normal }, safeArea: { flex: 1 },
   header: { height: 61, paddingHorizontal: 27, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  backArrow: { transform: [{ scaleX: -1 }] }, title: { fontSize: 24, lineHeight: 31, fontWeight: '700', letterSpacing: -0.48, color: C.text },
+  backArrow: { transform: [{ scaleX: -1 }] }, title: { fontSize: typography.title.title2.bold.fontSize, lineHeight: 31, fontWeight: typography.title.title2.bold.fontWeight, letterSpacing: -0.48, color: colors.light.label.neutral },
   content: { width: 330, alignSelf: 'center', paddingTop: 6, paddingBottom: 18 },
-  intro: { gap: 8 }, introTitle: { fontSize: 20, lineHeight: 26, fontWeight: '600', letterSpacing: -0.4, color: C.text },
-  caption: { fontSize: 12, lineHeight: 16, letterSpacing: -0.24, color: C.assistive }, form: { marginTop: 38, gap: 22 },
-  field: { gap: 6 }, label: { marginLeft: 8, fontSize: 14, lineHeight: 19, fontWeight: '500', letterSpacing: -0.28, color: C.assistive },
-  input: { height: 45, borderRadius: 10, backgroundColor: C.field, paddingHorizontal: 15, fontSize: 14, color: C.text },
-  codeRow: { flexDirection: 'row', gap: 6 }, codeBox: { flex: 1, height: 45, borderRadius: 10, backgroundColor: C.field, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  code: { fontSize: 14, lineHeight: 18, fontWeight: '600', letterSpacing: -0.28, color: C.alternative },
-  codeButton: { width: 101, height: 45, borderRadius: 10, backgroundColor: C.button, alignItems: 'center', justifyContent: 'center' }, codeButtonText: { fontSize: 16, fontWeight: '500', color: C.alternative },
-  familyListSection: { gap: 9 }, listHeader: { minHeight: 25, marginHorizontal: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, badges: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  badge: { minHeight: 23, borderRadius: 12, paddingHorizontal: 9, paddingVertical: 3, backgroundColor: C.soft, fontSize: 12, lineHeight: 16, fontWeight: '500', color: C.primary, overflow: 'hidden' },
-  memberList: { gap: 7 }, memberCard: { height: 54, borderRadius: 15, borderWidth: 1.5, borderColor: '#f5f5f5', paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 11 }, memberCardFilled: { backgroundColor: C.field, borderColor: C.field },
-  memberName: { fontSize: 15, lineHeight: 19, fontWeight: '600', color: C.text }, memberMeta: { fontSize: 11, lineHeight: 14, fontWeight: '500', color: C.alternative },
-  addButton: { height: 38, borderRadius: 10, borderWidth: 1, borderStyle: 'dashed', borderColor: C.primary, alignItems: 'center', justifyContent: 'center', marginTop: 3 }, addText: { fontSize: 14, fontWeight: '600', color: C.primary },
-  createFooter: { paddingHorizontal: 36, paddingTop: 10, paddingBottom: 12, backgroundColor: C.white },
-  createButton: { width: '100%', height: 48, borderRadius: 10, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }, createText: { fontSize: 20, lineHeight: 26, fontWeight: '600', color: C.field }, pressed: { opacity: 0.78 },
+  intro: { gap: 8 }, introTitle: { fontSize: typography.headline.headline1.semibold.fontSize, lineHeight: 26, fontWeight: typography.body.semibold.fontWeight, letterSpacing: -0.4, color: colors.light.label.neutral },
+  caption: { fontSize: typography.caption.regular.fontSize, lineHeight: 16, letterSpacing: -0.24, color: colors.light.label.assistive }, form: { marginTop: 38, gap: 22 },
+  field: { gap: 6 }, label: { marginLeft: 8, fontSize: typography.label.medium.fontSize, lineHeight: 19, fontWeight: typography.body.medium.fontWeight, letterSpacing: -0.28, color: colors.light.label.assistive },
+  input: { height: 45, borderRadius: 10, backgroundColor: colors.light.background.neutral, paddingHorizontal: 15, fontSize: typography.label.medium.fontSize, color: colors.light.label.neutral },
+  codeRow: { flexDirection: 'row', gap: 6 }, codeBox: { flex: 1, height: 45, borderRadius: 10, backgroundColor: colors.light.background.neutral, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  code: { fontSize: typography.label.medium.fontSize, lineHeight: 18, fontWeight: typography.body.semibold.fontWeight, letterSpacing: -0.28, color: colors.light.label.alternative },
+  codeButton: { width: 101, height: 45, borderRadius: 10, backgroundColor: colors.light.fill.alternative, alignItems: 'center', justifyContent: 'center' }, codeButtonText: { fontSize: typography.body.medium.fontSize, fontWeight: typography.body.medium.fontWeight, color: colors.light.label.alternative },
+  familyListSection: { gap: 9 }, listHeader: { minHeight: 25, marginHorizontal: spacing.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, badges: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+  badge: { minHeight: 23, borderRadius: 12, paddingHorizontal: 9, paddingVertical: 3, backgroundColor: colors.palette.red[90], fontSize: typography.caption.regular.fontSize, lineHeight: 16, fontWeight: typography.body.medium.fontWeight, color: colors.primary, overflow: 'hidden' },
+  memberList: { gap: 7 }, memberCard: { height: 54, borderRadius: 15, borderWidth: 1.5, borderColor: colors.light.background.neutral, paddingHorizontal: spacing.md, flexDirection: 'row', alignItems: 'center', gap: 11 }, memberCardFilled: { backgroundColor: colors.light.background.neutral, borderColor: colors.light.background.neutral },
+  memberName: { fontSize: 15, lineHeight: 19, fontWeight: typography.body.semibold.fontWeight, color: colors.light.label.neutral }, memberMeta: { fontSize: 11, lineHeight: 14, fontWeight: typography.body.medium.fontWeight, color: colors.light.label.alternative },
+  addButton: { height: 38, borderRadius: 10, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginTop: 3 }, addText: { fontSize: typography.label.medium.fontSize, fontWeight: typography.body.semibold.fontWeight, color: colors.primary },
+  createFooter: { paddingHorizontal: 36, paddingTop: 10, paddingBottom: spacing.md, backgroundColor: colors.light.background.normal },
+  createButton: { width: '100%', height: 48, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }, createText: { fontSize: typography.headline.headline1.semibold.fontSize, lineHeight: 26, fontWeight: typography.body.semibold.fontWeight, color: colors.light.background.neutral }, pressed: { opacity: 0.78 },
 });

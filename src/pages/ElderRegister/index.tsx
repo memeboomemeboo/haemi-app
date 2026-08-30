@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { colors, spacing, typography } from '@/shared/constants';
 import {
   Alert,
   ActivityIndicator,
@@ -18,19 +19,6 @@ import { authService, myPageService } from '@/shared/api';
 import { Arrow, BottomNavigation } from '@/shared/ui';
 
 type Gender = 'MALE' | 'FEMALE';
-
-const COLORS = {
-  primary: '#fd6941',
-  text: '#3c3e3f',
-  alternative: '#5a5c5d',
-  assistive: '#76787a',
-  disabled: '#e6e6e7',
-  line: '#c1c2c3',
-  neutralLine: '#dadbdc',
-  field: '#f7f7f7',
-  button: '#dddedf',
-  white: '#ffffff',
-};
 
 export default function ElderRegisterScreen() {
   const router = useRouter();
@@ -115,7 +103,7 @@ export default function ElderRegisterScreen() {
         >
           <View style={styles.header}>
             <Pressable accessibilityRole="button" accessibilityLabel="뒤로 가기" hitSlop={10} onPress={() => router.back()}>
-              <Arrow size={22} color={COLORS.text} style={styles.backArrow} />
+              <Arrow size={22} color={colors.light.label.neutral} style={styles.backArrow} />
             </Pressable>
             <Text style={styles.title}>어르신 등록</Text>
           </View>
@@ -127,10 +115,10 @@ export default function ElderRegisterScreen() {
           >
             <View style={styles.form}>
               <Field label="어르신 성함">
-                <TextInput style={styles.input} placeholder="어르신 성함" placeholderTextColor={COLORS.line} value={name} onChangeText={setName} />
+                <TextInput style={styles.input} placeholder="어르신 성함" placeholderTextColor={colors.light.line.normal} value={name} onChangeText={setName} />
               </Field>
               <Field label="전화번호">
-                <TextInput style={styles.input} placeholder="전화번호" placeholderTextColor={COLORS.line} value={phoneNumber} onChangeText={handlePhoneChange} keyboardType="phone-pad" />
+                <TextInput style={styles.input} placeholder="전화번호" placeholderTextColor={colors.light.line.normal} value={phoneNumber} onChangeText={handlePhoneChange} keyboardType="phone-pad" />
               </Field>
               <Field label="성별" gap={10}>
                 <View style={styles.genderRow}>
@@ -140,21 +128,21 @@ export default function ElderRegisterScreen() {
               </Field>
               <Field label="아이디">
                 <View style={styles.idRow}>
-                  <TextInput style={[styles.input, styles.idInput]} placeholder="아이디" placeholderTextColor={COLORS.line} value={loginId} onChangeText={handleLoginIdChange} autoCapitalize="none" />
+                  <TextInput style={[styles.input, styles.idInput]} placeholder="아이디" placeholderTextColor={colors.light.line.normal} value={loginId} onChangeText={handleLoginIdChange} autoCapitalize="none" />
                   <Pressable style={styles.checkButton} onPress={handleCheckId} disabled={checkingId}>
                     <Text style={styles.checkButtonText}>{checkingId ? '확인 중' : '중복 확인'}</Text>
                   </Pressable>
                 </View>
               </Field>
               <Field label="비밀번호">
-                <TextInput style={styles.input} placeholder="숫자 6자리" placeholderTextColor={COLORS.line} value={password} onChangeText={(value) => setPassword(value.replace(/\D/g, '').slice(0, 6))} secureTextEntry keyboardType="number-pad" />
+                <TextInput style={styles.input} placeholder="숫자 6자리" placeholderTextColor={colors.light.line.normal} value={password} onChangeText={(value) => setPassword(value.replace(/\D/g, '').slice(0, 6))} secureTextEntry keyboardType="number-pad" />
               </Field>
             </View>
 
             <View style={styles.submitArea}>
               <Text style={styles.notice}>※이 계정은 어르신 권한으로 생성됩니다.</Text>
               <Pressable style={({ pressed }) => [styles.submitButton, pressed && styles.pressed]} onPress={handleRegister} disabled={registering}>
-                {registering ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.submitText}>어르신 등록</Text>}
+                {registering ? <ActivityIndicator color={colors.light.background.normal} /> : <Text style={styles.submitText}>어르신 등록</Text>}
               </Pressable>
             </View>
           </ScrollView>
@@ -178,29 +166,29 @@ function GenderButton({ label, active, onPress }: { label: string; active: boole
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.white },
+  screen: { flex: 1, backgroundColor: colors.light.background.normal },
   safeArea: { flex: 1 },
   keyboardView: { flex: 1 },
   header: { height: 61, paddingHorizontal: 27, flexDirection: 'row', alignItems: 'center', gap: 12 },
   backArrow: { transform: [{ scaleX: -1 }] },
-  title: { fontSize: 24, lineHeight: 31, fontWeight: '700', letterSpacing: -0.48, color: COLORS.text },
+  title: { fontSize: typography.title.title2.bold.fontSize, lineHeight: 31, fontWeight: typography.title.title2.bold.fontWeight, letterSpacing: -0.48, color: colors.light.label.neutral },
   content: { flexGrow: 1, width: 330, alignSelf: 'center', paddingTop: 50, paddingBottom: 47, justifyContent: 'space-between' },
   form: { gap: 20 },
   field: { width: '100%' },
-  label: { marginLeft: 8, fontSize: 14, lineHeight: 19, fontWeight: '500', letterSpacing: -0.28, color: COLORS.assistive },
-  input: { width: '100%', height: 45, borderRadius: 10, backgroundColor: COLORS.field, paddingHorizontal: 15, paddingVertical: 0, fontSize: 14, lineHeight: 18, color: COLORS.text, letterSpacing: -0.28 },
+  label: { marginLeft: 8, fontSize: typography.label.medium.fontSize, lineHeight: 19, fontWeight: typography.body.medium.fontWeight, letterSpacing: -0.28, color: colors.light.label.assistive },
+  input: { width: '100%', height: 45, borderRadius: 10, backgroundColor: colors.light.background.neutral, paddingHorizontal: 15, paddingVertical: 0, fontSize: typography.label.medium.fontSize, lineHeight: 18, color: colors.light.label.neutral, letterSpacing: -0.28 },
   genderRow: { height: 27, flexDirection: 'row', gap: 8 },
-  genderButton: { width: 70, height: 27, borderRadius: 14, borderWidth: 1, borderColor: COLORS.disabled, alignItems: 'center', justifyContent: 'center' },
-  genderButtonActive: { borderColor: COLORS.primary },
-  genderText: { fontSize: 16, lineHeight: 21, fontWeight: '400', letterSpacing: -0.32, color: COLORS.neutralLine },
-  genderTextActive: { color: COLORS.primary, fontWeight: '500' },
+  genderButton: { width: 70, height: 27, borderRadius: 14, borderWidth: 1, borderColor: colors.light.label.disabled, alignItems: 'center', justifyContent: 'center' },
+  genderButtonActive: { borderColor: colors.primary },
+  genderText: { fontSize: typography.body.medium.fontSize, lineHeight: 21, fontWeight: typography.body.regular.fontWeight, letterSpacing: -0.32, color: colors.light.line.neutral },
+  genderTextActive: { color: colors.primary, fontWeight: typography.body.medium.fontWeight },
   idRow: { flexDirection: 'row', gap: 6 },
   idInput: { flex: 1 },
-  checkButton: { width: 101, height: 45, borderRadius: 10, backgroundColor: COLORS.button, alignItems: 'center', justifyContent: 'center' },
-  checkButtonText: { fontSize: 16, lineHeight: 21, fontWeight: '500', letterSpacing: -0.32, color: COLORS.alternative },
-  submitArea: { alignItems: 'center', gap: 8, marginTop: 87 },
-  notice: { fontSize: 12, lineHeight: 16, fontWeight: '400', letterSpacing: -0.24, color: COLORS.assistive },
-  submitButton: { width: 327, height: 48, borderRadius: 10, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
-  submitText: { fontSize: 20, lineHeight: 26, fontWeight: '600', letterSpacing: -0.4, color: COLORS.field },
+  checkButton: { width: 101, height: 45, borderRadius: 10, backgroundColor: colors.light.fill.alternative, alignItems: 'center', justifyContent: 'center' },
+  checkButtonText: { fontSize: typography.body.medium.fontSize, lineHeight: 21, fontWeight: typography.body.medium.fontWeight, letterSpacing: -0.32, color: colors.light.label.alternative },
+  submitArea: { alignItems: 'center', gap: spacing.sm, marginTop: 87 },
+  notice: { fontSize: typography.caption.regular.fontSize, lineHeight: 16, fontWeight: typography.body.regular.fontWeight, letterSpacing: -0.24, color: colors.light.label.assistive },
+  submitButton: { width: 327, height: 48, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  submitText: { fontSize: typography.headline.headline1.semibold.fontSize, lineHeight: 26, fontWeight: typography.body.semibold.fontWeight, letterSpacing: -0.4, color: colors.light.background.neutral },
   pressed: { opacity: 0.78 },
 });
