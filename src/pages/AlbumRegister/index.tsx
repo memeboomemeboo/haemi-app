@@ -65,6 +65,7 @@ export default function AlbumRegisterScreen() {
           <Text style={styles.title}>추억 등록</Text>
         </View>
 
+        <View style={styles.formGroup}>
         <View style={styles.fields}>
           {/* 보낼 어르신 */}
           <View style={styles.field}>
@@ -198,6 +199,7 @@ export default function AlbumRegisterScreen() {
             <Text style={styles.saveButtonText}>저장</Text>
           </Pressable>
         </View>
+        </View>
       </ScrollView>
 
       <BottomNavigation activeTab="Album" />
@@ -223,6 +225,12 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 27,
     paddingBottom: 40,
+    // Figma: 헤더(뒤로가기+타이틀)에서 폼 영역까지 25, 폼 내부에서 필드 그룹과 버튼까지 48
+    gap: 25,
+  },
+  formGroup: {
+    width: '100%',
+    alignItems: 'center',
     gap: 48,
   },
   backTitle: {
@@ -241,6 +249,7 @@ const styles = StyleSheet.create({
     lineHeight: 31,
   },
   fields: {
+    width: '100%',
     gap: 28,
   },
   field: {
@@ -258,8 +267,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   elderChip: {
+    width: 80,
     height: 31,
-    paddingHorizontal: 14,
     borderRadius: 100,
     borderWidth: 1,
     borderColor: '#e6e6e7',
@@ -396,7 +405,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.32,
   },
   buttonRow: {
-    marginTop: -8,
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 10,
