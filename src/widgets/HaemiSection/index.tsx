@@ -1,5 +1,5 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Illustration } from '@/shared/ui/Icon';
+import { Illustration } from '@/shared/ui';
 
 const logoSource = require('../../../assets/images/haemi-logo.png');
 const familySource = require('../../../assets/images/haemi-family.png');

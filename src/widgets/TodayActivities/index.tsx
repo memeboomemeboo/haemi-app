@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import type { Activity, ActivityType } from '@/entities/activity';
-import { Check, Illustration, type IllustrationName } from '@/shared/ui/Icon';
+import { Check, Illustration, type IllustrationName } from '@/shared/ui';
 
 interface TodayActivitiesProps {
   activities: Activity[] | null;

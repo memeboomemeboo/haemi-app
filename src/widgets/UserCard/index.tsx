@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { SeniorProfile } from '@/entities/user';
-import { Arrow, Profile } from '@/shared/ui/Icon';
+import { Arrow, Profile } from '@/shared/ui';
 
 interface UserCardProps {
   profile: SeniorProfile | null;

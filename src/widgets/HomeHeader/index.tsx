@@ -1,5 +1,5 @@
 import { Image, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
-import { Alarm, Setting } from '@/shared/ui/Icon';
+import { Alarm, Setting } from '@/shared/ui';
 
 const logoSource = require('../../../assets/images/haemi-logo.png');
 

@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Illustration } from '@/shared/ui/Icon';
+import { Illustration } from '@/shared/ui';
 
 /** 앨범에 사진이 없을 때 표시 (Figma node 52-2611 / 211-3944) */
 export const AlbumEmptyState = () => {
