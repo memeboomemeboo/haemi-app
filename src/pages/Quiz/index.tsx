@@ -24,6 +24,7 @@ export default function QuizScreen() {
     isSubmitting,
     selectOption,
     goToNext,
+    retry,
   } = useTraining();
 
   const handleComplete = () => {
@@ -51,6 +52,11 @@ export default function QuizScreen() {
           {mode === 'loading' ? (
             <View style={styles.loading}>
               <Text style={styles.loadingText}>문제를 준비하고 있어요...</Text>
+            </View>
+          ) : mode === 'error' ? (
+            <View style={styles.loading}>
+              <Text style={styles.loadingText}>문제를 불러오지 못했어요.</Text>
+              <PrimaryButton label="다시 시도" onPress={retry} />
             </View>
           ) : (
             <View style={styles.content}>

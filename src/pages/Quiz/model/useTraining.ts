@@ -7,7 +7,7 @@ import {
   type TrainingSession,
 } from '@/shared/api/training';
 
-export type TrainingMode = 'loading' | 'active' | 'completed';
+export type TrainingMode = 'loading' | 'active' | 'completed' | 'error';
 
 export const useTraining = () => {
   const [session, setSession] = useState<TrainingSession | null>(null);
@@ -15,9 +15,11 @@ export const useTraining = () => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [textAnswer, setTextAnswer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
+    setMode('loading');
 
     const startSession = async () => {
       try {
@@ -32,7 +34,7 @@ export const useTraining = () => {
         }
       } catch (error) {
         console.warn('Failed to start training session', error);
-        if (isMounted) setMode('active');
+        if (isMounted) setMode('error');
       }
     };
 
@@ -40,7 +42,9 @@ export const useTraining = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [retryCount]);
+
+  const retry = useCallback(() => setRetryCount((c) => c + 1), []);
 
   const question: TrainingQuestion | null = session?.currentQuestion ?? null;
   const currentNumber = session?.currentQuestionNumber ?? 1;
@@ -100,6 +104,7 @@ export const useTraining = () => {
     isSubmitting,
     selectOption,
     goToNext,
+    retry,
     feedback: session?.feedback ?? null,
   };
 };
