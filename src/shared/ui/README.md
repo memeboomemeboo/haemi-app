@@ -6,7 +6,7 @@ Reusable UI components for Haemi app.
 
 ### BottomNavigation
 
-Navigation bar component with 5 tabs: Home, Album, Memory, Report, Quiz.
+Navigation bar component with 4 tabs: Home, Album, Report, Quiz.
 
 **Usage:**
 
@@ -28,7 +28,7 @@ export const MyApp = () => {
 
 **Props:**
 
-- `activeTab: NavigationTab` - Currently active tab ('Home' | 'Album' | 'Memory' | 'Report' | 'Quiz')
+- `activeTab: NavigationTab` - Currently active tab ('Home' | 'Album' | 'Report' | 'Quiz')
 - `onTabChange: (tab: NavigationTab) => void` - Callback when tab is pressed
 
 ### Icon
