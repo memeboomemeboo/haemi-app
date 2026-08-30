@@ -14,8 +14,9 @@ export default function ElderHomeScreen() {
   const userName = group?.members?.[0]?.relation || '어르신';
 
   const handleTaskPress = (index: number) => {
-    // TODO: Navigate to specific task screens
-    console.log(`Task ${index} pressed`);
+    if (index === 1) {
+      router.push('/quiz');
+    }
   };
 
   return (
