@@ -5,13 +5,16 @@ import { useRouter } from 'expo-router';
 import { BottomNavigation } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 import { ElderTodayTasks } from '@/widgets/ElderTodayTasks';
+import { colors } from '@/shared/constants';
 
 import { useElderHome } from './model/useElderHome';
+
+const light = colors.light;
 
 export default function ElderHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { homeData, isLoading, taskStatus, handleTaskPress } = useElderHome();
+  const { homeData, isLoading, isError, taskStatus, handleTaskPress, refetch } = useElderHome();
 
   const userName = '어르신';
 
@@ -32,7 +35,18 @@ export default function ElderHomeScreen() {
 
         {isLoading ? (
           <View style={styles.loader}>
-            <ActivityIndicator size="large" color="#fd6941" />
+            <ActivityIndicator size="large" color={light.primary} />
+          </View>
+        ) : isError ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>데이터를 불러오지 못했어요.</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={refetch}
+              style={({ pressed }) => [styles.retryButton, pressed && styles.retryButtonPressed]}
+            >
+              <Text style={styles.retryText}>다시 시도</Text>
+            </Pressable>
           </View>
         ) : (
           <View style={styles.tasks}>
@@ -72,7 +86,7 @@ export default function ElderHomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: light.background.normal,
   },
   scroll: {
     flex: 1,
@@ -93,13 +107,38 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 36.4,
     letterSpacing: -0.56,
-    color: '#3c3e3f',
+    color: light.label.neutral,
     textAlign: 'center',
   },
   loader: {
     height: 220,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorBox: {
+    height: 220,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  errorText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: light.label.alternative,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: light.primary,
+  },
+  retryButtonPressed: {
+    opacity: 0.7,
+  },
+  retryText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: light.label.buttonText,
   },
   tasks: {
     marginBottom: 24,
@@ -108,7 +147,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
     fontWeight: '600',
-    color: '#fd6941',
+    color: light.primary,
     marginTop: -8,
     marginBottom: 12,
   },
@@ -121,8 +160,8 @@ const styles = StyleSheet.create({
     height: 69,
     borderRadius: 15,
     borderWidth: 1.5,
-    borderColor: '#e8e8e9',
-    backgroundColor: '#fafafa',
+    borderColor: light.line.alternative,
+    backgroundColor: light.background.alternative,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -134,6 +173,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 36.4,
     letterSpacing: -0.56,
-    color: '#5a5c5d',
+    color: light.label.alternative,
   },
 });

@@ -1,6 +1,9 @@
 import { View, StyleSheet, Pressable, Text } from 'react-native';
 
 import { Picture, Heart, Sent } from '@/shared/ui';
+import { colors } from '@/shared/constants';
+
+const light = colors.light;
 
 export interface TaskStatus {
   greetingCompleted: boolean;
@@ -45,7 +48,7 @@ export function ElderTodayTasks({ status, onTaskPress }: ElderTodayTasksProps) {
             ]}
           >
             <View style={styles.iconContainer}>
-              <task.icon size={60} color={task.isCompleted ? '#fd6941' : '#5a5c5d'} />
+              <task.icon size={60} color={task.isCompleted ? light.primary : light.label.alternative} />
             </View>
             <Text style={[styles.label, task.isCompleted && styles.labelCompleted]}>
               {task.label}
@@ -62,10 +65,10 @@ export function ElderTodayTasks({ status, onTaskPress }: ElderTodayTasksProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fafafa',
+    backgroundColor: light.background.alternative,
     borderRadius: 15,
     borderWidth: 1.5,
-    borderColor: '#e8e8e9',
+    borderColor: light.line.alternative,
     padding: 16,
     marginBottom: 24,
   },
@@ -74,7 +77,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 36.4,
     letterSpacing: -0.56,
-    color: '#3c3e3f',
+    color: light.label.neutral,
     marginBottom: 16,
   },
   grid: {
@@ -89,10 +92,10 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 8,
     minHeight: 180,
-    backgroundColor: '#dadbdc',
+    backgroundColor: light.line.neutral,
   },
   cardCompleted: {
-    backgroundColor: '#fff3f0',
+    backgroundColor: colors.palette.red[90],
   },
   cardPressed: {
     opacity: 0.7,
@@ -108,22 +111,22 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 23.4,
     letterSpacing: -0.36,
-    color: '#5a5c5d',
+    color: light.label.alternative,
     textAlign: 'center',
     marginTop: 8,
   },
   labelCompleted: {
-    color: '#fd6941',
+    color: light.primary,
   },
   status: {
     fontSize: 18,
     fontWeight: '600',
     lineHeight: 23.4,
     letterSpacing: -0.36,
-    color: '#5a5c5d',
+    color: light.label.alternative,
     marginTop: 4,
   },
   statusCompleted: {
-    color: '#fd6941',
+    color: light.primary,
   },
 });

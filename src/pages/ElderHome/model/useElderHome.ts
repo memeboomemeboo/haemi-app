@@ -7,7 +7,7 @@ import { useAsyncData } from '@/shared/hooks';
 export function useElderHome() {
   const router = useRouter();
 
-  const { data, isLoading, refetch } = useAsyncData(getElderHome);
+  const { data, isLoading, isError, refetch } = useAsyncData(getElderHome);
 
   const taskStatus = data
     ? {
@@ -28,6 +28,7 @@ export function useElderHome() {
   return {
     homeData: data,
     isLoading,
+    isError,
     taskStatus,
     handleTaskPress,
     refetch,
