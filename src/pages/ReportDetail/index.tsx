@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 
 import {
@@ -39,6 +39,7 @@ export default function ReportDetailScreen() {
     goBack,
     header,
     highlights,
+    isLoading,
     profile,
     supportGuides,
   } = useReportDetail();
@@ -67,17 +68,23 @@ export default function ReportDetailScreen() {
         </View>
       </View>
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingBottom: contentPaddingBottom }]}
-        showsVerticalScrollIndicator={false}
-      >
-        <ProfileSummary profile={profile} />
-        <AttendanceSection attendance={attendance} copy={attendanceCopy} />
-        <CognitiveSection cognitiveStatus={cognitiveStatus} />
-        <HighlightSection highlights={highlights} />
-        <SupportGuideSection guides={supportGuides} />
-      </ScrollView>
+      {isLoading || !profile || !attendanceCopy ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator color={light.primary} size="large" />
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[styles.content, { paddingBottom: contentPaddingBottom }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <ProfileSummary profile={profile} />
+          <AttendanceSection attendance={attendance} copy={attendanceCopy} />
+          <CognitiveSection cognitiveStatus={cognitiveStatus} />
+          {highlights.length > 0 && <HighlightSection highlights={highlights} />}
+          {supportGuides.length > 0 && <SupportGuideSection guides={supportGuides} />}
+        </ScrollView>
+      )}
 
       <BottomNavigation activeTab="Report" />
     </View>
@@ -98,7 +105,7 @@ function ProfileSummary({ profile }: { profile: ReportDetailProfile }) {
           </View>
         </View>
 
-        <View style={styles.watchPill}>
+        <View style={[styles.watchPill, { backgroundColor: profile.badgeColor }]}>
           <Text style={styles.watchPillText}>{profile.badge}</Text>
         </View>
       </View>
@@ -269,6 +276,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: light.background.normal,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   header: {
     paddingHorizontal: 26,
