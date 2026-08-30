@@ -17,7 +17,8 @@ export default function AlbumRegisterScreen() {
 
   const [elder, setElder] = useState('어머니');
   const [title, setTitle] = useState('어린 시절 고향');
-  const [photos, setPhotos] = useState<string[]>([]);
+  // 같은 사진을 두 번 고를 수도 있으므로 uri가 아닌 별도 id로 각 항목을 구분한다
+  const [photos, setPhotos] = useState<{ id: string; uri: string }[]>([]);
   const [memo, setMemo] = useState('가족끼리 나들이에 갔던 날이에요');
   const [question, setQuestion] = useState('이 사진, 기억나세요?');
   const [year, setYear] = useState('1975');
@@ -28,12 +29,14 @@ export default function AlbumRegisterScreen() {
       quality: 0.8,
     });
     if (!result.canceled) {
-      setPhotos((current) => [...current, result.assets[0].uri].slice(0, MAX_PHOTOS));
+      const uri = result.assets[0].uri;
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      setPhotos((current) => [...current, { id, uri }].slice(0, MAX_PHOTOS));
     }
   };
 
-  const removePhoto = (uri: string) => {
-    setPhotos((current) => current.filter((photo) => photo !== uri));
+  const removePhoto = (id: string) => {
+    setPhotos((current) => current.filter((photo) => photo.id !== id));
   };
 
   const handleSave = () => {
@@ -117,15 +120,15 @@ export default function AlbumRegisterScreen() {
                   </Pressable>
                 )}
                 {photos.map((photo) => (
-                  <View key={photo} style={styles.photoTileWrapper}>
+                  <View key={photo.id} style={styles.photoTileWrapper}>
                     <View style={styles.photoTile}>
-                      <Image source={{ uri: photo }} style={styles.photoTileImage} />
+                      <Image source={{ uri: photo.uri }} style={styles.photoTileImage} />
                     </View>
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel="사진 삭제"
                       style={styles.photoDelete}
-                      onPress={() => removePhoto(photo)}
+                      onPress={() => removePhoto(photo.id)}
                       hitSlop={6}
                     >
                       <Plus size={10} color="#5a5c5d" style={styles.photoDeleteIcon} />
