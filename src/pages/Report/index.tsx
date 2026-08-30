@@ -17,7 +17,7 @@ const light = colors.light;
 const palette = colors.palette;
 
 export default function ReportScreen() {
-  const { fixedTopPaddingTop, openReportDetail, elders, isLoading } = useReport();
+  const { fixedTopPaddingTop, openReportDetail, elders, isLoading, isError, refetch } = useReport();
 
   return (
     <View style={styles.container}>
@@ -37,6 +37,17 @@ export default function ReportScreen() {
 
         {isLoading ? (
           <ActivityIndicator style={styles.loader} color={light.primary} size="large" />
+        ) : isError ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>데이터를 불러오지 못했어요.</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={refetch}
+              style={({ pressed }) => [styles.retryButton, pressed && styles.retryButtonPressed]}
+            >
+              <Text style={styles.retryText}>다시 시도</Text>
+            </Pressable>
+          </View>
         ) : elders.length === 0 ? (
           <Text style={styles.emptyText}>등록된 어르신이 없어요.</Text>
         ) : (
@@ -157,6 +168,30 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginTop: 60,
+  },
+  errorBox: {
+    marginTop: 60,
+    alignItems: 'center',
+    gap: 16,
+  },
+  errorText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: light.label.alternative,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: light.primary,
+  },
+  retryButtonPressed: {
+    opacity: 0.7,
+  },
+  retryText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: light.label.buttonText,
   },
   emptyText: {
     marginTop: 60,
