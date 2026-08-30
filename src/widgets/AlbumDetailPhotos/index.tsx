@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
+import { useTheme } from '@/shared/hooks';
 
 const sampleSource = require('../../../assets/images/album-sample.png');
 const THUMBNAIL_LIMIT = 2;
@@ -12,6 +14,9 @@ const resolveSource = (uri: string) =>
 
 /** 추억 상세의 사진 영역 — 대표 사진 + 썸네일 + 초과분 표시 (Figma node 1326:10058) */
 export const AlbumDetailPhotos = ({ photos }: AlbumDetailPhotosProps) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [mainPhoto, ...restPhotos] = photos;
   const thumbnails = restPhotos.slice(0, THUMBNAIL_LIMIT);
   const overflowCount = restPhotos.length - THUMBNAIL_LIMIT;
@@ -43,62 +48,63 @@ export const AlbumDetailPhotos = ({ photos }: AlbumDetailPhotosProps) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    gap: 16,
-  },
-  mainFrame: {
-    width: '100%',
-    height: 170,
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  mainPhoto: {
-    width: '100%',
-    height: '100%',
-    opacity: 0.9,
-  },
-  thumbnailRow: {
-    flexDirection: 'row',
-    gap: 9,
-  },
-  thumbnailFrame: {
-    flex: 1,
-    height: 81,
-    borderRadius: 15,
-    overflow: 'hidden',
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  thumbnailPhoto: {
-    width: '100%',
-    height: '100%',
-    opacity: 0.9,
-  },
-  overflowFrame: {
-    flex: 1,
-    height: 81,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e6e6e7',
-    backgroundColor: '#fafafa',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  overflowText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#c1c2c3',
-    letterSpacing: -0.4,
-  },
-});
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+  StyleSheet.create({
+    container: {
+      gap: 16,
+    },
+    mainFrame: {
+      width: '100%',
+      height: 170,
+      borderRadius: 10,
+      overflow: 'hidden',
+      backgroundColor: colors.background.normal,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.12,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    mainPhoto: {
+      width: '100%',
+      height: '100%',
+      opacity: 0.9,
+    },
+    thumbnailRow: {
+      flexDirection: 'row',
+      gap: 9,
+    },
+    thumbnailFrame: {
+      flex: 1,
+      height: 81,
+      borderRadius: 15,
+      overflow: 'hidden',
+      backgroundColor: colors.background.normal,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.12,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    thumbnailPhoto: {
+      width: '100%',
+      height: '100%',
+      opacity: 0.9,
+    },
+    overflowFrame: {
+      flex: 1,
+      height: 81,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.label.disabled,
+      backgroundColor: colors.background.alternative,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    overflowText: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: colors.line.normal,
+      letterSpacing: -0.4,
+    },
+  });
