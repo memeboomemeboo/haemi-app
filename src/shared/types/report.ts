@@ -1,38 +1,81 @@
-export type CognitiveReportPeriod = 'WEEKLY' | 'MONTHLY';
-export type ReportDeliveryMethod = 'IN_APP' | 'EMAIL' | 'IN_APP_AND_EMAIL';
+export type ElderStatus = 'GOOD' | 'NORMAL' | 'WATCH';
+export type CognitiveArea = 'ORIENTATION' | 'RECALL' | 'LANGUAGE' | 'DELAYED_RECALL';
+export type AreaStatus = 'GOOD' | 'NORMAL' | 'WATCH' | 'NOT_AVAILABLE';
+export type SuggestionAction =
+  | 'SEND_DAILY_CARE'
+  | 'REGISTER_MEMORY'
+  | 'CALL_ELDER'
+  | 'PRAISE_ELDER';
 
-export type CognitiveMetricResult = {
-  elderId?: string;
-  albumId?: string;
-  institutionId?: string;
-  metricDate?: string;
-  trainingSessionCount?: number;
-  trainingAccuracyRate?: number;
-  averageResponseSeconds?: number;
-  reminiscenceReactionCount?: number;
-  memoryPostCount?: number;
-  mostReactedPhotoType?: string;
-};
+export interface ElderReportCard {
+  elderId: string;
+  name: string;
+  role: string;
+  roleLabel: string;
+  age: number;
+  attendedToday: boolean;
+  status: ElderStatus;
+}
 
-export type CognitiveReportResult = {
-  reportId?: string;
-  elderId?: string;
-  albumId?: string;
-  period?: CognitiveReportPeriod;
-  periodStart?: string;
-  periodEnd?: string;
-  participationCount?: number;
-  averageAccuracyRate?: number;
-  averageResponseSeconds?: number;
-  memoryPostCount?: number;
-  reminiscenceParticipationCount?: number;
-  mostReactedPhotoType?: string;
-  accuracyChangeFromPrevious?: number;
-  responseTimeChangeFromPrevious?: number;
-  accuracyTrend?: { date?: string; accuracyRate?: number }[];
-  changeSummary?: string;
-  deliveryMethod?: ReportDeliveryMethod;
-  pdfKey?: string;
-  viewedAt?: string;
-  createdAt?: string;
-};
+export interface ElderReportSummary {
+  elderId: string;
+  name: string;
+  age: number;
+  generation: string;
+  daysTogether: number;
+  attendedToday: boolean;
+  weeklyParticipationDays: number;
+  weeklyGoalDays: number;
+  status: ElderStatus;
+  currentStreak: number;
+  bestStreak: number;
+}
+
+export interface DayMark {
+  date: string;
+  dayOfWeek: string;
+  participated: boolean;
+  training: boolean;
+  greetingRead: boolean;
+  memoryViewed: boolean;
+  replied: boolean;
+}
+
+export interface AttendanceDetail {
+  last7Days: DayMark[];
+  currentStreak: number;
+  bestStreak: number;
+  weeklyStatus: ElderStatus;
+}
+
+export interface AreaStatusItem {
+  area: CognitiveArea;
+  status: AreaStatus;
+  fourWeekDecline: boolean;
+}
+
+export interface CognitiveStatusData {
+  elderId: string;
+  areas: AreaStatusItem[];
+}
+
+export interface HighlightItem {
+  id: string;
+  title: string;
+  body: string;
+}
+
+export interface WeeklyHighlight {
+  elderId: string;
+  items: HighlightItem[];
+}
+
+export interface SuggestionItem {
+  action: SuggestionAction;
+  message: string;
+}
+
+export interface SupportGuideData {
+  elderName: string;
+  suggestions: SuggestionItem[];
+}
