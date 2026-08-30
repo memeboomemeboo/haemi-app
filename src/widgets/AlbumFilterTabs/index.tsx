@@ -1,32 +1,35 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-export type AlbumFilter = 'all' | 'period' | 'place' | 'person';
+/** 필터 탭 값 — '전체' 또는 특정 어르신 이름 (Figma node 1325:8142) */
+export type AlbumFilter = string;
 
-const FILTERS: { value: AlbumFilter; label: string }[] = [
-  { value: 'all', label: '전체' },
-  { value: 'period', label: '시기' },
-  { value: 'place', label: '장소' },
-  { value: 'person', label: '인물' },
-];
+export const ALL_FILTER_VALUE = 'all';
+
+export interface AlbumFilterOption {
+  value: AlbumFilter;
+  label: string;
+}
 
 interface AlbumFilterTabsProps {
+  options: AlbumFilterOption[];
   value: AlbumFilter;
   onChange: (filter: AlbumFilter) => void;
 }
 
-export const AlbumFilterTabs = ({ value, onChange }: AlbumFilterTabsProps) => {
+/** 앨범을 전달받는 어르신별로 필터링하는 탭 (Figma node 1326:9462 / 1325:8142) */
+export const AlbumFilterTabs = ({ options, value, onChange }: AlbumFilterTabsProps) => {
   return (
     <View style={styles.container}>
-      {FILTERS.map((filter) => {
-        const isSelected = filter.value === value;
+      {options.map((option) => {
+        const isSelected = option.value === value;
         return (
           <Pressable
-            key={filter.value}
+            key={option.value}
             style={[styles.tab, isSelected && styles.tabSelected]}
-            onPress={() => onChange(filter.value)}
+            onPress={() => onChange(option.value)}
           >
-            <Text style={[styles.tabLabel, isSelected && styles.tabLabelSelected]}>
-              {filter.label}
+            <Text style={[styles.tabLabel, isSelected && styles.tabLabelSelected]} numberOfLines={1}>
+              {option.label}
             </Text>
           </Pressable>
         );
@@ -42,12 +45,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 24,
+    paddingHorizontal: 4,
+    gap: 4,
     width: '100%',
   },
   tab: {
-    width: 69,
+    flex: 1,
     height: 25,
     borderRadius: 5,
     justifyContent: 'center',

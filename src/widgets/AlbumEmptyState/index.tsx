@@ -1,15 +1,15 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Illustration } from '@/shared/ui/Icon';
 
-/** 앨범에 사진이 없을 때 표시 (Figma node 52-2611 / 211-3944) */
+/** 앨범에 사진이 없을 때 표시 (Figma node 1326:9462 / 1386:2794) */
 export const AlbumEmptyState = () => {
   return (
     <View style={styles.container}>
-      <Illustration name="emptyAlbum" width={85} height={70} />
-      <View style={styles.textGroup}>
+      <View style={styles.iconTitleGroup}>
+        <Illustration name="emptyAlbum" width={96} height={96} />
         <Text style={styles.title}>아직 등록된 사진이 없어요</Text>
-        <Text style={styles.subtitle}>첫 번째 기억을 저장해보세요</Text>
       </View>
+      <Text style={styles.subtitle}>어르신께 추억을 전달드려보세요!</Text>
     </View>
   );
 };
@@ -18,11 +18,11 @@ const styles = StyleSheet.create({
   container: {
     width: 247,
     alignItems: 'center',
-    gap: 43,
+    gap: 20,
   },
-  textGroup: {
+  iconTitleGroup: {
     alignItems: 'center',
-    gap: 10,
+    gap: 9,
     width: '100%',
   },
   title: {
