@@ -66,139 +66,139 @@ export default function AlbumRegisterScreen() {
         </View>
 
         <View style={styles.formGroup}>
-        <View style={styles.fields}>
-          {/* 보낼 어르신 */}
-          <View style={styles.field}>
-            <Text style={styles.fieldLabel}>보낼 어르신</Text>
-            <View style={styles.elderRow}>
-              {ELDER_CANDIDATES.map((name) => {
-                const isSelected = name === elder;
-                return (
-                  <Pressable
-                    key={name}
-                    style={[styles.elderChip, isSelected && styles.elderChipSelected]}
-                    onPress={() => setElder(name)}
-                  >
-                    <Text style={[styles.elderChipText, isSelected && styles.elderChipTextSelected]}>
-                      {name}
+          <View style={styles.fields}>
+            {/* 보낼 어르신 */}
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>보낼 어르신</Text>
+              <View style={styles.elderRow}>
+                {ELDER_CANDIDATES.map((name) => {
+                  const isSelected = name === elder;
+                  return (
+                    <Pressable
+                      key={name}
+                      style={[styles.elderChip, isSelected && styles.elderChipSelected]}
+                      onPress={() => setElder(name)}
+                    >
+                      <Text style={[styles.elderChipText, isSelected && styles.elderChipTextSelected]}>
+                        {name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* 추억 이름 */}
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>추억 이름</Text>
+              <TextInput
+                value={title}
+                onChangeText={setTitle}
+                placeholder="추억 이름을 입력하세요"
+                placeholderTextColor="#c1c2c3"
+                style={styles.textInput}
+              />
+            </View>
+
+            {/* 사진 */}
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>사진</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.photoRow}
+              >
+                {photos.length < MAX_PHOTOS && (
+                  <Pressable style={styles.uploadTile} onPress={pickPhoto}>
+                    <Picture size={40} color="#c1c2c3" style={styles.uploadIcon} />
+                    <Text style={styles.uploadText}>
+                      사진 {photos.length}/{MAX_PHOTOS}
                     </Text>
                   </Pressable>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* 추억 이름 */}
-          <View style={styles.field}>
-            <Text style={styles.fieldLabel}>추억 이름</Text>
-            <TextInput
-              value={title}
-              onChangeText={setTitle}
-              placeholder="추억 이름을 입력하세요"
-              placeholderTextColor="#c1c2c3"
-              style={styles.textInput}
-            />
-          </View>
-
-          {/* 사진 */}
-          <View style={styles.field}>
-            <Text style={styles.fieldLabel}>사진</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.photoRow}
-            >
-              {photos.length < MAX_PHOTOS && (
-                <Pressable style={styles.uploadTile} onPress={pickPhoto}>
-                  <Picture size={40} color="#c1c2c3" style={styles.uploadIcon} />
-                  <Text style={styles.uploadText}>
-                    사진 {photos.length}/{MAX_PHOTOS}
-                  </Text>
-                </Pressable>
-              )}
-              {photos.map((photo) => (
-                <View key={photo} style={styles.photoTileWrapper}>
-                  <View style={styles.photoTile}>
-                    <Image source={{ uri: photo }} style={styles.photoTileImage} />
+                )}
+                {photos.map((photo) => (
+                  <View key={photo} style={styles.photoTileWrapper}>
+                    <View style={styles.photoTile}>
+                      <Image source={{ uri: photo }} style={styles.photoTileImage} />
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="사진 삭제"
+                      style={styles.photoDelete}
+                      onPress={() => removePhoto(photo)}
+                      hitSlop={6}
+                    >
+                      <Plus size={10} color="#5a5c5d" style={styles.photoDeleteIcon} />
+                    </Pressable>
                   </View>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="사진 삭제"
-                    style={styles.photoDelete}
-                    onPress={() => removePhoto(photo)}
-                    hitSlop={6}
-                  >
-                    <Plus size={10} color="#5a5c5d" style={styles.photoDeleteIcon} />
-                  </Pressable>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
+                ))}
+              </ScrollView>
+            </View>
 
-          {/* 메모 */}
-          <View style={styles.field}>
-            <Text style={styles.fieldLabel}>메모</Text>
-            <View style={styles.memoBox}>
+            {/* 메모 */}
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>메모</Text>
+              <View style={styles.memoBox}>
+                <TextInput
+                  multiline
+                  maxLength={MEMO_MAX_LENGTH}
+                  value={memo}
+                  onChangeText={setMemo}
+                  placeholder="추억을 적어주세요"
+                  placeholderTextColor="#c1c2c3"
+                  style={styles.memoInput}
+                  textAlignVertical="top"
+                />
+                <Text style={styles.memoCount}>
+                  {memo.length}/{MEMO_MAX_LENGTH}
+                </Text>
+              </View>
+            </View>
+
+            {/* 어르신께 여쭤볼 한마디 */}
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>어르신께 여쭤볼 한마디</Text>
               <TextInput
-                multiline
-                maxLength={MEMO_MAX_LENGTH}
-                value={memo}
-                onChangeText={setMemo}
-                placeholder="추억을 적어주세요"
+                value={question}
+                onChangeText={setQuestion}
+                placeholder="어르신께 여쭤볼 질문을 입력하세요"
                 placeholderTextColor="#c1c2c3"
-                style={styles.memoInput}
-                textAlignVertical="top"
+                style={styles.textInput}
               />
-              <Text style={styles.memoCount}>
-                {memo.length}/{MEMO_MAX_LENGTH}
-              </Text>
+            </View>
+
+            {/* 연도 */}
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>연도</Text>
+              <View style={styles.yearInputWrapper}>
+                <TextInput
+                  value={year}
+                  onChangeText={setYear}
+                  placeholder="예: 1975"
+                  placeholderTextColor="#c1c2c3"
+                  keyboardType="number-pad"
+                  style={styles.yearInput}
+                />
+                <Calendar size={17} color="#76787a" />
+              </View>
             </View>
           </View>
 
-          {/* 어르신께 여쭤볼 한마디 */}
-          <View style={styles.field}>
-            <Text style={styles.fieldLabel}>어르신께 여쭤볼 한마디</Text>
-            <TextInput
-              value={question}
-              onChangeText={setQuestion}
-              placeholder="어르신께 여쭤볼 질문을 입력하세요"
-              placeholderTextColor="#c1c2c3"
-              style={styles.textInput}
-            />
+          {/* 취소 / 저장 */}
+          <View style={styles.buttonRow}>
+            <Pressable
+              style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
+              onPress={() => router.back()}
+            >
+              <Text style={styles.cancelButtonText}>취소</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]}
+              onPress={handleSave}
+            >
+              <Text style={styles.saveButtonText}>저장</Text>
+            </Pressable>
           </View>
-
-          {/* 연도 */}
-          <View style={styles.field}>
-            <Text style={styles.fieldLabel}>연도</Text>
-            <View style={styles.yearInputWrapper}>
-              <TextInput
-                value={year}
-                onChangeText={setYear}
-                placeholder="예: 1975"
-                placeholderTextColor="#c1c2c3"
-                keyboardType="number-pad"
-                style={styles.yearInput}
-              />
-              <Calendar size={17} color="#76787a" />
-            </View>
-          </View>
-        </View>
-
-        {/* 취소 / 저장 */}
-        <View style={styles.buttonRow}>
-          <Pressable
-            style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.cancelButtonText}>취소</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]}
-            onPress={handleSave}
-          >
-            <Text style={styles.saveButtonText}>저장</Text>
-          </Pressable>
-        </View>
         </View>
       </ScrollView>
 
