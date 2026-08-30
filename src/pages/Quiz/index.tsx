@@ -1,30 +1,30 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Arrow } from '@/shared/ui';
 
-import { COLORS, QUIZ_COMPLETE_IMAGE, QUIZ_FEEDBACK_CORRECT_IMAGE, QUIZ_FEEDBACK_WRONG_IMAGE } from './constants';
-import { type QuizAnswerValue, useQuiz } from './model/useQuiz';
-
-const ANSWERS: QuizAnswerValue[] = ['O', 'X'];
+import { COLORS, QUIZ_COMPLETE_IMAGE } from './constants';
+import { useTraining } from './model/useTraining';
 
 export default function QuizScreen() {
   const router = useRouter();
   const {
-    answerQuestion,
-    goToNext,
-    hasAnswered,
-    isCorrect,
-    isSubmitting,
     mode,
-    progress,
-    progressPercent,
     question,
-    selectedAnswer,
+    currentNumber,
     total,
-  } = useQuiz();
+    progressPercent,
+    isChoiceMode,
+    selectedOption,
+    textAnswer,
+    setTextAnswer,
+    hasAnswered,
+    isSubmitting,
+    selectOption,
+    goToNext,
+  } = useTraining();
 
   const handleComplete = () => {
     router.replace('/');
@@ -45,7 +45,7 @@ export default function QuizScreen() {
               <Arrow color={COLORS.text} size={34} style={styles.backIcon} />
               <Text style={styles.headerText}>이전으로</Text>
             </Pressable>
-            <Text style={styles.headerText}>퀴즈</Text>
+            <Text style={styles.headerText}>인지 훈련</Text>
           </View>
 
           {mode === 'loading' ? (
@@ -54,49 +54,51 @@ export default function QuizScreen() {
             </View>
           ) : (
             <View style={styles.content}>
-              <ProgressBar progress={progress} progressPercent={progressPercent} total={total} />
+              <ProgressBar
+                progress={currentNumber}
+                progressPercent={progressPercent}
+                total={total}
+              />
 
-              {mode === 'active' ? (
+              {mode === 'active' && question ? (
                 <>
                   <View style={styles.quizContent}>
                     <View style={styles.questionGroup}>
                       <Text style={styles.questionText}>
                         <Text style={styles.questionPrefix}>Q. </Text>
-                        {question.question}
+                        {question.prompt}
                       </Text>
 
-                      <View style={styles.answersRow}>
-                        {ANSWERS.map((answer) => (
-                          <AnswerCard
-                            key={answer}
-                            answer={answer}
-                            disabled={hasAnswered || isSubmitting}
-                            isSelected={selectedAnswer === answer}
-                            onPress={() => answerQuestion(answer)}
-                          />
-                        ))}
-                      </View>
-                    </View>
-
-                    {hasAnswered && (
-                      <View style={styles.feedbackCard}>
-                        <Image
-                          source={isCorrect ? QUIZ_FEEDBACK_CORRECT_IMAGE : QUIZ_FEEDBACK_WRONG_IMAGE}
-                          style={styles.feedbackImage}
-                          contentFit="contain"
-                        />
-                        <View style={styles.feedbackCopy}>
-                          <Text style={styles.feedbackTitle}>정답은 {question.correctAnswer}!</Text>
-                          <Text style={styles.feedbackText}>{question.explanation}</Text>
+                      {isChoiceMode ? (
+                        <View style={styles.optionsColumn}>
+                          {(question.options ?? []).map((option) => (
+                            <OptionCard
+                              key={option}
+                              label={option}
+                              disabled={selectedOption !== null || isSubmitting}
+                              isSelected={selectedOption === option}
+                              onPress={() => selectOption(option)}
+                            />
+                          ))}
                         </View>
-                      </View>
-                    )}
+                      ) : (
+                        <TextInput
+                          value={textAnswer}
+                          onChangeText={setTextAnswer}
+                          placeholder="답을 입력하세요"
+                          placeholderTextColor={COLORS.textAssistive}
+                          style={styles.textInput}
+                          multiline
+                          editable={!isSubmitting}
+                        />
+                      )}
+                    </View>
                   </View>
 
                   <PrimaryButton
                     label="다음으로"
                     disabled={!hasAnswered || isSubmitting}
-                    onPress={goToNext}
+                    onPress={() => void goToNext()}
                   />
                 </>
               ) : (
@@ -108,7 +110,7 @@ export default function QuizScreen() {
                       contentFit="contain"
                     />
                     <Text style={styles.completeText}>
-                      오늘의 <Text style={styles.highlightText}>퀴즈</Text>를{'\n'}
+                      오늘의 <Text style={styles.highlightText}>인지 훈련</Text>을{'\n'}
                       <Text style={styles.highlightText}>완료</Text>하셨어요!
                     </Text>
                   </View>
@@ -145,37 +147,31 @@ const ProgressBar = ({ progress, progressPercent, total }: ProgressBarProps) => 
   );
 };
 
-interface AnswerCardProps {
-  answer: QuizAnswerValue;
+interface OptionCardProps {
+  label: string;
   disabled: boolean;
   isSelected: boolean;
   onPress: () => void;
 }
 
-const AnswerCard = ({ answer, disabled, isSelected, onPress }: AnswerCardProps) => {
+const OptionCard = ({ label, disabled, isSelected, onPress }: OptionCardProps) => {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${answer} 선택`}
+      accessibilityLabel={`${label} 선택`}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
-        styles.answerCard,
-        isSelected && styles.answerCardSelected,
+        styles.optionCard,
+        isSelected && styles.optionCardSelected,
         pressed && !disabled && styles.pressed,
       ]}
     >
-      <AnswerBadge isSelected={isSelected} />
-      <Text style={styles.answerText}>{answer}</Text>
+      <View style={[styles.optionBadge, isSelected && styles.optionBadgeSelected]}>
+        {isSelected && <Text style={styles.optionBadgeCheck}>✓</Text>}
+      </View>
+      <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>{label}</Text>
     </Pressable>
-  );
-};
-
-const AnswerBadge = ({ isSelected }: { isSelected: boolean }) => {
-  return (
-    <View style={[styles.answerBadge, isSelected && styles.answerBadgeSelected]}>
-      {isSelected && <Text style={styles.answerBadgeCheck}>✓</Text>}
-    </View>
   );
 };
 
@@ -304,12 +300,10 @@ const styles = StyleSheet.create({
     gap: 24,
   },
   questionGroup: {
-    alignItems: 'center',
-    gap: 55,
+    gap: 36,
   },
   questionText: {
     width: '100%',
-    maxWidth: 326,
     color: COLORS.text,
     fontSize: 28,
     fontWeight: '600',
@@ -320,93 +314,77 @@ const styles = StyleSheet.create({
   questionPrefix: {
     color: COLORS.primary,
   },
-  answersRow: {
-    width: 319,
+  optionsColumn: {
+    gap: 12,
+  },
+  optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 17,
-  },
-  answerCard: {
-    width: 151,
-    height: 181,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 7,
+    gap: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     backgroundColor: COLORS.primarySoft,
   },
-  answerCardSelected: {
-    borderWidth: 1,
+  optionCardSelected: {
+    borderWidth: 1.5,
     borderColor: COLORS.primary,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
+    shadowOpacity: 0.5,
     shadowRadius: 4,
     elevation: 4,
   },
-  answerBadge: {
-    position: 'absolute',
-    left: 10,
-    top: 10,
-    width: 29,
-    height: 29,
-    alignItems: 'center',
-    justifyContent: 'center',
+  optionBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     borderWidth: 2,
     borderColor: COLORS.primary,
-    borderRadius: 15,
     backgroundColor: COLORS.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  answerBadgeSelected: {
+  optionBadgeSelected: {
     borderWidth: 0,
     backgroundColor: COLORS.primary,
   },
-  answerBadgeCheck: {
+  optionBadgeCheck: {
     color: COLORS.white,
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
-    lineHeight: 24,
+    lineHeight: 20,
   },
-  answerText: {
-    color: COLORS.primary,
-    fontSize: 64,
-    fontWeight: '500',
-    lineHeight: 83,
-    letterSpacing: -1.28,
-  },
-  feedbackCard: {
-    height: 97,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 20,
-    paddingHorizontal: 20,
-    borderRadius: 15,
-    backgroundColor: COLORS.fill,
-  },
-  feedbackImage: {
-    width: 55,
-    height: 55,
-  },
-  feedbackCopy: {
+  optionText: {
     flex: 1,
-    gap: 4,
-  },
-  feedbackTitle: {
-    color: COLORS.primary,
-    fontSize: 20,
-    fontWeight: '600',
-    lineHeight: 26,
-    letterSpacing: -0.4,
-  },
-  feedbackText: {
-    color: COLORS.textAssistive,
-    fontSize: 18,
+    color: COLORS.text,
+    fontSize: 22,
     fontWeight: '500',
-    lineHeight: 23,
-    letterSpacing: -0.36,
+    lineHeight: 28,
+    letterSpacing: -0.44,
+  },
+  optionTextSelected: {
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  textInput: {
+    minHeight: 120,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: COLORS.line,
+    backgroundColor: COLORS.primarySoft,
+    color: COLORS.text,
+    fontSize: 22,
+    fontWeight: '500',
+    lineHeight: 28,
+    letterSpacing: -0.44,
+    textAlignVertical: 'top',
   },
   completeContent: {
+    flex: 1,
     alignItems: 'center',
-    paddingTop: 127,
+    justifyContent: 'center',
   },
   completeImage: {
     width: 150,
