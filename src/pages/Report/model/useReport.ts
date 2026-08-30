@@ -9,7 +9,7 @@ export function useReport() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const { data: elders, isLoading } = useAsyncData(getElderReportList);
+  const { data: elders, isLoading, isError, refetch } = useAsyncData(getElderReportList);
 
   const openReportDetail = useCallback(
     (elderId: string) => {
@@ -21,6 +21,8 @@ export function useReport() {
   return {
     elders: elders ?? [],
     isLoading,
+    isError,
+    refetch,
     fixedTopPaddingTop: Math.max(insets.top, 20),
     openReportDetail,
   };
