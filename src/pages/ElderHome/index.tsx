@@ -2,7 +2,6 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
-import { useUserContext } from '@/shared/context/UserContext';
 import { BottomNavigation } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 import { ElderTodayTasks } from '@/widgets/ElderTodayTasks';
@@ -12,10 +11,9 @@ import { useElderHome } from './model/useElderHome';
 export default function ElderHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { group } = useUserContext();
   const { homeData, isLoading, taskStatus, handleTaskPress } = useElderHome();
 
-  const userName = group?.elders?.[0]?.name ?? '어르신';
+  const userName = '어르신';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>

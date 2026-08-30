@@ -1,564 +1,452 @@
 import { Image } from 'expo-image';
-import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, Pressable, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
-  getQuizQuestions,
-  submitQuizAnswer,
-  endQuizSession,
-  type QuizQuestion,
-} from '@/shared/api/quiz';
-import { BottomNavigation } from '@/shared/ui';
-import { HomeHeader } from '@/widgets/HomeHeader';
-import { Circle } from '@/widgets/QuizAnswerCard/Circle';
+import { Arrow } from '@/shared/ui';
 
-// Figma MCP 에셋들 (localhost:3845)
-const QUIZ_EMOJI = 'http://localhost:3845/assets/596d86be093839995361d77d7ec263267d8fbce7.png';
+import { COLORS, QUIZ_COMPLETE_IMAGE, QUIZ_FEEDBACK_CORRECT_IMAGE, QUIZ_FEEDBACK_WRONG_IMAGE } from './constants';
+import { type QuizAnswerValue, useQuiz } from './model/useQuiz';
 
-// Fallback 모의 데이터 (API 미연결 시)
-const FALLBACK_QUESTIONS: QuizQuestion[] = [
-  {
-    id: 'q1',
-    question: '길고양이 급식소는 아무곳에나 설치해도 된다.',
-    correctAnswer: 'X',
-    explanation: '급식소는 허락받은 장소에 설치하고 깨끗하게 관리해야 해요.',
-  },
-];
-
-type QuizMode = 'loading' | 'active' | 'completed';
-
-interface SessionStats {
-  totalQuestions: number;
-  correctCount: number;
-  accuracy: number;
-  averageResponseTime: number;
-}
+const ANSWERS: QuizAnswerValue[] = ['O', 'X'];
 
 export default function QuizScreen() {
-  const [questions, setQuestions] = useState<QuizQuestion[]>(FALLBACK_QUESTIONS);
-  const [mode, setMode] = useState<QuizMode>('loading');
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [userAnswer, setUserAnswer] = useState<'O' | 'X' | null>(null);
-  const [answered, setAnswered] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [stats, setStats] = useState<SessionStats | null>(null);
+  const router = useRouter();
+  const {
+    answerQuestion,
+    goToNext,
+    hasAnswered,
+    isCorrect,
+    isSubmitting,
+    mode,
+    progress,
+    progressPercent,
+    question,
+    selectedAnswer,
+    total,
+  } = useQuiz();
 
-  // API에서 문제 로드
-  useEffect(() => {
-    const loadQuestions = async () => {
-      try {
-        setMode('loading');
-        const data = await getQuizQuestions({ limit: 10 });
-        setQuestions(data.length > 0 ? data : FALLBACK_QUESTIONS);
-        setMode('active');
-      } catch (error) {
-        console.warn('Failed to load quiz questions from API, using fallback data');
-        setQuestions(FALLBACK_QUESTIONS);
-        setMode('active');
-      }
-    };
-
-    loadQuestions();
-  }, []);
-
-  const question = questions[currentIndex];
-  const isCorrect = userAnswer === question.correctAnswer;
-  const progress = currentIndex + 1;
-  const total = questions.length;
-
-  const handleAnswer = async (answer: 'O' | 'X') => {
-    setUserAnswer(answer);
-    setAnswered(true);
-
-    // 답변을 API로 전송
-    try {
-      setIsSubmitting(true);
-      const question = questions[currentIndex];
-      await submitQuizAnswer(question.id, answer);
-    } catch (error) {
-      console.warn('Failed to submit answer', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleNext = async () => {
-    const isLastQuestion = currentIndex === questions.length - 1;
-
-    if (isLastQuestion) {
-      // 마지막 문제: 세션 종료 및 결과 표시
-      try {
-        setIsSubmitting(true);
-        // TODO: sessionId로 세션 종료 및 결과 가져오기
-        // const sessionResult = await endQuizSession(sessionId || '');
-        // setStats({
-        //   totalQuestions: sessionResult.totalQuestions,
-        //   correctCount: sessionResult.correctCount,
-        //   accuracy: sessionResult.accuracy,
-        //   averageResponseTime: sessionResult.averageResponseTime,
-        // });
-        setMode('completed');
-      } catch (error) {
-        console.warn('Failed to end session', error);
-      } finally {
-        setIsSubmitting(false);
-      }
-    } else {
-      // 다음 문제로 이동
-      setCurrentIndex(currentIndex + 1);
-      setUserAnswer(null);
-      setAnswered(false);
-    }
-  };
-
-  const handleRestart = () => {
-    setMode('loading');
-    setCurrentIndex(0);
-    setUserAnswer(null);
-    setAnswered(false);
-    setStats(null);
-    // 다시 로드
-    window.location.reload?.();
+  const handleComplete = () => {
+    router.replace('/');
   };
 
   return (
     <View style={styles.container}>
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <View style={styles.headerWrapper}>
-          <HomeHeader style={styles.header} />
-        </View>
+      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+        <View style={styles.screen}>
+          <View style={styles.header}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="이전으로"
+              hitSlop={8}
+              onPress={() => router.back()}
+              style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+            >
+              <Arrow color={COLORS.text} size={34} style={styles.backIcon} />
+              <Text style={styles.headerText}>이전으로</Text>
+            </Pressable>
+            <Text style={styles.headerText}>퀴즈</Text>
+          </View>
 
-        <View style={styles.mainContent}>
-          <Text style={styles.title}>인지 훈련</Text>
-
-          {mode === 'loading' && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#fd6941" />
+          {mode === 'loading' ? (
+            <View style={styles.loading}>
               <Text style={styles.loadingText}>문제를 준비하고 있어요...</Text>
             </View>
-          )}
+          ) : (
+            <View style={styles.content}>
+              <ProgressBar progress={progress} progressPercent={progressPercent} total={total} />
 
-          {mode === 'active' && (
-            <View style={styles.quizSection}>
-            {/* 진행도 바 섹션 (128-3119): gap 20 */}
-            <View style={styles.progressRow}>
-              <View style={styles.progressBar}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    { width: `${(progress / total) * 100}%` },
-                  ]}
-                />
-              </View>
-              <View style={styles.progressLabel}>
-                <Text style={styles.progressNumber}>{progress}</Text>
-                <Text style={styles.progressSlash}> / </Text>
-                <Text style={styles.progressTotal}>{total}</Text>
-              </View>
-            </View>
+              {mode === 'active' ? (
+                <>
+                  <View style={styles.quizContent}>
+                    <View style={styles.questionGroup}>
+                      <Text style={styles.questionText}>
+                        <Text style={styles.questionPrefix}>Q. </Text>
+                        {question.question}
+                      </Text>
 
-            {/* 질문 섹션 (128-3130): gap 55 */}
-            <View style={styles.questionSection}>
-              <Text style={styles.questionText}>
-                <Text style={styles.qLabel}>Q. </Text>
-                <Text>{question.question}</Text>
-              </Text>
+                      <View style={styles.answersRow}>
+                        {ANSWERS.map((answer) => (
+                          <AnswerCard
+                            key={answer}
+                            answer={answer}
+                            disabled={hasAnswered || isSubmitting}
+                            isSelected={selectedAnswer === answer}
+                            onPress={() => answerQuestion(answer)}
+                          />
+                        ))}
+                      </View>
+                    </View>
 
-              {/* O/X 카드 (128-3132): gap 17 */}
-              <View style={styles.answersRow}>
-                <Pressable
-                  style={[
-                    styles.answerCard,
-                    userAnswer === 'O' && styles.answerCardSelected,
-                  ]}
-                  onPress={() => handleAnswer('O')}
-                  disabled={answered}
-                >
-                  <Text style={styles.answerTextO}>O</Text>
-                  <View style={styles.circleBadgeO}>
-                    <Circle type="Check" />
+                    {hasAnswered && (
+                      <View style={styles.feedbackCard}>
+                        <Image
+                          source={isCorrect ? QUIZ_FEEDBACK_CORRECT_IMAGE : QUIZ_FEEDBACK_WRONG_IMAGE}
+                          style={styles.feedbackImage}
+                          contentFit="contain"
+                        />
+                        <View style={styles.feedbackCopy}>
+                          <Text style={styles.feedbackTitle}>정답은 {question.correctAnswer}!</Text>
+                          <Text style={styles.feedbackText}>{question.explanation}</Text>
+                        </View>
+                      </View>
+                    )}
                   </View>
-                </Pressable>
 
-                <Pressable
-                  style={[
-                    styles.answerCard,
-                    userAnswer === 'X' && styles.answerCardSelected,
-                  ]}
-                  onPress={() => handleAnswer('X')}
-                  disabled={answered}
-                >
-                  <Text style={styles.answerTextX}>X</Text>
-                  <View style={styles.circleBadgeX}>
-                    <Circle type="Default" />
-                  </View>
-                </Pressable>
-              </View>
-            </View>
-
-            {/* 피드백 + 버튼 (128-3129): gap 19 */}
-            {answered && (
-              <View style={styles.feedbackSection}>
-                {/* 피드백 (128-3139): h 86, gap 24 */}
-                <View style={styles.feedbackCard}>
-                  <Image
-                    source={QUIZ_EMOJI}
-                    style={styles.feedbackEmoji}
-                    contentFit="cover"
+                  <PrimaryButton
+                    label="다음으로"
+                    disabled={!hasAnswered || isSubmitting}
+                    onPress={goToNext}
                   />
-                  <View style={styles.feedbackText}>
-                    <Text style={styles.feedbackTitle}>
-                      {isCorrect ? '정답입니다!' : `정답은 ${question.correctAnswer}!`}
-                    </Text>
-                    <Text style={styles.feedbackExplanation}>
-                      {question.explanation}
+                </>
+              ) : (
+                <>
+                  <View style={styles.completeContent}>
+                    <Image
+                      source={QUIZ_COMPLETE_IMAGE}
+                      style={styles.completeImage}
+                      contentFit="contain"
+                    />
+                    <Text style={styles.completeText}>
+                      오늘의 <Text style={styles.highlightText}>퀴즈</Text>를{'\n'}
+                      <Text style={styles.highlightText}>완료</Text>하셨어요!
                     </Text>
                   </View>
-                </View>
 
-                {/* 버튼 (128-3146): h 42, rounded 10 */}
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.nextButton,
-                    pressed && styles.nextButtonPressed,
-                  ]}
-                  onPress={handleNext}
-                >
-                  <Text style={styles.nextButtonText}>다음으로</Text>
-                </Pressable>
-              </View>
-            )}
-            </View>
-          )}
-
-          {mode === 'completed' && (
-            <View style={styles.completedContainer}>
-              <View style={styles.completedContent}>
-                <Text style={styles.completedTitle}>완료!</Text>
-                <Text style={styles.completedSubtitle}>
-                  {questions.length}개 문제를 모두 풀었어요
-                </Text>
-
-                {stats && (
-                  <View style={styles.statsBox}>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>정답률</Text>
-                      <Text style={styles.statValue}>{stats.accuracy}%</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>정답</Text>
-                      <Text style={styles.statValue}>
-                        {stats.correctCount} / {stats.totalQuestions}
-                      </Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statLabel}>평균 시간</Text>
-                      <Text style={styles.statValue}>
-                        {stats.averageResponseTime.toFixed(1)}초
-                      </Text>
-                    </View>
-                  </View>
-                )}
-
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.restartButton,
-                    pressed && styles.nextButtonPressed,
-                  ]}
-                  onPress={handleRestart}
-                  disabled={isSubmitting}
-                >
-                  <Text style={styles.restartButtonText}>다시 풀기</Text>
-                </Pressable>
-              </View>
+                  <PrimaryButton label="다음으로" onPress={handleComplete} />
+                </>
+              )}
             </View>
           )}
         </View>
       </SafeAreaView>
-
-      <BottomNavigation activeTab="Quiz" />
     </View>
   );
 }
 
+interface ProgressBarProps {
+  progress: number;
+  progressPercent: `${number}%`;
+  total: number;
+}
+
+const ProgressBar = ({ progress, progressPercent, total }: ProgressBarProps) => {
+  return (
+    <View style={styles.progressRow}>
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: progressPercent }]} />
+      </View>
+      <View style={styles.progressLabel}>
+        <Text style={styles.progressCurrent}>{progress}</Text>
+        <Text style={styles.progressMuted}>/</Text>
+        <Text style={styles.progressMuted}>{total}</Text>
+      </View>
+    </View>
+  );
+};
+
+interface AnswerCardProps {
+  answer: QuizAnswerValue;
+  disabled: boolean;
+  isSelected: boolean;
+  onPress: () => void;
+}
+
+const AnswerCard = ({ answer, disabled, isSelected, onPress }: AnswerCardProps) => {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${answer} 선택`}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.answerCard,
+        isSelected && styles.answerCardSelected,
+        pressed && !disabled && styles.pressed,
+      ]}
+    >
+      <AnswerBadge isSelected={isSelected} />
+      <Text style={styles.answerText}>{answer}</Text>
+    </Pressable>
+  );
+};
+
+const AnswerBadge = ({ isSelected }: { isSelected: boolean }) => {
+  return (
+    <View style={[styles.answerBadge, isSelected && styles.answerBadgeSelected]}>
+      {isSelected && <Text style={styles.answerBadgeCheck}>✓</Text>}
+    </View>
+  );
+};
+
+interface PrimaryButtonProps {
+  disabled?: boolean;
+  label: string;
+  onPress: () => void;
+}
+
+const PrimaryButton = ({ disabled = false, label, onPress }: PrimaryButtonProps) => {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.primaryButton,
+        disabled && styles.primaryButtonDisabled,
+        pressed && !disabled && styles.primaryButtonPressed,
+      ]}
+    >
+      <Text style={styles.primaryButtonText}>{label}</Text>
+    </Pressable>
+  );
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
   },
   safeArea: {
     flex: 1,
+    width: '100%',
+    alignItems: 'center',
   },
-  headerWrapper: {
-    paddingHorizontal: 26,
-    paddingTop: 14,
+  screen: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 402,
+    paddingHorizontal: 19,
+    paddingTop: 12,
   },
   header: {
-    marginBottom: 0,
-  },
-  mainContent: {
-    flex: 1,
-    paddingHorizontal: 36,
-    paddingTop: 10,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#3c3e3f',
-    letterSpacing: -0.48,
-    lineHeight: 31,
-    marginBottom: 12,
-  },
-  quizSection: {
-    flex: 1,
-    justifyContent: 'flex-start',
-  },
-  progressRow: {
-    gap: 12,
+    height: 42,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'space-between',
+    marginBottom: 44,
   },
-  progressBar: {
+  backButton: {
+    minHeight: 42,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  backIcon: {
+    transform: [{ scaleX: -1 }],
+  },
+  headerText: {
+    color: COLORS.text,
+    fontSize: 32,
+    fontWeight: '600',
+    lineHeight: 42,
+    letterSpacing: -0.64,
+  },
+  loading: {
     flex: 1,
-    height: 8,
-    backgroundColor: '#c1c2c3',
-    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    color: COLORS.textAssistive,
+    fontSize: 20,
+    fontWeight: '500',
+    lineHeight: 26,
+    letterSpacing: -0.4,
+  },
+  content: {
+    flex: 1,
+  },
+  progressRow: {
+    height: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 43,
+  },
+  progressTrack: {
+    flex: 1,
+    height: 5,
     overflow: 'hidden',
+    borderRadius: 100,
+    backgroundColor: COLORS.line,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#fd6941',
-    borderRadius: 4,
+    borderRadius: 100,
+    backgroundColor: COLORS.primary,
   },
   progressLabel: {
-    width: 50,
+    width: 62,
     flexDirection: 'row',
-    gap: 4,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 7,
   },
-  progressNumber: {
-    fontSize: 20,
+  progressCurrent: {
+    color: COLORS.primary,
+    fontSize: 28,
     fontWeight: '600',
-    color: '#fd6941',
-    letterSpacing: -0.4,
-    width: 12,
+    lineHeight: 36,
+    letterSpacing: -0.56,
   },
-  progressSlash: {
-    fontSize: 20,
+  progressMuted: {
+    color: COLORS.line,
+    fontSize: 28,
     fontWeight: '600',
-    color: '#c1c2c3',
-    letterSpacing: -0.4,
+    lineHeight: 36,
+    letterSpacing: -0.56,
   },
-  progressTotal: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#c1c2c3',
-    letterSpacing: -0.4,
-    width: 15,
+  quizContent: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: 24,
   },
-  questionSection: {
-    gap: 18,
+  questionGroup: {
+    alignItems: 'center',
+    gap: 55,
   },
   questionText: {
-    fontSize: 20,
-    fontWeight: '500',
-    color: '#3c3e3f',
-    letterSpacing: -0.4,
-    lineHeight: 26,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  qLabel: {
+    width: '100%',
+    maxWidth: 326,
+    color: COLORS.text,
+    fontSize: 28,
     fontWeight: '600',
-    color: '#fd6941',
+    lineHeight: 36,
+    letterSpacing: -0.56,
+    textAlign: 'center',
+  },
+  questionPrefix: {
+    color: COLORS.primary,
   },
   answersRow: {
+    width: 319,
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 17,
-    marginBottom: 16,
   },
   answerCard: {
     width: 151,
     height: 181,
-    borderRadius: 6.688,
-    backgroundColor: '#fff3f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 7,
+    backgroundColor: COLORS.primarySoft,
   },
   answerCardSelected: {
-    borderWidth: 0.4,
-    borderColor: '#fd6941',
-    shadowColor: '#fd6941',
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
     shadowRadius: 4,
     elevation: 4,
   },
+  answerBadge: {
+    position: 'absolute',
+    left: 10,
+    top: 10,
+    width: 29,
+    height: 29,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    borderRadius: 15,
+    backgroundColor: COLORS.primarySoft,
+  },
+  answerBadgeSelected: {
+    borderWidth: 0,
+    backgroundColor: COLORS.primary,
+  },
+  answerBadgeCheck: {
+    color: COLORS.white,
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 24,
+  },
   answerText: {
-    position: 'absolute',
+    color: COLORS.primary,
     fontSize: 64,
     fontWeight: '500',
-    color: '#fd6941',
+    lineHeight: 83,
     letterSpacing: -1.28,
-    lineHeight: 64,
-  },
-  answerTextO: {
-    position: 'absolute',
-    fontSize: 64,
-    fontWeight: '500',
-    color: '#fd6941',
-    letterSpacing: -1.28,
-    left: 51.6,
-    top: 48.6,
-    lineHeight: 64,
-  },
-  answerTextX: {
-    position: 'absolute',
-    fontSize: 64,
-    fontWeight: '500',
-    color: '#fd6941',
-    letterSpacing: -1.28,
-    left: '50%',
-    top: '50%',
-    marginLeft: -20.5,
-    marginTop: -41.5,
-    lineHeight: 64,
-  },
-  circleBadgeO: {
-    position: 'absolute',
-    left: 8.6,
-    top: 6.6,
-    zIndex: 10,
-  },
-  circleBadgeX: {
-    position: 'absolute',
-    left: 9,
-    top: 7,
-    zIndex: 10,
-  },
-  feedbackSection: {
-    gap: 12,
   },
   feedbackCard: {
-    backgroundColor: '#f7f7f7',
-    borderRadius: 15,
-    height: 86,
+    height: 97,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    gap: 12,
+    gap: 20,
+    paddingHorizontal: 20,
+    borderRadius: 15,
+    backgroundColor: COLORS.fill,
   },
-  feedbackEmoji: {
-    width: 42,
-    height: 42,
+  feedbackImage: {
+    width: 55,
+    height: 55,
   },
-  feedbackText: {
+  feedbackCopy: {
     flex: 1,
     gap: 4,
   },
   feedbackTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fd6941',
-    letterSpacing: -0.32,
-  },
-  feedbackExplanation: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#76787a',
-    letterSpacing: -0.28,
-    lineHeight: 19,
-  },
-  // 버튼 (128-3146): h 42, rounded 10
-  nextButton: {
-    height: 42,
-    backgroundColor: '#fd6941',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  nextButtonPressed: {
-    opacity: 0.85,
-  },
-  nextButtonText: {
+    color: COLORS.primary,
     fontSize: 20,
     fontWeight: '600',
-    color: '#ffffff',
+    lineHeight: 26,
     letterSpacing: -0.4,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#76787a',
-    letterSpacing: -0.32,
-  },
-  completedContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  completedContent: {
-    alignItems: 'center',
-    gap: 28,
-  },
-  completedTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#fd6941',
-    letterSpacing: -0.64,
-  },
-  completedSubtitle: {
+  feedbackText: {
+    color: COLORS.textAssistive,
     fontSize: 18,
     fontWeight: '500',
-    color: '#3c3e3f',
+    lineHeight: 23,
     letterSpacing: -0.36,
+  },
+  completeContent: {
+    alignItems: 'center',
+    paddingTop: 127,
+  },
+  completeImage: {
+    width: 150,
+    height: 150,
+    marginBottom: 44,
+  },
+  completeText: {
+    color: COLORS.text,
+    fontSize: 28,
+    fontWeight: '600',
+    lineHeight: 36,
+    letterSpacing: -0.56,
     textAlign: 'center',
   },
-  statsBox: {
-    width: '100%',
-    gap: 16,
-    paddingHorizontal: 20,
+  highlightText: {
+    color: COLORS.primary,
   },
-  statItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#f7f7f7',
-    borderRadius: 10,
-  },
-  statLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#76787a',
-    letterSpacing: -0.28,
-  },
-  statValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fd6941',
-    letterSpacing: -0.28,
-  },
-  restartButton: {
-    height: 42,
-    width: '100%',
-    backgroundColor: '#fd6941',
-    borderRadius: 10,
-    justifyContent: 'center',
+  primaryButton: {
+    height: 69,
+    marginTop: 'auto',
+    marginBottom: 74,
     alignItems: 'center',
-    marginTop: 12,
+    justifyContent: 'center',
+    borderRadius: 15,
+    backgroundColor: COLORS.primary,
   },
-  restartButtonText: {
-    fontSize: 20,
+  primaryButtonDisabled: {
+    opacity: 0.45,
+  },
+  primaryButtonPressed: {
+    opacity: 0.85,
+  },
+  primaryButtonText: {
+    color: COLORS.white,
+    fontSize: 28,
     fontWeight: '600',
-    color: '#ffffff',
-    letterSpacing: -0.4,
+    lineHeight: 36,
+    letterSpacing: -0.56,
+  },
+  pressed: {
+    opacity: 0.75,
   },
 });

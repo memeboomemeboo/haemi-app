@@ -37,3 +37,15 @@ export { elderService } from './elder';
 export type { ElderSignupRequest, ElderSignupResponse, ElderSessionRefreshRequest, ElderSessionRefreshResponse } from './elder';
 export { getElderHome } from './elderHome';
 export type { ElderHomeResponse, ElderHomeGreeting, ElderHomeMemory, ElderHomeTraining } from './elderHome';
+export { myPageService } from './my-page';
+export type {
+  GuardianRole,
+  GuardianProfileResponse as MyPageProfileResponse,
+  FamilyDetailResponse,
+  ElderCardResponse,
+  GuardianMemberResponse,
+  UpdateGuardianProfileRequest,
+  RegisterElderRequest,
+  CreateFamilyRequest as MyPageCreateFamilyRequest,
+  CreateFamilyResponse as MyPageCreateFamilyResponse,
+} from './my-page';
