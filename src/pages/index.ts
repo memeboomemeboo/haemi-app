@@ -7,3 +7,4 @@ export { default as MemoryRegister } from './MemoryRegister';
 export { default as MemberEdit } from './MemberEdit';
 export { default as Quiz } from './Quiz';
 export { default as Report } from './Report';
+export { default as ReportDetail } from './ReportDetail';
