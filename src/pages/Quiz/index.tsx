@@ -11,7 +11,7 @@ export default function QuizScreen() {
           <Text style={styles.title}>퀴즈</Text>
         </View>
       </SafeAreaView>
-      <BottomNavigation activeTab="Quiz" />
+      <BottomNavigation activeTab="Album" />
     </View>
   );
 }

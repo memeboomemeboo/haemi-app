@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/shared/hooks';
-import { Illustration } from '@/shared/ui/Icon';
+import { Illustration } from '@/shared/ui';
 
 /** 앨범에 사진이 없을 때 표시 (Figma node 1326:9462 / 1386:2794) */
 export const AlbumEmptyState = () => {

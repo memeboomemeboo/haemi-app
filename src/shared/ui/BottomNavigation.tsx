@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Pressable, Text, StyleSheet } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
-import { Home, Album, Report, Quiz } from './Icon';
+import { Home, Album, Report, Setting } from './Icon';
 
-export type NavigationTab = 'Home' | 'Album' | 'Report' | 'Quiz';
+export type NavigationTab = 'Home' | 'Album' | 'Report' | 'Setting';
 
 interface BottomNavigationProps {
   activeTab: NavigationTab;
@@ -11,26 +11,26 @@ interface BottomNavigationProps {
 
 const TAB_LABELS: Record<NavigationTab, string> = {
   Home: '홈',
-  Album: '앨범',
+  Album: '추억',
   Report: '리포트',
-  Quiz: '퀴즈',
+  Setting: '설정',
 };
 
 const ICON_COMPONENTS: Record<NavigationTab, React.ComponentType<{ size?: number; color?: string }>> = {
   Home,
   Album,
   Report,
-  Quiz,
+  Setting,
 };
 
 const TAB_ROUTES: Record<NavigationTab, Href> = {
   Home: '/',
   Album: '/album',
   Report: '/report',
-  Quiz: '/quiz',
+  Setting: '/setting',
 };
 
-const TABS: NavigationTab[] = ['Home', 'Album', 'Report', 'Quiz'];
+const TABS: NavigationTab[] = ['Home', 'Album', 'Report', 'Setting'];
 
 const ACTIVE_COLOR = '#fd6941';
 const INACTIVE_COLOR = '#dadbdc';
@@ -71,20 +71,20 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#ffffff',
     height: 73,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.03,
     shadowRadius: 2,
-    elevation: 3,
+    elevation: 2,
   },
   content: {
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 32,
+    gap: 58,
     paddingHorizontal: 20,
   },
   tabButton: {
