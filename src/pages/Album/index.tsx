@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,9 +16,16 @@ export default function AlbumScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { items, isLoading } = useAlbumItems();
+  const { items, isLoading, refetch } = useAlbumItems();
   // 어르신별 필터링 (Figma node 1325:8142 / 1386:2794) — 등장하는 이름만큼 탭이 생긴다
   const { filter, setFilter, filterOptions, visibleItems } = useAlbumFilter(items);
+
+  // 등록 화면에서 저장하고 돌아왔을 때 새 추억이 바로 보이도록 화면에 포커스될 때마다 다시 불러온다
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch]),
+  );
 
   // API 연결 후에도 그대로 동작: 로딩이 끝났는데 사진이 없으면 빈 화면 표시
   const isEmpty = !isLoading && (visibleItems?.length ?? 0) === 0;

@@ -1,9 +1,10 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { createAlbumItem } from '@/entities/album';
 import { useTheme } from '@/shared/hooks';
 import { Arrow, BottomNavigation, Calendar, Picture, Plus } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
@@ -26,6 +27,7 @@ export default function AlbumRegisterScreen() {
   const [memo, setMemo] = useState('가족끼리 나들이에 갔던 날이에요');
   const [question, setQuestion] = useState('이 사진, 기억나세요?');
   const [year, setYear] = useState('1975');
+  const [isSaving, setIsSaving] = useState(false);
 
   const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -43,9 +45,31 @@ export default function AlbumRegisterScreen() {
     setPhotos((current) => current.filter((photo) => photo.id !== id));
   };
 
-  const handleSave = () => {
-    // TODO: API 연결 시 POST /albums 호출로 대체
-    router.back();
+  const handleSave = async () => {
+    if (!title.trim()) {
+      Alert.alert('추억 이름을 입력해주세요');
+      return;
+    }
+    if (isSaving) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await createAlbumItem({
+        title: title.trim(),
+        elderName: elder,
+        year,
+        memo: memo.trim() || undefined,
+        photos: photos.map((photo) => photo.uri),
+        question: question.trim() || undefined,
+      });
+      router.back();
+    } catch {
+      Alert.alert('추억을 저장하지 못했어요', '잠시 후 다시 시도해주세요');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -200,10 +224,15 @@ export default function AlbumRegisterScreen() {
               <Text style={styles.cancelButtonText}>취소</Text>
             </Pressable>
             <Pressable
-              style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.saveButton,
+                pressed && styles.pressed,
+                isSaving && styles.saveButtonDisabled,
+              ]}
               onPress={handleSave}
+              disabled={isSaving}
             >
-              <Text style={styles.saveButtonText}>저장</Text>
+              <Text style={styles.saveButtonText}>{isSaving ? '저장 중...' : '저장'}</Text>
             </Pressable>
           </View>
         </View>
@@ -439,6 +468,9 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
       backgroundColor: colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
+    },
+    saveButtonDisabled: {
+      opacity: 0.6,
     },
     saveButtonText: {
       fontSize: 20,

@@ -31,10 +31,10 @@ export interface AlbumItem {
   title: string;
   /** 이 추억을 전달받는 어르신 이름 (예: 박영호) — 상단 필터 탭 기준 */
   elderName: string;
-  /** 표시용 날짜 (예: 1980.04.) */
-  date: string;
-  /** 장소 (예: 구지면) */
-  location: string;
+  /** 표시용 날짜 (예: 1980.04.) — 등록 화면에서는 연도만 받으므로 없을 수 있다 */
+  date?: string;
+  /** 장소 (예: 구지면) — 등록 화면에 입력 필드가 없으므로 없을 수 있다 */
+  location?: string;
   /** 사진 URL — 없으면 위젯이 기본 샘플 이미지를 보여준다 */
   photoUrl?: string;
   /** 상세 화면 표시용 연도 배지 (예: 1975년) */
@@ -45,4 +45,15 @@ export interface AlbumItem {
   memo?: string;
   /** 주고 받은 이야기 스레드 — 어르신이 답변하면 그리드 카드에 "답변" 배지가 표시된다 */
   conversation?: AlbumConversation;
+}
+
+/** 추억 등록 화면에서 새로 만들 때 필요한 입력 값 */
+export interface NewAlbumItemInput {
+  title: string;
+  elderName: string;
+  year: string;
+  memo?: string;
+  photos?: string[];
+  /** 어르신께 여쭤볼 한마디 — 있으면 답변 대기 상태의 대화가 함께 생성된다 */
+  question?: string;
 }
