@@ -41,7 +41,7 @@ export default function ElderHomeScreen() {
             <ElderTodayTasks status={taskStatus} onTaskPress={handleTaskPress} />
             {homeData && homeData.training.streak > 0 && (
               <Text style={styles.streak}>
-                {`🔥 ${homeData.training.streak}일 연속 인지 훈련 중!`}
+                {`${homeData.training.streak}일 연속 인지 훈련 중!`}
               </Text>
             )}
           </View>
