@@ -1,61 +1,39 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-  Image,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  Arrow,
-  BottomNavigation,
-  Calendar,
-  CheckMark,
-  Map,
-  People,
-  Picture,
-  Plus,
-  Report,
-} from '@/shared/ui';
+import { Arrow, BottomNavigation, Calendar, Picture, Plus } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 
 const MEMO_MAX_LENGTH = 200;
-
-// TODO: API 연결 시 가족 구성원 목록 조회(GET /family/members)로 대체
-const FAMILY_CANDIDATES = ['언니', '남동생'];
+const MAX_PHOTOS = 4;
+const ELDER_CANDIDATES = ['아버지', '어머니'];
 
 export default function AlbumRegisterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [date, setDate] = useState('1999.04.');
-  const [location, setLocation] = useState('어린이 대공원');
-  const [family, setFamily] = useState<string[]>(['아버지', '어머니']);
-  const [showFamilyPicker, setShowFamilyPicker] = useState(false);
+  const [elder, setElder] = useState('어머니');
+  const [title, setTitle] = useState('어린 시절 고향');
+  const [photos, setPhotos] = useState<string[]>([]);
   const [memo, setMemo] = useState('가족끼리 나들이에 갔던 날이에요');
+  const [question, setQuestion] = useState('이 사진, 기억나세요?');
+  const [year, setYear] = useState('1975');
 
-  const pickImage = async () => {
+  const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.8,
     });
     if (!result.canceled) {
-      setPhotoUri(result.assets[0].uri);
+      setPhotos((current) => [...current, result.assets[0].uri].slice(0, MAX_PHOTOS));
     }
   };
 
-  const toggleFamilyMember = (name: string) => {
-    setFamily((current) =>
-      current.includes(name) ? current.filter((n) => n !== name) : [...current, name]
-    );
+  const removePhoto = (uri: string) => {
+    setPhotos((current) => current.filter((photo) => photo !== uri));
   };
 
   const handleSave = () => {
@@ -84,83 +62,81 @@ export default function AlbumRegisterScreen() {
           >
             <Arrow size={22} color="#3c3e3f" style={styles.backArrow} />
           </Pressable>
-          <Text style={styles.title}>앨범 등록</Text>
+          <Text style={styles.title}>추억 등록</Text>
         </View>
 
-        {/* 이미지 업로드 카드 */}
-        <Pressable style={styles.uploadCard} onPress={pickImage}>
-          {photoUri && <Image source={{ uri: photoUri }} style={styles.uploadImage} />}
-          {!photoUri && <Picture size={40} color="#dadbdc" />}
-          {!photoUri && (
-            <>
-              <View style={styles.uploadTextGroup}>
-                <Text style={styles.uploadLabel}>앨범 사진</Text>
-                <Text style={styles.uploadHint}>이미지를 업로드하세요</Text>
-              </View>
-              <View style={styles.uploadButton}>
-                <Text style={styles.uploadButtonText}>이미지 업로드</Text>
-              </View>
-            </>
-          )}
-        </Pressable>
-
-        {/* 입력 필드 */}
         <View style={styles.fields}>
-          <View style={styles.fieldRow}>
-            <View style={styles.fieldLabelGroup}>
-              <Calendar size={24} color="#76787a" />
-              <Text style={styles.fieldLabel}>시기</Text>
+          {/* 보낼 어르신 */}
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>보낼 어르신</Text>
+            <View style={styles.elderRow}>
+              {ELDER_CANDIDATES.map((name) => {
+                const isSelected = name === elder;
+                return (
+                  <Pressable
+                    key={name}
+                    style={[styles.elderChip, isSelected && styles.elderChipSelected]}
+                    onPress={() => setElder(name)}
+                  >
+                    <Text style={[styles.elderChipText, isSelected && styles.elderChipTextSelected]}>
+                      {name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
+          </View>
+
+          {/* 추억 이름 */}
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>추억 이름</Text>
             <TextInput
-              value={date}
-              onChangeText={setDate}
-              placeholder="예: 1999.04."
+              value={title}
+              onChangeText={setTitle}
+              placeholder="추억 이름을 입력하세요"
               placeholderTextColor="#c1c2c3"
-              style={styles.fieldInput}
+              style={styles.textInput}
             />
           </View>
 
-          <View style={styles.fieldRow}>
-            <View style={styles.fieldLabelGroup}>
-              <Map size={24} color="#76787a" />
-              <Text style={styles.fieldLabel}>장소</Text>
-            </View>
-            <TextInput
-              value={location}
-              onChangeText={setLocation}
-              placeholder="장소를 입력하세요"
-              placeholderTextColor="#c1c2c3"
-              style={styles.fieldInput}
-            />
-          </View>
-
-          <View style={styles.fieldRow}>
-            <View style={styles.fieldLabelGroup}>
-              <People size={26} color="#76787a" />
-              <Text style={styles.fieldLabel}>가족</Text>
-            </View>
-            <View style={styles.chipsRow}>
-              {family.map((name) => (
-                <View key={name} style={styles.chip}>
-                  <Text style={styles.chipText}>{name}</Text>
+          {/* 사진 */}
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>사진</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.photoRow}
+            >
+              {photos.length < MAX_PHOTOS && (
+                <Pressable style={styles.uploadTile} onPress={pickPhoto}>
+                  <Picture size={40} color="#c1c2c3" style={styles.uploadIcon} />
+                  <Text style={styles.uploadText}>
+                    사진 {photos.length}/{MAX_PHOTOS}
+                  </Text>
+                </Pressable>
+              )}
+              {photos.map((photo) => (
+                <View key={photo} style={styles.photoTileWrapper}>
+                  <View style={styles.photoTile}>
+                    <Image source={{ uri: photo }} style={styles.photoTileImage} />
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="사진 삭제"
+                    style={styles.photoDelete}
+                    onPress={() => removePhoto(photo)}
+                    hitSlop={6}
+                  >
+                    <Plus size={10} color="#5a5c5d" style={styles.photoDeleteIcon} />
+                  </Pressable>
                 </View>
               ))}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="가족 추가"
-                style={styles.chipAdd}
-                onPress={() => setShowFamilyPicker(true)}
-              >
-                <Plus size={12} color="#fd6941" />
-              </Pressable>
-            </View>
+            </ScrollView>
           </View>
 
-          <View style={[styles.fieldRow, styles.fieldRowTop]}>
-            <View style={styles.fieldLabelGroup}>
-              <Report size={22} color="#76787a" />
-              <Text style={styles.fieldLabel}>메모</Text>
-            </View>
+          {/* 메모 */}
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>메모</Text>
             <View style={styles.memoBox}>
               <TextInput
                 multiline
@@ -175,6 +151,34 @@ export default function AlbumRegisterScreen() {
               <Text style={styles.memoCount}>
                 {memo.length}/{MEMO_MAX_LENGTH}
               </Text>
+            </View>
+          </View>
+
+          {/* 어르신께 여쭤볼 한마디 */}
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>어르신께 여쭤볼 한마디</Text>
+            <TextInput
+              value={question}
+              onChangeText={setQuestion}
+              placeholder="어르신께 여쭤볼 질문을 입력하세요"
+              placeholderTextColor="#c1c2c3"
+              style={styles.textInput}
+            />
+          </View>
+
+          {/* 연도 */}
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>연도</Text>
+            <View style={styles.yearInputWrapper}>
+              <TextInput
+                value={year}
+                onChangeText={setYear}
+                placeholder="예: 1975"
+                placeholderTextColor="#c1c2c3"
+                keyboardType="number-pad"
+                style={styles.yearInput}
+              />
+              <Calendar size={17} color="#76787a" />
             </View>
           </View>
         </View>
@@ -197,35 +201,6 @@ export default function AlbumRegisterScreen() {
       </ScrollView>
 
       <BottomNavigation activeTab="Album" />
-
-      {/* 가족 선택 모달 */}
-      <Modal
-        visible={showFamilyPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowFamilyPicker(false)}
-      >
-        <Pressable style={styles.modalOverlay} onPress={() => setShowFamilyPicker(false)}>
-          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.modalTitle}>가족 추가</Text>
-            <ScrollView style={styles.familyList} showsVerticalScrollIndicator={false}>
-              {FAMILY_CANDIDATES.filter((name) => !family.includes(name)).map((name) => (
-                <Pressable
-                  key={name}
-                  style={styles.familyItem}
-                  onPress={() => {
-                    toggleFamilyMember(name);
-                    setShowFamilyPicker(false);
-                  }}
-                >
-                  <Text style={styles.familyItemText}>{name}</Text>
-                  <CheckMark size={20} color="#fd6941" />
-                </Pressable>
-              ))}
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
@@ -246,9 +221,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 23,
+    paddingHorizontal: 27,
     paddingBottom: 40,
-    gap: 37,
+    gap: 48,
   },
   backTitle: {
     flexDirection: 'row',
@@ -265,70 +240,11 @@ const styles = StyleSheet.create({
     letterSpacing: -0.48,
     lineHeight: 31,
   },
-  uploadCard: {
-    height: 189,
-    borderWidth: 1.5,
-    borderColor: '#f7f7f7',
-    borderRadius: 20,
-    backgroundColor: '#ffffff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    overflow: 'hidden',
-  },
-  uploadImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  uploadTextGroup: {
-    alignItems: 'center',
-    gap: 2,
-  },
-  uploadLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#76787a',
-    letterSpacing: -0.32,
-    lineHeight: 21,
-  },
-  uploadHint: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#c1c2c3',
-    letterSpacing: -0.28,
-    lineHeight: 18,
-  },
-  uploadButton: {
-    borderWidth: 1,
-    borderColor: '#e8e8e9',
-    borderRadius: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#ffffff',
-  },
-  uploadButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#c1c2c3',
-    letterSpacing: -0.28,
-    lineHeight: 18,
-  },
   fields: {
     gap: 28,
   },
-  fieldRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  fieldRowTop: {
-    alignItems: 'flex-start',
-  },
-  fieldLabelGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+  field: {
+    gap: 8,
   },
   fieldLabel: {
     fontSize: 18,
@@ -337,48 +253,108 @@ const styles = StyleSheet.create({
     letterSpacing: -0.36,
     lineHeight: 23,
   },
-  fieldInput: {
-    width: 254,
-    height: 37,
+  elderRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  elderChip: {
+    height: 31,
+    paddingHorizontal: 14,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: '#e6e6e7',
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  elderChipSelected: {
+    borderColor: '#fd6941',
+  },
+  elderChipText: {
+    fontSize: 20,
+    fontWeight: '400',
+    color: '#dadbdc',
+    letterSpacing: -0.4,
+  },
+  elderChipTextSelected: {
+    color: '#fd6941',
+  },
+  textInput: {
+    height: 46,
     borderRadius: 10,
     backgroundColor: '#f7f7f7',
     paddingHorizontal: 16,
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#76787a',
-    letterSpacing: -0.36,
-  },
-  chipsRow: {
-    width: 252,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  chip: {
-    height: 23,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    backgroundColor: '#fed7cd',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chipText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#fd6941',
+    color: '#76787a',
     letterSpacing: -0.32,
-    lineHeight: 21,
   },
-  chipAdd: {
-    width: 26,
-    height: 26,
-    borderRadius: 100,
-    backgroundColor: '#fff3f0',
+  photoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 11,
+  },
+  uploadTile: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e6e6e7',
+    backgroundColor: '#fafafa',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  uploadIcon: {
+    marginBottom: 4,
+  },
+  uploadText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#c1c2c3',
+    letterSpacing: -0.24,
+  },
+  photoTileWrapper: {
+    width: 100,
+    height: 106,
+    justifyContent: 'flex-end',
+  },
+  photoTile: {
+    width: 100,
+    height: 100,
+    borderRadius: 15,
+    overflow: 'hidden',
+    backgroundColor: '#ffffff',
+    shadowColor: '#000000',
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 2,
+  },
+  photoTileImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  photoDelete: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 100,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 2,
+  },
+  photoDeleteIcon: {
+    transform: [{ rotate: '45deg' }],
+  },
   memoBox: {
-    width: 254,
     height: 99,
     borderRadius: 10,
     backgroundColor: '#f7f7f7',
@@ -386,13 +362,13 @@ const styles = StyleSheet.create({
   },
   memoInput: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingHorizontal: 10,
+    paddingTop: 12,
     paddingBottom: 24,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '500',
     color: '#76787a',
-    letterSpacing: -0.36,
+    letterSpacing: -0.32,
   },
   memoCount: {
     position: 'absolute',
@@ -402,10 +378,25 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: '#c1c2c3',
     letterSpacing: -0.28,
-    lineHeight: 18,
+  },
+  yearInputWrapper: {
+    height: 46,
+    borderRadius: 10,
+    backgroundColor: '#f7f7f7',
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  yearInput: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#76787a',
+    letterSpacing: -0.32,
   },
   buttonRow: {
-    marginTop: 31,
+    marginTop: -8,
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 10,
@@ -436,48 +427,11 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 20,
     fontWeight: '500',
-    color: '#fed7cd',
+    color: '#ffffff',
     letterSpacing: -0.4,
     lineHeight: 26,
   },
   pressed: {
     opacity: 0.85,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '80%',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#3c3e3f',
-    marginBottom: 16,
-    letterSpacing: -0.36,
-  },
-  familyList: {
-    maxHeight: 200,
-  },
-  familyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  familyItemText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#76787a',
-    letterSpacing: -0.32,
   },
 });

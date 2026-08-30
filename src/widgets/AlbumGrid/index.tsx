@@ -11,33 +11,35 @@ interface AlbumGridProps {
 export const AlbumGrid = ({ items, onItemPress }: AlbumGridProps) => {
   return (
     <View style={styles.grid}>
-      {(items ?? []).map((item) => (
-        <Pressable key={item.id} style={styles.card} onPress={() => onItemPress?.(item)}>
-          <View style={styles.photoFrame}>
-            <Image
-              source={item.photoUrl ? { uri: item.photoUrl } : sampleSource}
-              style={styles.photo}
-              resizeMode="cover"
-            />
-          </View>
-          <View style={styles.info}>
-            <Text style={styles.title} numberOfLines={1}>
-              {item.title}
-            </Text>
-            <View style={styles.badgeRow}>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{item.date}</Text>
-              </View>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{item.location}</Text>
-              </View>
+      {(items ?? []).map((item) => {
+        const hasAnswer = Boolean(item.conversation?.answer);
+        return (
+          <Pressable key={item.id} style={styles.card} onPress={() => onItemPress?.(item)}>
+            <View style={styles.photoFrame}>
+              <Image
+                source={item.photoUrl ? { uri: item.photoUrl } : sampleSource}
+                style={styles.photo}
+                resizeMode="cover"
+              />
             </View>
-            <Text style={styles.description} numberOfLines={1}>
-              {item.description}
-            </Text>
-          </View>
-        </Pressable>
-      ))}
+            <View style={styles.info}>
+              <View style={styles.titleRow}>
+                <Text style={styles.title} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <View style={[styles.statusBadge, hasAnswer && styles.statusBadgeAnswered]}>
+                  <Text style={[styles.statusBadgeText, hasAnswer && styles.statusBadgeTextAnswered]}>
+                    {hasAnswer ? '답변' : '대기중'}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.meta} numberOfLines={1}>
+                {item.location} · {item.date}
+              </Text>
+            </View>
+          </Pressable>
+        );
+      })}
     </View>
   );
 };
@@ -56,7 +58,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: 174,
-    height: 223,
+    height: 195,
     backgroundColor: '#ffffff',
     borderRadius: 15,
     paddingHorizontal: 11,
@@ -86,39 +88,47 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   info: {
-    gap: 6,
+    gap: 8,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 4,
   },
   title: {
-    fontSize: 20,
+    flexShrink: 1,
+    fontSize: 18,
     fontWeight: '600',
     color: '#3c3e3f',
-    letterSpacing: -0.4,
-    lineHeight: 26,
+    letterSpacing: -0.36,
+    lineHeight: 23,
   },
-  badgeRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  badge: {
-    height: 20,
-    paddingHorizontal: 5,
-    borderRadius: 5,
-    backgroundColor: '#fed7cd',
+  statusBadge: {
+    height: 21,
+    paddingHorizontal: 2,
+    minWidth: 45,
+    borderRadius: 15,
+    backgroundColor: '#c1c2c3',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  badgeText: {
-    fontSize: 14,
+  statusBadgeAnswered: {
+    backgroundColor: '#fd6941',
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#5a5c5d',
+    letterSpacing: -0.24,
+  },
+  statusBadgeTextAnswered: {
+    color: '#f5f5f5',
+  },
+  meta: {
+    fontSize: 12,
     fontWeight: '500',
     color: '#fd6941',
-    letterSpacing: -0.28,
-    lineHeight: 18,
-  },
-  description: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#5a5c5d',
-    letterSpacing: -0.28,
-    lineHeight: 18,
+    letterSpacing: -0.24,
   },
 });

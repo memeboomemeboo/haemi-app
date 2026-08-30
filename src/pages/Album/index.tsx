@@ -1,31 +1,44 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAlbumItems } from '@/entities/album';
 import { BottomNavigation, Fab } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
-import { AlbumFilterTabs, type AlbumFilter } from '@/widgets/AlbumFilterTabs';
+import { ALL_FILTER_VALUE, AlbumFilterTabs, type AlbumFilter } from '@/widgets/AlbumFilterTabs';
 import { AlbumGrid } from '@/widgets/AlbumGrid';
 import { AlbumEmptyState } from '@/widgets/AlbumEmptyState';
 
 export default function AlbumScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [filter, setFilter] = useState<AlbumFilter>('all');
+  const [filter, setFilter] = useState<AlbumFilter>(ALL_FILTER_VALUE);
   const { items, isLoading } = useAlbumItems();
 
+  // 어르신별로 필터링 — 등장하는 이름만큼 탭이 생긴다 (Figma node 1325:8142 / 1386:2794)
+  const filterOptions = useMemo(() => {
+    const elderNames = Array.from(new Set((items ?? []).map((item) => item.elderName)));
+    return [{ value: ALL_FILTER_VALUE, label: '전체' }, ...elderNames.map((name) => ({ value: name, label: name }))];
+  }, [items]);
+
+  const visibleItems = useMemo(() => {
+    if (filter === ALL_FILTER_VALUE) {
+      return items;
+    }
+    return (items ?? []).filter((item) => item.elderName === filter);
+  }, [items, filter]);
+
   // API 연결 후에도 그대로 동작: 로딩이 끝났는데 사진이 없으면 빈 화면 표시
-  const isEmpty = !isLoading && (items?.length ?? 0) === 0;
+  const isEmpty = !isLoading && (visibleItems?.length ?? 0) === 0;
 
   return (
     <View style={styles.container}>
       {/* 스크롤과 무관하게 고정되는 영역: 해미 상단바 + 타이틀 + 필터 탭 */}
       <View style={[styles.fixedTop, { paddingTop: Math.max(insets.top, 20) }]}>
         <HomeHeader style={styles.header} />
-        <Text style={styles.screenTitle}>기억 앨범</Text>
-        <AlbumFilterTabs value={filter} onChange={setFilter} />
+        <Text style={styles.screenTitle}>추억 앨범</Text>
+        <AlbumFilterTabs options={filterOptions} value={filter} onChange={setFilter} />
       </View>
 
       {isEmpty ? (
@@ -39,7 +52,7 @@ export default function AlbumScreen() {
           showsVerticalScrollIndicator={false}
         >
           <AlbumGrid
-            items={items}
+            items={visibleItems}
             onItemPress={(item) => router.push({ pathname: '/album/[id]', params: { id: item.id } })}
           />
         </ScrollView>

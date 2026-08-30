@@ -27,14 +27,14 @@ export interface AlbumConversation {
 /** 기억 앨범 항목 */
 export interface AlbumItem {
   id: string;
-  /** 카드 제목 (예: 안영세 서거일) */
+  /** 카드 제목 (예: 어린 시절 고향) */
   title: string;
+  /** 이 추억을 전달받는 어르신 이름 (예: 박영호) — 상단 필터 탭 기준 */
+  elderName: string;
   /** 표시용 날짜 (예: 1980.04.) */
   date: string;
   /** 장소 (예: 구지면) */
   location: string;
-  /** 부제 (예: 가족 나들이) */
-  description: string;
   /** 사진 URL — 없으면 위젯이 기본 샘플 이미지를 보여준다 */
   photoUrl?: string;
   /** 상세 화면 표시용 연도 배지 (예: 1975년) */
@@ -43,6 +43,6 @@ export interface AlbumItem {
   photos?: string[];
   /** 보호자 메모 */
   memo?: string;
-  /** 주고 받은 이야기 스레드 */
+  /** 주고 받은 이야기 스레드 — 어르신이 답변하면 그리드 카드에 "답변" 배지가 표시된다 */
   conversation?: AlbumConversation;
 }

@@ -1,5 +1,10 @@
 # Haemi - React Native + TypeScript + FSD
 
+## Git Workflow (IMPORTANT)
+
+- Commit changes locally as work progresses, but **do NOT run `git push` (or open a PR) until the user explicitly asks for it in that conversation.**
+- A prior approval to push does not carry over — ask again (or wait for the request) each time.
+
 ## Project Setup
 - **Framework**: React Native (Expo)
 - **Language**: TypeScript (strict mode)
