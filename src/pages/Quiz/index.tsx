@@ -77,9 +77,9 @@ export default function QuizScreen() {
 
                       {isChoiceMode ? (
                         <View style={styles.optionsColumn}>
-                          {(question.options ?? []).map((option) => (
+                          {(question.options ?? []).map((option, idx) => (
                             <OptionCard
-                              key={option}
+                              key={`${idx}_${option}`}
                               label={option}
                               disabled={selectedOption !== null || isSubmitting}
                               isSelected={selectedOption === option}
