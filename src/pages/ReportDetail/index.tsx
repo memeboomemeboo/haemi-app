@@ -26,7 +26,6 @@ import {
 import { useReportDetail } from '@/pages/ReportDetail/model/useReportDetail';
 import { HomeHeader } from '@/widgets/HomeHeader';
 
-const palette = colors.palette;
 const light = colors.light;
 
 export default function ReportDetailScreen() {
@@ -40,6 +39,7 @@ export default function ReportDetailScreen() {
     header,
     highlights,
     isLoading,
+    isError,
     profile,
     supportGuides,
   } = useReportDetail();
@@ -68,7 +68,11 @@ export default function ReportDetailScreen() {
         </View>
       </View>
 
-      {isLoading || !profile || !attendanceCopy ? (
+      {isError ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorText}>데이터를 불러오지 못했어요.</Text>
+        </View>
+      ) : isLoading || !profile || !attendanceCopy ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator color={light.primary} size="large" />
         </View>
@@ -214,7 +218,7 @@ function HighlightSection({ highlights }: { highlights: Highlight[] }) {
 
       <View style={styles.highlightCard}>
         {highlights.map((item, index) => (
-          <View key={item.eyebrow}>
+          <View key={`${index}_${item.eyebrow}`}>
             <View style={styles.highlightItem}>
               <View style={styles.highlightTextGroup}>
                 <Text style={styles.highlightEyebrow}>{item.eyebrow}</Text>
@@ -281,6 +285,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  errorText: {
+    color: light.label.assistive,
+    fontSize: 16,
+    fontWeight: '500',
   },
   header: {
     paddingHorizontal: 26,
@@ -403,7 +412,6 @@ const styles = StyleSheet.create({
     minWidth: 66,
     height: 19,
     borderRadius: 100,
-    backgroundColor: palette.red[60],
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,

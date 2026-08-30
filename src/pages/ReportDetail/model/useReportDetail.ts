@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
-import { useRouter } from 'expo-router';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -43,6 +42,7 @@ export function useReportDetail() {
   const { elderId } = useLocalSearchParams<{ elderId: string }>();
 
   const fetchAll = useCallback(async () => {
+    if (!elderId) throw new Error('elderId is required');
     const [summary, attendance, cognitive, highlight, supportGuide] = await Promise.all([
       getElderReportSummary(elderId),
       getAttendanceDetail(elderId),
@@ -53,16 +53,21 @@ export function useReportDetail() {
     return { summary, attendance, cognitive, highlight, supportGuide };
   }, [elderId]);
 
-  const { data, isLoading } = useAsyncData(fetchAll);
+  const { data, isLoading, isError } = useAsyncData(fetchAll);
 
   const goBack = useCallback(() => router.back(), [router]);
 
+  const layout = {
+    contentPaddingBottom: Math.max(insets.bottom, 0) + 28,
+    fixedTopPaddingTop: Math.max(insets.top, 20),
+    goBack,
+  };
+
   if (!data) {
     return {
-      isLoading: true,
-      goBack,
-      contentPaddingBottom: Math.max(insets.bottom, 0) + 28,
-      fixedTopPaddingTop: Math.max(insets.top, 20),
+      ...layout,
+      isLoading,
+      isError,
       attendance: [] as AttendanceDay[],
       attendanceCopy: null as ReportDetailAttendanceCopy | null,
       cognitiveStatus: [] as CognitiveStatus[],
@@ -130,10 +135,9 @@ export function useReportDetail() {
   }));
 
   return {
+    ...layout,
     isLoading,
-    goBack,
-    contentPaddingBottom: Math.max(insets.bottom, 0) + 28,
-    fixedTopPaddingTop: Math.max(insets.top, 20),
+    isError,
     attendance: attendanceDays,
     attendanceCopy,
     cognitiveStatus,

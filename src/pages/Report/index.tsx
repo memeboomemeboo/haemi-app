@@ -37,6 +37,8 @@ export default function ReportScreen() {
 
         {isLoading ? (
           <ActivityIndicator style={styles.loader} color={light.primary} size="large" />
+        ) : elders.length === 0 ? (
+          <Text style={styles.emptyText}>등록된 어르신이 없어요.</Text>
         ) : (
           <View style={styles.reportList}>
             {elders.map((elder) => (
@@ -155,6 +157,13 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginTop: 60,
+  },
+  emptyText: {
+    marginTop: 60,
+    color: light.label.assistive,
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   title: {
     color: light.label.neutral,
