@@ -1,14 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-
-/** 필터 탭 값 — '전체' 또는 특정 어르신 이름 (Figma node 1325:8142) */
-export type AlbumFilter = string;
-
-export const ALL_FILTER_VALUE = 'all';
-
-export interface AlbumFilterOption {
-  value: AlbumFilter;
-  label: string;
-}
+import type { AlbumFilter, AlbumFilterOption } from '@/entities/album';
 
 interface AlbumFilterTabsProps {
   options: AlbumFilterOption[];
