@@ -43,11 +43,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const savedToken = await getAuthToken();
         if (savedToken) {
           setTokenState(savedToken);
-          // 토큰이 유효한지 확인하고 사용자 정보 로드
+          const savedRole = await authService.getStoredRole();
+          if (savedRole) {
+            setRoleState(savedRole);
+            return;
+          }
+          // 기존 설치 데이터는 보호자 프로필 조회로 한 번 마이그레이션한다.
           try {
             const meResponse = await authService.getMe();
             if (meResponse.success && meResponse.data) {
-              setRoleState(meResponse.data.role || null);
+              const hydratedRole = meResponse.data.role || null;
+              setRoleState(hydratedRole);
+              await authService.setStoredRole(hydratedRole);
             }
           } catch (error) {
             // 토큰이 만료되었거나 유효하지 않음 - 로그아웃 처리
@@ -90,6 +97,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const logout = useCallback(() => {
+    void authService.setStoredRole(null);
     setTokenState(null);
     setRoleState(null);
     setRelationState(null);

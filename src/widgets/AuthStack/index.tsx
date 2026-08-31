@@ -34,6 +34,7 @@ export default function AuthStack() {
     try {
       await authService.setToken(tokens.accessToken);
       await authService.setRefreshToken(tokens.refreshToken);
+      await authService.setStoredRole('FAMILY');
       await pinStorage.saveLoginId(signupDraft.loginId);
     } catch (caught) {
       throw new Error(`로그인 정보 저장 실패: ${getErrorMessage(caught)}`);
@@ -47,12 +48,14 @@ export default function AuthStack() {
     const tokens = await authService.loginWithPin({ loginId, pin, deviceId: await getOrCreateDeviceId() });
     await authService.setToken(tokens.accessToken);
     await authService.setRefreshToken(tokens.refreshToken);
+    await authService.setStoredRole('FAMILY');
     setRole('FAMILY');
     setToken(tokens.accessToken);
   }, [setRole, setToken]);
   const loginElderWithPin = useCallback(async (pin: string) => {
     const tokens = await authService.loginElderWithPin({ pin });
     await authService.setToken(tokens.accessToken);
+    await authService.setStoredRole('ELDER');
     setRole('ELDER');
     setToken(tokens.accessToken);
   }, [setRole, setToken]);

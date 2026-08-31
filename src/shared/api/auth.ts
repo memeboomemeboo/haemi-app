@@ -2,7 +2,7 @@
  * 인증 API
  */
 
-import { post, get, setAuthToken as setClientToken, setRefreshToken as setClientRefreshToken } from './client';
+import { get, getAuthRole, post, setAuthRole, setAuthToken as setClientToken, setRefreshToken as setClientRefreshToken } from './client';
 import type {
   SignUpRequest,
   LoginRequest,
@@ -22,6 +22,7 @@ import type {
   SwaggerApiResponse,
   TokenResponse,
   ApiResponse,
+  UserRole,
 } from '@/shared/types';
 import { getOrCreateDeviceId } from '@/shared/lib';
 
@@ -107,6 +108,7 @@ export const authService = {
     } finally {
       await setClientToken(null);
       await setClientRefreshToken(null);
+      await setAuthRole(null);
     }
   },
 
@@ -144,6 +146,15 @@ export const authService = {
   async clearToken() {
     await setClientToken(null);
     await setClientRefreshToken(null);
+    await setAuthRole(null);
+  },
+
+  async setStoredRole(role: UserRole | null): Promise<void> {
+    await setAuthRole(role);
+  },
+
+  async getStoredRole(): Promise<UserRole | null> {
+    return getAuthRole();
   },
 
   async updateProfile(data: { name?: string; password?: string }): Promise<ApiResponse<AuthUser>> {

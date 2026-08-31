@@ -5,6 +5,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ApiError, NetworkError, UnauthorizedError } from './errors';
 import { getOrCreateDeviceId } from '@/shared/lib/deviceId';
+import type { UserRole } from '@/shared/types';
 
 // 프로덕션 빌드에서만 SecureStore import
 let SecureStore: any = null;
@@ -20,6 +21,7 @@ if (!__DEV__) {
 const API_BASE_URL = `${process.env.EXPO_PUBLIC_API_URL}/api/v1`;
 const AUTH_TOKEN_KEY = 'haemi_auth_token';
 const REFRESH_TOKEN_KEY = 'haemi_refresh_token';
+const AUTH_ROLE_KEY = 'haemi_auth_role';
 
 if (!process.env.EXPO_PUBLIC_API_URL) {
   console.warn('⚠️ EXPO_PUBLIC_API_URL not set');
@@ -98,6 +100,15 @@ export const setRefreshToken = async (token: string | null) => {
 
 export const getRefreshToken = async (): Promise<string | null> => {
   return getTokenStorage(REFRESH_TOKEN_KEY);
+};
+
+export const setAuthRole = async (role: UserRole | null): Promise<void> => {
+  await setTokenStorage(AUTH_ROLE_KEY, role);
+};
+
+export const getAuthRole = async (): Promise<UserRole | null> => {
+  const role = await getTokenStorage(AUTH_ROLE_KEY);
+  return role === 'ELDER' || role === 'FAMILY' || role === 'INSTITUTION_ADMIN' ? role : null;
 };
 
 const refreshAuthToken = async (): Promise<string | null> => {
