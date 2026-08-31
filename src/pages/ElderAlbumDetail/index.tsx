@@ -110,7 +110,7 @@ export default function ElderAlbumDetailScreen({ id }: ElderAlbumDetailScreenPro
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="이야기 전하기"
-              onPress={() => router.push('/daily-message')}
+              onPress={() => router.push({ pathname: '/daily-message', params: { memoryId: id } })}
               style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
             >
               <Text style={styles.primaryButtonText}>이야기 전하기</Text>

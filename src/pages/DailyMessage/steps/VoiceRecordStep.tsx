@@ -5,8 +5,9 @@ import {
   useAudioRecorder,
 } from 'expo-audio';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { elderMemoryResponseService, uploadMediaFile } from '@/shared/api';
 import { useTheme } from '@/shared/hooks';
 import { Mic, Waveform } from '@/shared/ui';
 
@@ -23,18 +24,21 @@ function formatDuration(seconds: number): string {
 }
 
 interface VoiceRecordStepProps {
+  memoryId: string;
   onSent: () => void;
 }
 
-/** Figma node 1408:5931 — 음성으로 이야기 전하기 (expo-audio 실제 녹음) */
-export function VoiceRecordStep({ onSent }: VoiceRecordStepProps) {
+/** Figma node 1408:5931 — 음성으로 이야기 전하기 (expo-audio 실제 녹음 + 서버 업로드) */
+export function VoiceRecordStep({ memoryId, onSent }: VoiceRecordStepProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const audioRecorder = useAudioRecorder(VOICE_RECORDING_OPTIONS);
   const [isRecording, setIsRecording] = useState(false);
   const [hasRecorded, setHasRecorded] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [recordingStartedAt, setRecordingStartedAt] = useState<number | null>(null);
+  const [recordedUri, setRecordedUri] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isRecording || recordingStartedAt === null) return undefined;
@@ -78,6 +82,7 @@ export function VoiceRecordStep({ onSent }: VoiceRecordStepProps) {
     setIsRecording(false);
     setRecordingStartedAt(null);
     setHasRecorded(true);
+    setRecordedUri(audioRecorder.uri);
   };
 
   const handleMicPress = () => {
@@ -98,7 +103,27 @@ export function VoiceRecordStep({ onSent }: VoiceRecordStepProps) {
     );
   };
 
-  const canSend = hasRecorded && !isRecording;
+  const handleSend = async () => {
+    if (!recordedUri) return;
+
+    setIsSending(true);
+    try {
+      const { mediaRefId } = await uploadMediaFile({
+        uri: recordedUri,
+        mediaType: 'ELDER_RESPONSE_VOICE',
+        filename: `voice-${Date.now()}.m4a`,
+        contentType: 'audio/m4a',
+      });
+      await elderMemoryResponseService.postVoiceResponse(memoryId, mediaRefId);
+      onSent();
+    } catch {
+      Alert.alert('전송하지 못했어요', '잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const canSend = hasRecorded && !isRecording && !isSending;
 
   return (
     <View style={styles.container}>
@@ -134,9 +159,12 @@ export function VoiceRecordStep({ onSent }: VoiceRecordStepProps) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="재녹음"
-          disabled={!hasRecorded || isRecording}
+          disabled={!hasRecorded || isRecording || isSending}
           onPress={handleReRecord}
-          style={[styles.secondaryButton, (!hasRecorded || isRecording) && styles.buttonDisabled]}
+          style={[
+            styles.secondaryButton,
+            (!hasRecorded || isRecording || isSending) && styles.buttonDisabled,
+          ]}
         >
           <Text style={styles.secondaryButtonText}>재녹음</Text>
         </Pressable>
@@ -144,10 +172,14 @@ export function VoiceRecordStep({ onSent }: VoiceRecordStepProps) {
           accessibilityRole="button"
           accessibilityLabel="보내기"
           disabled={!canSend}
-          onPress={onSent}
+          onPress={() => void handleSend()}
           style={[styles.primaryButton, !canSend && styles.buttonDisabled]}
         >
-          <Text style={styles.primaryButtonText}>보내기</Text>
+          {isSending ? (
+            <ActivityIndicator color={colors.background.normal} />
+          ) : (
+            <Text style={styles.primaryButtonText}>보내기</Text>
+          )}
         </Pressable>
       </View>
     </View>

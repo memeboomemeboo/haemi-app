@@ -1,25 +1,28 @@
 import * as ImagePicker from 'expo-image-picker';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 
+import { elderMemoryResponseService, uploadMediaFile } from '@/shared/api';
 import { useTheme } from '@/shared/hooks';
 
 interface PhotoSelectStepProps {
+  memoryId: string;
   onPicked: () => void;
   onCancelled: () => void;
 }
 
-/** 사진 고르기 — 갤러리에서 사진 한 장을 고르면 바로 완료 화면으로 이동한다 */
-export function PhotoSelectStep({ onPicked, onCancelled }: PhotoSelectStepProps) {
+/** 사진 고르기 — 갤러리에서 사진 한 장을 고르고 서버에 업로드하면 완료 화면으로 이동한다 */
+export function PhotoSelectStep({ memoryId, onPicked, onCancelled }: PhotoSelectStepProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const hasLaunchedRef = useRef(false);
+  const [statusText, setStatusText] = useState('사진을 고르고 있어요...');
 
   useEffect(() => {
     if (hasLaunchedRef.current) return;
     hasLaunchedRef.current = true;
 
-    const pickPhoto = async () => {
+    const pickAndSendPhoto = async () => {
       try {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permission.granted) {
@@ -39,20 +42,34 @@ export function PhotoSelectStep({ onPicked, onCancelled }: PhotoSelectStepProps)
           return;
         }
 
+        setStatusText('사진을 보내고 있어요...');
+        const asset = result.assets[0];
+        const contentType = asset.mimeType ?? 'image/jpeg';
+        const filename = asset.fileName ?? `photo-${Date.now()}.${contentType.split('/')[1] ?? 'jpg'}`;
+
+        const { mediaRefId } = await uploadMediaFile({
+          uri: asset.uri,
+          mediaType: 'ELDER_RESPONSE_IMAGE',
+          filename,
+          contentType,
+          sizeBytes: asset.fileSize,
+        });
+        await elderMemoryResponseService.postImageResponse(memoryId, mediaRefId);
+
         onPicked();
       } catch {
-        Alert.alert('사진을 불러오지 못했어요', '잠시 후 다시 시도해주세요.');
+        Alert.alert('사진을 보내지 못했어요', '잠시 후 다시 시도해주세요.');
         onCancelled();
       }
     };
 
-    void pickPhoto();
-  }, [onCancelled, onPicked]);
+    void pickAndSendPhoto();
+  }, [memoryId, onCancelled, onPicked]);
 
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color={colors.primary} />
-      <Text style={styles.text}>사진을 고르고 있어요...</Text>
+      <Text style={styles.text}>{statusText}</Text>
     </View>
   );
 }

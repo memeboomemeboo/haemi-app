@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
-import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/shared/hooks';
@@ -34,6 +34,7 @@ export default function DailyMessageScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { memoryId } = useLocalSearchParams<{ memoryId?: string }>();
   const [step, setStep] = useState<Step>('method');
 
   const handleBack = useCallback(() => {
@@ -56,18 +57,29 @@ export default function DailyMessageScreen() {
         {step !== 'done' && (
           <BackHeader title={STEP_TITLE[step]} onBack={handleBack} style={styles.header} />
         )}
-        {step === 'method' && (
-          <MethodSelectStep onNext={(method) => setStep(METHOD_STEP[method])} />
+        {!memoryId ? (
+          <Text style={styles.errorText}>어떤 추억에 대한 이야기인지 알 수 없어요.</Text>
+        ) : (
+          <>
+            {step === 'method' && (
+              <MethodSelectStep onNext={(method) => setStep(METHOD_STEP[method])} />
+            )}
+            {step === 'voice' && (
+              <VoiceRecordStep memoryId={memoryId} onSent={() => setStep('done')} />
+            )}
+            {step === 'emotion' && (
+              <EmotionSelectStep memoryId={memoryId} onSent={() => setStep('done')} />
+            )}
+            {step === 'photo' && (
+              <PhotoSelectStep
+                memoryId={memoryId}
+                onPicked={() => setStep('done')}
+                onCancelled={() => setStep('method')}
+              />
+            )}
+            {step === 'done' && <DoneStep onRestart={() => router.replace('/')} />}
+          </>
         )}
-        {step === 'voice' && <VoiceRecordStep onSent={() => setStep('done')} />}
-        {step === 'emotion' && <EmotionSelectStep onSent={() => setStep('done')} />}
-        {step === 'photo' && (
-          <PhotoSelectStep
-            onPicked={() => setStep('done')}
-            onCancelled={() => setStep('method')}
-          />
-        )}
-        {step === 'done' && <DoneStep onRestart={() => router.replace('/')} />}
       </ScrollView>
     </View>
   );
@@ -84,5 +96,12 @@ const styles = StyleSheet.create({
   header: {
     marginTop: 24,
     marginBottom: 44,
+  },
+  errorText: {
+    fontSize: 20,
+    fontWeight: '500',
+    color: '#76787a',
+    textAlign: 'center',
+    marginTop: 40,
   },
 });
