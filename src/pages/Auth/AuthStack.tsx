@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react';
-import SignupScreen, { type GuardianSignupDraft } from '@/pages/Auth/SignupScreen';
+import SignupScreen, { type GuardianSignupDraft } from './SignupScreen';
 import RoleSelectScreen from '@/pages/RoleSelect';
 import { ElderPinScreen, PinScreen, pinStorage } from '@/features/auth';
 import { authService, getErrorMessage } from '@/shared/api';
 import { useUserContext } from '@/shared/context/UserContext';
-import { getOrCreateDeviceId } from '@/shared/lib';
+import { getOrCreateDeviceId, getRoleFromToken } from '@/shared/lib';
 import type { TokenResponse } from '@/shared/types';
 
 type AuthMode = 'role-select' | 'signup' | 'pin-setup' | 'guardian-pin' | 'elder-pin';
@@ -49,7 +49,7 @@ export default function AuthStack() {
     await authService.setToken(tokens.accessToken);
     await authService.setRefreshToken(tokens.refreshToken);
     await authService.setStoredRole('FAMILY');
-    setRole('FAMILY');
+    setRole(getRoleFromToken(tokens.accessToken) ?? 'FAMILY');
     setToken(tokens.accessToken);
   }, [setRole, setToken]);
   const loginElderWithPin = useCallback(async (pin: string) => {

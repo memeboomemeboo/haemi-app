@@ -3,8 +3,9 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { getAuthToken, authService, setOnUnauthorizedCallback } from '@/shared/api';
+import { authService, getAuthToken, setOnUnauthorizedCallback } from '@/shared/api';
 import { initializeTestToken } from '@/shared/lib/auth';
+import { getRoleFromToken } from '@/shared/lib';
 import type { UserRole, Relation, Group } from '@/shared/types';
 
 interface UserContextType {
@@ -43,24 +44,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const savedToken = await getAuthToken();
         if (savedToken) {
           setTokenState(savedToken);
+          // 1) 저장된 role이 있으면 그대로 사용 (로그인 시 setStoredRole로 기록됨)
           const savedRole = await authService.getStoredRole();
           if (savedRole) {
             setRoleState(savedRole);
-            return;
-          }
-          // 기존 설치 데이터는 보호자 프로필 조회로 한 번 마이그레이션한다.
-          try {
-            const meResponse = await authService.getMe();
-            if (meResponse.success && meResponse.data) {
-              const hydratedRole = meResponse.data.role || null;
-              setRoleState(hydratedRole);
-              await authService.setStoredRole(hydratedRole);
-            }
-          } catch (error) {
-            // 토큰이 만료되었거나 유효하지 않음 - 로그아웃 처리
-            setTokenState(null);
-            if (__DEV__) {
-              console.warn('Failed to hydrate role during startup:', error);
+          } else {
+            // 2) 저장된 role이 없는 기존 설치는 토큰 자체에서 role을 읽어 마이그레이션한다
+            const tokenRole = getRoleFromToken(savedToken);
+            if (tokenRole) {
+              setRoleState(tokenRole);
+              await authService.setStoredRole(tokenRole);
+            } else if (__DEV__) {
+              console.warn('Failed to parse role from saved token');
             }
           }
         }

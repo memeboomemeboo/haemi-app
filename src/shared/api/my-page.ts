@@ -1,4 +1,5 @@
 import { del, get, patch, post } from './client';
+import { confirmMediaUpload, requestMediaUpload, type RequestMediaUploadResponse } from './media';
 import type { SwaggerApiResponse } from '@/shared/types';
 
 export type GuardianRole = 'GUARDIAN' | 'DAUGHTER' | 'SON' | 'GRANDDAUGHTER' | 'GRANDSON' | 'OTHER';
@@ -70,13 +71,6 @@ export interface CreateFamilyResponse {
   inviteCode: string;
 }
 
-interface RequestUploadResponse {
-  mediaRefId: string;
-  presignedUrl?: string;
-  duplicate?: boolean;
-  servingUrl?: string;
-}
-
 export const myPageService = {
   async getProfile(): Promise<GuardianProfileResponse> {
     const response = await get<SwaggerApiResponse<GuardianProfileResponse>>('/guardian/profile');
@@ -115,16 +109,9 @@ export const myPageService = {
     originalFilename: string;
     contentType: string;
     declaredSizeBytes?: number;
-  }): Promise<RequestUploadResponse> {
-    const response = await post<SwaggerApiResponse<RequestUploadResponse>>('/media/upload-request', {
-      mediaType: 'PROFILE_IMAGE',
-      ...data,
-    });
-    return response.data;
+  }): Promise<RequestMediaUploadResponse> {
+    return requestMediaUpload({ mediaType: 'PROFILE_IMAGE', ...data });
   },
 
-  async confirmMediaUpload(mediaRefId: string): Promise<string> {
-    const response = await post<SwaggerApiResponse<string>>(`/media/${mediaRefId}/confirm`);
-    return response.data;
-  },
+  confirmMediaUpload,
 };
