@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/shared/hooks';
 import { formatKoreanDate } from '@/shared/lib';
-import { Mail, Profile, Waveform } from '@/shared/ui';
+import { Mail, PlayTriangle, Profile } from '@/shared/ui';
 
 import { useElderHome } from './model/useElderHome';
 
@@ -81,7 +81,7 @@ export default function ElderHomeScreen() {
               ]}
             >
               <View style={styles.notificationIconCircle}>
-                <Mail size={24} color={colors.label.assistive} />
+                <Mail size={24} color={colors.primary} />
               </View>
               <View style={styles.notificationContent}>
                 <View style={styles.notificationTitleRow}>
@@ -114,7 +114,7 @@ export default function ElderHomeScreen() {
               ]}
             >
               <View style={[styles.notificationIconCircle, styles.notificationIconCirclePrimary]}>
-                <Waveform size={20} color={colors.primary} />
+                <PlayTriangle size={20} color={colors.primary} />
               </View>
               <View style={styles.notificationContent}>
                 <Text style={styles.notificationTitle}>
