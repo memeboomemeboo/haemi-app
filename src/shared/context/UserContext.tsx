@@ -44,25 +44,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const savedToken = await getAuthToken();
         if (savedToken) {
           setTokenState(savedToken);
-          const restoredRole = getRoleFromToken(savedToken);
-          if (restoredRole) {
-            setRoleState(restoredRole);
-          }
-
-          // 보호자 프로필 API는 어르신 토큰으로 호출할 수 없으므로 보호자 세션에서만 보조 확인한다.
-          try {
-            if (restoredRole !== 'ELDER') {
-              const meResponse = await authService.getMe();
-              if (meResponse.success && meResponse.data) {
-                setRoleState(meResponse.data.role || null);
-              }
-            }
-          } catch (error) {
-            if (!restoredRole) {
-              setTokenState(null);
-            }
-            if (__DEV__) {
-              console.warn('Failed to hydrate user:', error);
+          const savedRole = await authService.getStoredRole();
+          if (savedRole) {
+            setRoleState(savedRole);
+          } else {
+            const tokenRole = getRoleFromToken(savedToken);
+            if (tokenRole) {
+              setRoleState(tokenRole);
+              await authService.setStoredRole(tokenRole);
+            } else if (__DEV__) {
+              console.warn('Failed to parse role from saved token');
             }
           }
         }
@@ -99,6 +90,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const logout = useCallback(() => {
+    void authService.setStoredRole(null);
     setTokenState(null);
     setRoleState(null);
     setRelationState(null);

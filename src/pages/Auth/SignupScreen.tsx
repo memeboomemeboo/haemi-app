@@ -20,6 +20,7 @@ export default function SignupScreen({ onContinue, onLoginPress }: SignupScreenP
   const [isCheckingUserId, setCheckingUserId] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [isPasswordVisible, setPasswordVisible] = useState(false);
   const [error, setError] = useState('');
   const phoneDigits = phone.replace(/\D/g, '');
@@ -71,7 +72,15 @@ export default function SignupScreen({ onContinue, onLoginPress }: SignupScreenP
     if (password !== passwordConfirm) return setError('비밀번호가 일치하지 않습니다.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedBirthDate)) return setError('생년월일 8자리를 입력해주세요.');
     if (!/^01\d{8,9}$/.test(phoneDigits)) return setError('올바른 전화번호를 입력해주세요.');
-    onContinue({ name: name.trim(), loginId: userId.trim(), password, birthDate: normalizedBirthDate, phone: phoneDigits });
+    const trimmedInviteCode = inviteCode.trim();
+    onContinue({
+      name: name.trim(),
+      loginId: userId.trim(),
+      password,
+      birthDate: normalizedBirthDate,
+      phone: phoneDigits,
+      ...(trimmedInviteCode ? { inviteCode: trimmedInviteCode } : {}),
+    });
   };
 
   return (
@@ -91,6 +100,7 @@ export default function SignupScreen({ onContinue, onLoginPress }: SignupScreenP
           <Field label="전화번호"><TextInput style={styles.input} placeholder="010-1234-5678" value={phone} onChangeText={handlePhoneChange} keyboardType="phone-pad" maxLength={13} placeholderTextColor={colors.light.line.normal} /></Field>
           <Field label="아이디"><View style={styles.idRow}><TextInput style={[styles.input, styles.idInput]} placeholder="아이디" value={userId} onChangeText={(value) => { setUserId(value); setUserIdAvailable(false); setError(''); }} autoCapitalize="none" placeholderTextColor={colors.light.line.normal} /><Pressable style={[styles.checkButton, isUserIdAvailable && styles.availableButton]} onPress={checkUserIdAvailability} disabled={isCheckingUserId}><Text style={[styles.checkText, isUserIdAvailable && styles.availableText]}>{isCheckingUserId ? '확인 중' : isUserIdAvailable ? '사용 가능' : '중복 확인'}</Text></Pressable></View></Field>
           <Field label="비밀번호"><View style={styles.passwordGroup}><View style={styles.iconInput}><TextInput style={styles.flexInput} placeholder="비밀번호" value={password} onChangeText={setPassword} secureTextEntry={!isPasswordVisible} placeholderTextColor={colors.light.line.normal} /><Pressable onPress={() => setPasswordVisible((value) => !value)} hitSlop={10} accessibilityRole="button" accessibilityLabel={isPasswordVisible ? '비밀번호 숨기기' : '비밀번호 보기'}><Ionicons name={isPasswordVisible ? 'eye-outline' : 'eye-off-outline'} size={17} color={colors.light.label.assistive} /></Pressable></View><TextInput style={styles.input} placeholder="비밀번호 확인" value={passwordConfirm} onChangeText={setPasswordConfirm} secureTextEntry placeholderTextColor={colors.light.line.normal} /></View></Field>
+          <Field label="초대 코드 (선택)"><TextInput style={styles.input} placeholder="가족에게 받은 초대 코드" value={inviteCode} onChangeText={(value) => setInviteCode(value.toUpperCase())} autoCapitalize="characters" autoCorrect={false} maxLength={12} placeholderTextColor={colors.light.line.normal} /></Field>
         </View>
         {error ? <Text style={[styles.error, isUserIdAvailable && styles.success]}>{error}</Text> : null}
         <Pressable style={({ pressed }) => [styles.nextButton, !canSubmit && styles.nextButtonDisabled, pressed && styles.pressed]} onPress={handleSignup}><Text style={styles.nextText}>다음으로</Text></Pressable>
