@@ -46,9 +46,10 @@ export const ElderMemoryCard = ({ notification, onPress }: ElderMemoryCardProps)
 function getCopy(notification: MemoryNotification): { title: string; subtitle: string } {
   switch (notification.status) {
     case 'new':
+      const senderLabel = notification.senderLabel ?? '가족';
       return {
         title: '새 추억이 왔어요',
-        subtitle: `${notification.senderLabel ?? ''}이 추억을 보냈어요`,
+        subtitle: `${senderLabel}이 추억을 보냈어요`,
       };
     case 'none-new':
       return { title: '추억 앨범을 확인해요', subtitle: '추억 앨범으로 기억을 돌아봐요' };

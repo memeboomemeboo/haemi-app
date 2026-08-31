@@ -3,7 +3,9 @@ import { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useElderProfile, verifyElderPin } from '@/entities/elder';
+import { loginElderWithPin, useElderProfile } from '@/entities/elder';
+import { authService, getErrorMessage } from '@/shared/api';
+import { useUserContext } from '@/shared/context/UserContext';
 import { useTheme } from '@/shared/hooks';
 import { shuffleArray } from '@/shared/lib';
 import { Backspace } from '@/shared/ui';
@@ -30,9 +32,11 @@ export default function ElderLoginScreen() {
   const theme = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { profile } = useElderProfile();
+  const { setRole, setToken } = useUserContext();
 
   const [digits, setDigits] = useState(() => shuffleArray(DIGITS));
   const [pin, setPin] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const keypad = useMemo(() => buildKeypad(digits), [digits]);
 
@@ -42,14 +46,20 @@ export default function ElderLoginScreen() {
     }
     const nextPin = pin + digit;
     setPin(nextPin);
+    setErrorMessage(null);
 
     if (nextPin.length === PIN_LENGTH) {
-      const verified = await verifyElderPin(nextPin);
-      if (verified) {
+      try {
+        const { accessToken } = await loginElderWithPin(nextPin);
+        await authService.setToken(accessToken);
+        await authService.setRefreshToken(null);
+        setRole('ELDER');
+        setToken(accessToken);
         router.replace('/elder-home' as Href);
-      } else {
+      } catch (caught) {
         setPin('');
         setDigits(shuffleArray(DIGITS));
+        setErrorMessage(getErrorMessage(caught));
       }
     }
   };
@@ -68,6 +78,7 @@ export default function ElderLoginScreen() {
               <View style={styles.textGroup}>
                 <Text style={styles.title}>{profile?.honorificName ?? ''}, 반가워요</Text>
                 <Text style={styles.subtitle}>비밀번호 {PIN_LENGTH}자리를 입력해주세요</Text>
+                {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
               </View>
             </View>
 
@@ -180,6 +191,13 @@ const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
       fontWeight: '500',
       color: colors.label.assistive,
       letterSpacing: -0.4,
+    },
+    errorText: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: '#ee2a2b',
+      letterSpacing: -0.32,
+      textAlign: 'center',
     },
     dotsRow: {
       flexDirection: 'row',

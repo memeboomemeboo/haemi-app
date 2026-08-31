@@ -5,6 +5,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { getAuthToken, authService, setOnUnauthorizedCallback } from '@/shared/api';
 import { initializeTestToken } from '@/shared/lib/auth';
+import { getRoleFromToken } from '@/shared/lib';
 import type { UserRole, Relation, Group } from '@/shared/types';
 
 interface UserContextType {
@@ -43,15 +44,23 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const savedToken = await getAuthToken();
         if (savedToken) {
           setTokenState(savedToken);
-          // 토큰이 유효한지 확인하고 사용자 정보 로드
+          const restoredRole = getRoleFromToken(savedToken);
+          if (restoredRole) {
+            setRoleState(restoredRole);
+          }
+
+          // 보호자 프로필 API는 어르신 토큰으로 호출할 수 없으므로 보호자 세션에서만 보조 확인한다.
           try {
-            const meResponse = await authService.getMe();
-            if (meResponse.success && meResponse.data) {
-              setRoleState(meResponse.data.role || null);
+            if (restoredRole !== 'ELDER') {
+              const meResponse = await authService.getMe();
+              if (meResponse.success && meResponse.data) {
+                setRoleState(meResponse.data.role || null);
+              }
             }
           } catch (error) {
-            // 토큰이 만료되었거나 유효하지 않음 - 로그아웃 처리
-            setTokenState(null);
+            if (!restoredRole) {
+              setTokenState(null);
+            }
             if (__DEV__) {
               console.warn('Failed to hydrate user:', error);
             }

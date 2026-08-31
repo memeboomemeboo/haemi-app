@@ -66,6 +66,13 @@ export const authService = {
     return response.data;
   },
 
+  async loginElderWithPin(pin: string): Promise<{ accessToken: string }> {
+    const response = await post<SwaggerApiResponse<{ accessToken: string }>>('/auth/elders/login', { pin }, {
+      skipAuth: true,
+    });
+    return response.data;
+  },
+
   async signup(data: SignUpRequest): Promise<ApiResponse<AuthResponse>> {
     return post<ApiResponse<AuthResponse>>('/auth/signup', data, {
       skipAuth: true,
@@ -127,7 +134,7 @@ export const authService = {
   },
 
   // 리프레시 토큰 설정
-  async setRefreshToken(token: string) {
+  async setRefreshToken(token: string | null) {
     await setClientRefreshToken(token);
   },
 

@@ -1,4 +1,4 @@
-import { apiClient } from '@/shared/api';
+import { apiClient, authService } from '@/shared/api';
 import type { ElderProfile } from '../model/types';
 import { MOCK_ELDER_PROFILE } from './mock';
 
@@ -18,4 +18,8 @@ export async function verifyElderPin(pin: string): Promise<boolean> {
   }
   const result = await apiClient.post<{ verified: boolean }>('/elder/login', { pin });
   return result.verified;
+}
+
+export async function loginElderWithPin(pin: string): Promise<{ accessToken: string }> {
+  return authService.loginElderWithPin(pin);
 }

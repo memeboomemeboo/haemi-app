@@ -39,9 +39,14 @@ export const ElderDailyMessageCard = ({ notification, onPress }: ElderDailyMessa
 
 function getCopy(notification: DailyMessageNotification): { title: string; subtitle: string } {
   if (notification.status === 'received') {
+    const senderLabel = notification.senderLabel ?? '가족';
+    const messageLabel = notification.durationLabel
+      ? `음성 메세지 · ${notification.durationLabel}`
+      : '한마디';
+
     return {
       title: '하루 한마디 도착',
-      subtitle: `${notification.senderLabel ?? ''}이 보낸 음성 메세지 · ${notification.durationLabel ?? ''}`,
+      subtitle: `${senderLabel}이 보낸 ${messageLabel}`,
     };
   }
   return { title: '입력된 한마디가 없어요', subtitle: '아직 음성 메시지가 오지 않았어요' };
