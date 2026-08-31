@@ -131,6 +131,11 @@ export const colors = {
       7: '#121212',
       5: '#0d0d0d',
     },
+    // Figma "main" 틴트 — 추억 앨범 화면의 배지/버튼 배경 등에 사용
+    orange: {
+      97: '#fff3f0',
+      90: '#fed7cd',
+    },
   },
 } as const;
 

@@ -1,44 +1,50 @@
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Illustration } from '@/shared/ui/Icon';
+import { useTheme } from '@/shared/hooks';
+import { Illustration } from '@/shared/ui';
 
-/** 앨범에 사진이 없을 때 표시 (Figma node 52-2611 / 211-3944) */
+/** 앨범에 사진이 없을 때 표시 (Figma node 1326:9462 / 1386:2794) */
 export const AlbumEmptyState = () => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
-      <Illustration name="emptyAlbum" width={85} height={70} />
-      <View style={styles.textGroup}>
+      <View style={styles.iconTitleGroup}>
+        <Illustration name="emptyAlbum" width={96} height={96} />
         <Text style={styles.title}>아직 등록된 사진이 없어요</Text>
-        <Text style={styles.subtitle}>첫 번째 기억을 저장해보세요</Text>
       </View>
+      <Text style={styles.subtitle}>어르신께 추억을 전달드려보세요!</Text>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    width: 247,
-    alignItems: 'center',
-    gap: 43,
-  },
-  textGroup: {
-    alignItems: 'center',
-    gap: 10,
-    width: '100%',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#3c3e3f',
-    letterSpacing: -0.48,
-    lineHeight: 31,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#76787a',
-    letterSpacing: -0.32,
-    lineHeight: 21,
-    textAlign: 'center',
-  },
-});
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+  StyleSheet.create({
+    container: {
+      width: 247,
+      alignItems: 'center',
+      gap: 20,
+    },
+    iconTitleGroup: {
+      alignItems: 'center',
+      gap: 9,
+      width: '100%',
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '600',
+      color: colors.label.neutral,
+      letterSpacing: -0.48,
+      lineHeight: 31,
+      textAlign: 'center',
+    },
+    subtitle: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: colors.label.assistive,
+      letterSpacing: -0.32,
+      lineHeight: 21,
+      textAlign: 'center',
+    },
+  });

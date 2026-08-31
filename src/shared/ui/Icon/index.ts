@@ -24,6 +24,10 @@ export {
   Map,
   People,
   CheckMark,
+  Play,
+  Replay,
+  Mail,
+  PlayTriangle,
+  Backspace,
   Close,
-  Trash,
 } from './icons-components';

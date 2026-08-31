@@ -1,101 +1,74 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
-import {
-  Image,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  Alert,
-} from 'react-native';
+import { useMemo, useState } from 'react';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { uploadAlbumPhotos } from '@/shared/api/albums';
-import {
-  Arrow,
-  BottomNavigation,
-  Calendar,
-  CheckMark,
-  Close,
-  Map,
-  People,
-  Picture,
-  Plus,
-  Report,
-} from '@/shared/ui';
+import { createAlbumItem } from '@/entities/album';
+import { useTheme } from '@/shared/hooks';
+import { Arrow, BottomNavigation, Calendar, Picture, Plus } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 
 const MEMO_MAX_LENGTH = 200;
-
-// TODO: API 연결 시 가족 구성원 목록 조회(GET /family/members)로 대체
-const FAMILY_CANDIDATES = ['언니', '남동생'];
+const MAX_PHOTOS = 4;
+const ELDER_CANDIDATES = ['아버지', '어머니'];
 
 export default function AlbumRegisterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
+  const { colors } = theme;
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [date, setDate] = useState('1999.04.');
-  const [location, setLocation] = useState('어린이 대공원');
-  const [family, setFamily] = useState<string[]>(['아버지', '어머니']);
-  const [showFamilyPicker, setShowFamilyPicker] = useState(false);
-  const [pickerPosition, setPickerPosition] = useState({ top: 0, left: 0 });
+  const [elder, setElder] = useState('어머니');
+  const [title, setTitle] = useState('어린 시절 고향');
+  // 같은 사진을 두 번 고를 수도 있으므로 uri가 아닌 별도 id로 각 항목을 구분한다
+  const [photos, setPhotos] = useState<{ id: string; uri: string }[]>([]);
   const [memo, setMemo] = useState('가족끼리 나들이에 갔던 날이에요');
-  const chipAddRef = useRef<View>(null);
+  const [question, setQuestion] = useState('이 사진, 기억나세요?');
+  const [year, setYear] = useState('1975');
+  const [isSaving, setIsSaving] = useState(false);
 
-  // + 버튼 위치를 측정해 바로 아래에 드롭다운을 띄운다 (Figma 109-568)
-  const openFamilyPicker = () => {
-    chipAddRef.current?.measureInWindow((x, y, width, height) => {
-      setPickerPosition({ top: y + height + 6, left: x + width / 2 - 52 });
-      setShowFamilyPicker(true);
-    });
-  };
-
-  const pickImage = async () => {
+  const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.8,
     });
     if (!result.canceled) {
-      setPhotoUri(result.assets[0].uri);
+      const uri = result.assets[0].uri;
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      setPhotos((current) => [...current, { id, uri }].slice(0, MAX_PHOTOS));
     }
   };
 
-  const toggleFamilyMember = (name: string) => {
-    setFamily((current) =>
-      current.includes(name) ? current.filter((n) => n !== name) : [...current, name]
-    );
+  const removePhoto = (id: string) => {
+    setPhotos((current) => current.filter((photo) => photo.id !== id));
   };
 
   const handleSave = async () => {
+    if (!title.trim()) {
+      Alert.alert('추억 이름을 입력해주세요');
+      return;
+    }
+    if (isSaving) {
+      return;
+    }
+
+    setIsSaving(true);
     try {
-      if (family.length === 0) {
-        Alert.alert('가족 구성원을 최소 1명 이상 추가해주세요.');
-        return;
-      }
-
-      // TODO: 앨범 생성 API (POST /albums) 호출
-      // const album = await createAlbum({
-      //   name: `${family.join(', ')}과 함께한 추억`,
-      //   description: memo,
-      //   memberIds: family,
-      // });
-
-      // 사진이 있으면 업로드
-      // if (photoUri && album.id) {
-      //   await uploadAlbumPhotos(album.id, {
-      //     photos: [{ uri: photoUri, fileName: 'photo.jpg', mimeType: 'image/jpeg' }],
-      //   });
-      // }
-
-      Alert.alert('앨범이 등록되었습니다.');
+      await createAlbumItem({
+        title: title.trim(),
+        elderName: elder,
+        year,
+        memo: memo.trim() || undefined,
+        photos: photos.map((photo) => photo.uri),
+        question: question.trim() || undefined,
+      });
       router.back();
-    } catch (error) {
-      Alert.alert('앨범 등록 실패', error instanceof Error ? error.message : '알 수 없는 오류 발생');
+    } catch {
+      Alert.alert('추억을 저장하지 못했어요', '잠시 후 다시 시도해주세요');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -118,420 +91,395 @@ export default function AlbumRegisterScreen() {
             onPress={() => router.back()}
             hitSlop={8}
           >
-            <Arrow size={22} color="#3c3e3f" style={styles.backArrow} />
+            <Arrow size={22} color={colors.label.neutral} style={styles.backArrow} />
           </Pressable>
-          <Text style={styles.title}>앨범 등록</Text>
+          <Text style={styles.title}>추억 등록</Text>
         </View>
 
-        {/* 이미지 업로드 카드 */}
-        <Pressable style={styles.uploadCard} onPress={pickImage}>
-          {photoUri && <Image source={{ uri: photoUri }} style={styles.uploadImage} />}
-          {!photoUri && <Picture size={40} color="#dadbdc" />}
-          {!photoUri && (
-            <>
-              <View style={styles.uploadTextGroup}>
-                <Text style={styles.uploadLabel}>앨범 사진</Text>
-                <Text style={styles.uploadHint}>이미지를 업로드하세요</Text>
-              </View>
-              <View style={styles.uploadButton}>
-                <Text style={styles.uploadButtonText}>이미지 업로드</Text>
-              </View>
-            </>
-          )}
-        </Pressable>
-
-        {/* 입력 필드 */}
-        <View style={styles.fields}>
-          <View style={styles.fieldRow}>
-            <View style={styles.fieldLabelGroup}>
-              <Calendar size={24} color="#76787a" />
-              <Text style={styles.fieldLabel}>시기</Text>
-            </View>
-            <TextInput
-              value={date}
-              onChangeText={setDate}
-              placeholder="예: 1999.04."
-              placeholderTextColor="#c1c2c3"
-              style={styles.fieldInput}
-            />
-          </View>
-
-          <View style={styles.fieldRow}>
-            <View style={styles.fieldLabelGroup}>
-              <Map size={24} color="#76787a" />
-              <Text style={styles.fieldLabel}>장소</Text>
-            </View>
-            <TextInput
-              value={location}
-              onChangeText={setLocation}
-              placeholder="장소를 입력하세요"
-              placeholderTextColor="#c1c2c3"
-              style={styles.fieldInput}
-            />
-          </View>
-
-          <View style={styles.fieldRow}>
-            <View style={styles.fieldLabelGroup}>
-              <People size={26} color="#76787a" />
-              <Text style={styles.fieldLabel}>가족</Text>
-            </View>
-            <View style={styles.chipsRow}>
-              {family.map((name) => (
-                <View key={name} style={styles.chip}>
-                  <Text style={styles.chipText}>{name}</Text>
-                </View>
-              ))}
-              <View ref={chipAddRef} collapsable={false}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={family.length === FAMILY_CANDIDATES.length ? '가족 제거' : '가족 추가'}
-                  style={styles.chipAdd}
-                  onPress={openFamilyPicker}
-                >
-                  {family.length === FAMILY_CANDIDATES.length ? (
-                    <Close size={12} color="#fd6941" />
-                  ) : (
-                    <Plus size={12} color="#fd6941" />
-                  )}
-                </Pressable>
+        <View style={styles.formGroup}>
+          <View style={styles.fields}>
+            {/* 보낼 어르신 */}
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>보낼 어르신</Text>
+              <View style={styles.elderRow}>
+                {ELDER_CANDIDATES.map((name) => {
+                  const isSelected = name === elder;
+                  return (
+                    <Pressable
+                      key={name}
+                      style={[styles.elderChip, isSelected && styles.elderChipSelected]}
+                      onPress={() => setElder(name)}
+                    >
+                      <Text style={[styles.elderChipText, isSelected && styles.elderChipTextSelected]}>
+                        {name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
-          </View>
 
-          <View style={[styles.fieldRow, styles.fieldRowTop]}>
-            <View style={styles.fieldLabelGroup}>
-              <Report size={22} color="#76787a" />
-              <Text style={styles.fieldLabel}>메모</Text>
-            </View>
-            <View style={styles.memoBox}>
+            {/* 추억 이름 */}
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>추억 이름</Text>
               <TextInput
-                multiline
-                maxLength={MEMO_MAX_LENGTH}
-                value={memo}
-                onChangeText={setMemo}
-                placeholder="추억을 적어주세요"
-                placeholderTextColor="#c1c2c3"
-                style={styles.memoInput}
-                textAlignVertical="top"
+                value={title}
+                onChangeText={setTitle}
+                placeholder="추억 이름을 입력하세요"
+                placeholderTextColor={colors.line.normal}
+                style={styles.textInput}
               />
-              <Text style={styles.memoCount}>
-                {memo.length}/{MEMO_MAX_LENGTH}
-              </Text>
+            </View>
+
+            {/* 사진 */}
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>사진</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.photoRow}
+              >
+                {photos.length < MAX_PHOTOS && (
+                  <Pressable style={styles.uploadTile} onPress={pickPhoto}>
+                    <Picture size={40} color={colors.line.normal} style={styles.uploadIcon} />
+                    <Text style={styles.uploadText}>
+                      사진 {photos.length}/{MAX_PHOTOS}
+                    </Text>
+                  </Pressable>
+                )}
+                {photos.map((photo) => (
+                  <View key={photo.id} style={styles.photoTileWrapper}>
+                    <View style={styles.photoTile}>
+                      <Image source={{ uri: photo.uri }} style={styles.photoTileImage} />
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="사진 삭제"
+                      style={styles.photoDelete}
+                      onPress={() => removePhoto(photo.id)}
+                      hitSlop={6}
+                    >
+                      <Plus size={10} color={colors.label.alternative} style={styles.photoDeleteIcon} />
+                    </Pressable>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* 메모 */}
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>메모</Text>
+              <View style={styles.memoBox}>
+                <TextInput
+                  multiline
+                  maxLength={MEMO_MAX_LENGTH}
+                  value={memo}
+                  onChangeText={setMemo}
+                  placeholder="추억을 적어주세요"
+                  placeholderTextColor={colors.line.normal}
+                  style={styles.memoInput}
+                  textAlignVertical="top"
+                />
+                <Text style={styles.memoCount}>
+                  {memo.length}/{MEMO_MAX_LENGTH}
+                </Text>
+              </View>
+            </View>
+
+            {/* 어르신께 여쭤볼 한마디 */}
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>어르신께 여쭤볼 한마디</Text>
+              <TextInput
+                value={question}
+                onChangeText={setQuestion}
+                placeholder="어르신께 여쭤볼 질문을 입력하세요"
+                placeholderTextColor={colors.line.normal}
+                style={styles.textInput}
+              />
+            </View>
+
+            {/* 연도 */}
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>연도</Text>
+              <View style={styles.yearInputWrapper}>
+                <TextInput
+                  value={year}
+                  onChangeText={setYear}
+                  placeholder="예: 1975"
+                  placeholderTextColor={colors.line.normal}
+                  keyboardType="number-pad"
+                  style={styles.yearInput}
+                />
+                <Calendar size={17} color={colors.label.assistive} />
+              </View>
             </View>
           </View>
-        </View>
 
-        {/* 취소 / 저장 */}
-        <View style={styles.buttonRow}>
-          <Pressable
-            style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.cancelButtonText}>취소</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]}
-            onPress={handleSave}
-          >
-            <Text style={styles.saveButtonText}>저장</Text>
-          </Pressable>
+          {/* 취소 / 저장 */}
+          <View style={styles.buttonRow}>
+            <Pressable
+              style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
+              onPress={() => router.back()}
+            >
+              <Text style={styles.cancelButtonText}>취소</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                styles.saveButton,
+                pressed && styles.pressed,
+                isSaving && styles.saveButtonDisabled,
+              ]}
+              onPress={handleSave}
+              disabled={isSaving}
+            >
+              <Text style={styles.saveButtonText}>{isSaving ? '저장 중...' : '저장'}</Text>
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
 
       <BottomNavigation activeTab="Album" />
-
-      {/* 가족 추가 드롭다운 (Figma 109-568): + 버튼 아래 팝오버, 선택 항목은 체크 표시 */}
-      <Modal
-        visible={showFamilyPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowFamilyPicker(false)}
-      >
-        <Pressable style={styles.dropdownBackdrop} onPress={() => setShowFamilyPicker(false)}>
-          <View style={[styles.dropdown, { top: pickerPosition.top, left: pickerPosition.left }]}>
-            <View style={styles.dropdownInner}>
-              {FAMILY_CANDIDATES.map((name, index) => {
-                const isSelected = family.includes(name);
-                return (
-                  <Pressable
-                    key={name}
-                    style={[
-                      styles.dropdownRow,
-                      isSelected && styles.dropdownRowSelected,
-                      index < FAMILY_CANDIDATES.length - 1 && styles.dropdownRowDivider,
-                    ]}
-                    onPress={() => toggleFamilyMember(name)}
-                  >
-                    <View style={styles.dropdownCheckSlot}>
-                      {isSelected && <CheckMark size={13} color="#fd6035" />}
-                    </View>
-                    <Text style={styles.dropdownRowText}>{name}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  fixedTop: {
-    paddingHorizontal: 26,
-    backgroundColor: '#ffffff',
-  },
-  header: {
-    marginBottom: 26,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 23,
-    paddingBottom: 40,
-    gap: 37,
-  },
-  backTitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  backArrow: {
-    transform: [{ scaleX: -1 }],
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#3c3e3f',
-    letterSpacing: -0.48,
-    lineHeight: 31,
-  },
-  uploadCard: {
-    height: 189,
-    borderWidth: 1.5,
-    borderColor: '#f7f7f7',
-    borderRadius: 20,
-    backgroundColor: '#ffffff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    overflow: 'hidden',
-  },
-  uploadImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  uploadTextGroup: {
-    alignItems: 'center',
-    gap: 2,
-  },
-  uploadLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#76787a',
-    letterSpacing: -0.32,
-    lineHeight: 21,
-  },
-  uploadHint: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#c1c2c3',
-    letterSpacing: -0.28,
-    lineHeight: 18,
-  },
-  uploadButton: {
-    borderWidth: 1,
-    borderColor: '#e8e8e9',
-    borderRadius: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#ffffff',
-  },
-  uploadButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#c1c2c3',
-    letterSpacing: -0.28,
-    lineHeight: 18,
-  },
-  fields: {
-    gap: 28,
-  },
-  fieldRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  fieldRowTop: {
-    alignItems: 'flex-start',
-  },
-  fieldLabelGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  fieldLabel: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#76787a',
-    letterSpacing: -0.36,
-    lineHeight: 23,
-  },
-  fieldInput: {
-    width: 254,
-    height: 37,
-    borderRadius: 10,
-    backgroundColor: '#f7f7f7',
-    paddingHorizontal: 16,
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#76787a',
-    letterSpacing: -0.36,
-  },
-  chipsRow: {
-    width: 252,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  chip: {
-    height: 23,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    backgroundColor: '#fed7cd',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chipText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#fd6941',
-    letterSpacing: -0.32,
-    lineHeight: 21,
-  },
-  chipAdd: {
-    width: 26,
-    height: 26,
-    borderRadius: 100,
-    backgroundColor: '#fff3f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  memoBox: {
-    width: 254,
-    height: 99,
-    borderRadius: 10,
-    backgroundColor: '#f7f7f7',
-    overflow: 'hidden',
-  },
-  memoInput: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 24,
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#76787a',
-    letterSpacing: -0.36,
-  },
-  memoCount: {
-    position: 'absolute',
-    right: 12,
-    bottom: 6,
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#c1c2c3',
-    letterSpacing: -0.28,
-    lineHeight: 18,
-  },
-  buttonRow: {
-    marginTop: 31,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  cancelButton: {
-    width: 164,
-    height: 35,
-    borderRadius: 5,
-    backgroundColor: '#fed7cd',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    fontSize: 20,
-    fontWeight: '500',
-    color: '#fd6941',
-    letterSpacing: -0.4,
-    lineHeight: 26,
-  },
-  saveButton: {
-    width: 164,
-    height: 35,
-    borderRadius: 5,
-    backgroundColor: '#fd6941',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    fontSize: 20,
-    fontWeight: '500',
-    color: '#fed7cd',
-    letterSpacing: -0.4,
-    lineHeight: 26,
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-  // 가족 추가 드롭다운 (Figma 109-568): 104px 팝오버, 어두운 배경 없음
-  dropdownBackdrop: {
-    flex: 1,
-  },
-  dropdown: {
-    position: 'absolute',
-    width: 104,
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 4,
-  },
-  dropdownInner: {
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  dropdownRow: {
-    height: 36,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    backgroundColor: '#ffffff',
-  },
-  dropdownRowSelected: {
-    backgroundColor: '#fff3f0',
-  },
-  dropdownRowDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#fed7cd',
-  },
-  dropdownCheckSlot: {
-    width: 21,
-    justifyContent: 'center',
-  },
-  dropdownRowText: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#fd6035',
-    letterSpacing: -0.36,
-    lineHeight: 23,
-  },
-});
+const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background.normal,
+    },
+    fixedTop: {
+      paddingHorizontal: 26,
+      backgroundColor: colors.background.normal,
+    },
+    header: {
+      marginBottom: 26,
+    },
+    scroll: {
+      flex: 1,
+    },
+    content: {
+      paddingHorizontal: 27,
+      paddingBottom: 40,
+      // Figma: 헤더(뒤로가기+타이틀)에서 폼 영역까지 25, 폼 내부에서 필드 그룹과 버튼까지 48
+      gap: 25,
+    },
+    formGroup: {
+      width: '100%',
+      alignItems: 'center',
+      gap: 48,
+    },
+    backTitle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    backArrow: {
+      transform: [{ scaleX: -1 }],
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.label.neutral,
+      letterSpacing: -0.48,
+      lineHeight: 31,
+    },
+    fields: {
+      width: '100%',
+      gap: 28,
+    },
+    field: {
+      gap: 8,
+    },
+    fieldLabel: {
+      fontSize: 18,
+      fontWeight: '500',
+      color: colors.label.assistive,
+      letterSpacing: -0.36,
+      lineHeight: 23,
+    },
+    elderRow: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    elderChip: {
+      width: 80,
+      height: 31,
+      borderRadius: 100,
+      borderWidth: 1,
+      borderColor: colors.label.disabled,
+      backgroundColor: colors.background.normal,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    elderChipSelected: {
+      borderColor: colors.primary,
+    },
+    elderChipText: {
+      fontSize: 20,
+      fontWeight: '400',
+      color: colors.line.neutral,
+      letterSpacing: -0.4,
+    },
+    elderChipTextSelected: {
+      color: colors.primary,
+    },
+    textInput: {
+      height: 46,
+      borderRadius: 10,
+      backgroundColor: colors.background.neutral,
+      paddingHorizontal: 16,
+      fontSize: 16,
+      fontWeight: '500',
+      color: colors.label.assistive,
+      letterSpacing: -0.32,
+    },
+    photoRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: 11,
+    },
+    uploadTile: {
+      width: 100,
+      height: 100,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.label.disabled,
+      backgroundColor: colors.background.alternative,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    uploadIcon: {
+      marginBottom: 4,
+    },
+    uploadText: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: colors.line.normal,
+      letterSpacing: -0.24,
+    },
+    photoTileWrapper: {
+      width: 100,
+      height: 106,
+      justifyContent: 'flex-end',
+    },
+    photoTile: {
+      width: 100,
+      height: 100,
+      borderRadius: 15,
+      overflow: 'hidden',
+      backgroundColor: colors.background.normal,
+      shadowColor: '#000000',
+      shadowOpacity: 0.12,
+      shadowRadius: 3,
+      shadowOffset: { width: 0, height: 0 },
+      elevation: 2,
+    },
+    photoTileImage: {
+      width: '100%',
+      height: '100%',
+      resizeMode: 'cover',
+    },
+    photoDelete: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      width: 24,
+      height: 24,
+      borderRadius: 100,
+      backgroundColor: colors.background.normal,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000000',
+      shadowOpacity: 0.07,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 0 },
+      elevation: 2,
+    },
+    photoDeleteIcon: {
+      transform: [{ rotate: '45deg' }],
+    },
+    memoBox: {
+      height: 99,
+      borderRadius: 10,
+      backgroundColor: colors.background.neutral,
+      overflow: 'hidden',
+    },
+    memoInput: {
+      flex: 1,
+      paddingHorizontal: 10,
+      paddingTop: 12,
+      paddingBottom: 24,
+      fontSize: 16,
+      fontWeight: '500',
+      color: colors.label.assistive,
+      letterSpacing: -0.32,
+    },
+    memoCount: {
+      position: 'absolute',
+      right: 12,
+      bottom: 6,
+      fontSize: 14,
+      fontWeight: '400',
+      color: colors.line.normal,
+      letterSpacing: -0.28,
+    },
+    yearInputWrapper: {
+      height: 46,
+      borderRadius: 10,
+      backgroundColor: colors.background.neutral,
+      paddingHorizontal: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    yearInput: {
+      flex: 1,
+      fontSize: 16,
+      fontWeight: '500',
+      color: colors.label.assistive,
+      letterSpacing: -0.32,
+    },
+    buttonRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 10,
+    },
+    cancelButton: {
+      width: 164,
+      height: 35,
+      borderRadius: 5,
+      backgroundColor: palette.orange[90],
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    cancelButtonText: {
+      fontSize: 20,
+      fontWeight: '500',
+      color: colors.primary,
+      letterSpacing: -0.4,
+      lineHeight: 26,
+    },
+    saveButton: {
+      width: 164,
+      height: 35,
+      borderRadius: 5,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    saveButtonDisabled: {
+      opacity: 0.6,
+    },
+    saveButtonText: {
+      fontSize: 20,
+      fontWeight: '500',
+      color: colors.background.normal,
+      letterSpacing: -0.4,
+      lineHeight: 26,
+    },
+    pressed: {
+      opacity: 0.85,
+    },
+  });
