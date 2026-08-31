@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, type Href } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import { colors } from '@/shared/constants';
 import { formatKoreanDate } from '@/shared/lib/date';
@@ -40,14 +40,6 @@ export default function ElderHomeScreen() {
     void refetchSummary();
   };
 
-  const openAlbum = (albumId?: string) => {
-    if (albumId) {
-      router.push(`/album/${albumId}` as Href);
-      return;
-    }
-    router.push('/album');
-  };
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView
@@ -82,14 +74,8 @@ export default function ElderHomeScreen() {
               <ElderActivityCard onStartPress={() => router.push('/quiz')} />
             </View>
             <View style={styles.notificationList}>
-              <ElderMemoryCard
-                notification={summary.memory}
-                onPress={() => openAlbum(summary.memory.albumId)}
-              />
-              <ElderDailyMessageCard
-                notification={summary.dailyMessage}
-                onPress={() => openAlbum(summary.dailyMessage.albumId)}
-              />
+              <ElderMemoryCard notification={summary.memory} />
+              <ElderDailyMessageCard notification={summary.dailyMessage} />
             </View>
           </>
         ) : (
