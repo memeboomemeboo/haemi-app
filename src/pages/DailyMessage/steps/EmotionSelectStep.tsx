@@ -8,7 +8,6 @@ interface EmotionOption {
   key: string;
   emoji: string;
   label: string;
-  /** 실제로 확인된 값은 LOVE 뿐이라, 나머지는 백엔드 확정 전까지의 추정치 */
   serverValue: MemoryResponseEmotion;
 }
 

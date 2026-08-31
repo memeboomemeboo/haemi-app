@@ -35,6 +35,8 @@ export { authService } from './auth';
 export { groupService } from './group';
 export { getElderHome } from './elderHome';
 export type { ElderHomeResponse, ElderHomeGreeting, ElderHomeMemory, ElderHomeTraining } from './elderHome';
+export { elderMemoryService } from './elderMemory';
+export type { ElderMemorySummary, ElderMemoryDetail } from './elderMemory';
 export { elderMemoryResponseService } from './elderMemoryResponse';
 export type {
   MemoryResponse,

@@ -3,14 +3,7 @@ import type { SwaggerApiResponse } from '@/shared/types';
 
 export type MemoryResponseType = 'VOICE' | 'TEXT' | 'IMAGE' | 'EMOTION';
 
-/** 실제로 확인된 값은 LOVE 뿐이라, 나머지는 백엔드 확정 전까지의 추정치 */
-export type MemoryResponseEmotion =
-  | 'LOVE'
-  | 'MISS'
-  | 'LONGING'
-  | 'HAPPY'
-  | 'JOY'
-  | 'SAD';
+export type MemoryResponseEmotion = 'LOVE' | 'HAPPY' | 'JOY' | 'MISS' | 'SAD' | 'LONGING';
 
 export type TranscriptionStatus = 'NOT_APPLICABLE' | 'PENDING' | 'COMPLETED' | 'FAILED';
 

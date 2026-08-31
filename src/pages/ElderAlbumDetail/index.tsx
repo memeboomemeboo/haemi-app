@@ -3,17 +3,17 @@ import { useMemo } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useAlbumDetail, useAlbumItems } from '@/entities/album';
 import { useTheme } from '@/shared/hooks';
 import { BackHeader, Profile } from '@/shared/ui';
+import { useElderAlbum } from '@/pages/ElderAlbum/model/useElderAlbum';
+import { useElderAlbumDetail } from './model/useElderAlbumDetail';
 
 const sampleSource = require('../../../assets/images/album-sample.png');
 
-const DEFAULT_QUESTION = '이 사진, 기억나세요?';
-const DEFAULT_SENDER_RELATION = '가족';
+const DEFAULT_SENDER_LABEL = '가족';
 
-const resolvePhotoSource = (photo: string) =>
-  photo.startsWith('http') || photo.startsWith('file') ? { uri: photo } : sampleSource;
+const resolvePhotoSource = (imageKey: string) =>
+  imageKey.startsWith('http') || imageKey.startsWith('file') ? { uri: imageKey } : sampleSource;
 
 interface ElderAlbumDetailScreenProps {
   id: string;
@@ -26,16 +26,16 @@ export default function ElderAlbumDetailScreen({ id }: ElderAlbumDetailScreenPro
   const theme = useTheme();
   const { colors } = theme;
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const { item, isLoading } = useAlbumDetail(id);
-  const { data: items } = useAlbumItems();
+  const { memory, isLoading } = useElderAlbumDetail(id);
+  const { memories } = useElderAlbum();
 
   const nextItemId = useMemo(() => {
-    if (!items || items.length === 0) return null;
-    const currentIndex = items.findIndex((candidate) => candidate.id === id);
-    if (currentIndex === -1) return items[0].id;
-    const nextIndex = (currentIndex + 1) % items.length;
-    return items[nextIndex].id === id ? null : items[nextIndex].id;
-  }, [items, id]);
+    if (!memories || memories.length === 0) return null;
+    const currentIndex = memories.findIndex((candidate) => candidate.id === id);
+    if (currentIndex === -1) return memories[0].id;
+    const nextIndex = (currentIndex + 1) % memories.length;
+    return memories[nextIndex].id === id ? null : memories[nextIndex].id;
+  }, [memories, id]);
 
   const handleNextStory = () => {
     if (nextItemId) {
@@ -57,13 +57,13 @@ export default function ElderAlbumDetailScreen({ id }: ElderAlbumDetailScreenPro
         </View>
       )}
 
-      {!isLoading && !item && (
+      {!isLoading && !memory && (
         <View style={styles.centerFill}>
           <Text style={styles.emptyText}>추억을 찾을 수 없어요</Text>
         </View>
       )}
 
-      {!isLoading && item && (
+      {!isLoading && memory && (
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
@@ -73,27 +73,23 @@ export default function ElderAlbumDetailScreen({ id }: ElderAlbumDetailScreenPro
             <View style={styles.profileRow}>
               <View style={styles.profileLeft}>
                 <Profile size={47} color={colors.primary} />
-                <Text style={styles.senderName}>{item.senderRelation ?? DEFAULT_SENDER_RELATION}</Text>
+                <Text style={styles.senderName}>{memory.creatorRoleLabel ?? DEFAULT_SENDER_LABEL}</Text>
               </View>
-              {(item.year || item.date) && (
-                <Text style={styles.year}>{item.year ?? item.date}</Text>
-              )}
+              <Text style={styles.year}>{memory.memoryYear}년</Text>
             </View>
 
-            {item.memo && <Text style={styles.memo}>{item.memo}</Text>}
+            {memory.memo && <Text style={styles.memo}>{memory.memo}</Text>}
 
             <View style={styles.questionBox}>
-              <Text style={styles.questionText}>
-                {`" ${item.conversation?.question ?? DEFAULT_QUESTION} "`}
-              </Text>
+              <Text style={styles.questionText}>{`" ${memory.message} "`}</Text>
             </View>
 
-            {item.photos && item.photos.length > 0 && (
+            {memory.imageKeys && memory.imageKeys.length > 0 && (
               <View style={styles.photoRow}>
-                {item.photos.slice(0, 4).map((photo, index) => (
+                {memory.imageKeys.slice(0, 4).map((imageKey, index) => (
                   <Image
-                    key={`${photo}-${index}`}
-                    source={resolvePhotoSource(photo)}
+                    key={`${imageKey}-${index}`}
+                    source={resolvePhotoSource(imageKey)}
                     style={styles.photo}
                     resizeMode="cover"
                   />
@@ -103,7 +99,7 @@ export default function ElderAlbumDetailScreen({ id }: ElderAlbumDetailScreenPro
           </View>
 
           <Text style={styles.prompt}>
-            {`${item.senderRelation ?? DEFAULT_SENDER_RELATION}과 ${item.title} 사진이에요.\n이때 이야기 조금 들려주실래요?`}
+            {`${memory.creatorRoleLabel ?? DEFAULT_SENDER_LABEL}과 ${memory.title} 사진이에요.\n이때 이야기 조금 들려주실래요?`}
           </Text>
 
           <View style={styles.actionRow}>

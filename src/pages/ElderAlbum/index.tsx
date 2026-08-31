@@ -3,20 +3,26 @@ import { useCallback, useMemo } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useAlbumItems } from '@/entities/album';
 import { useTheme } from '@/shared/hooks';
 import { BackHeader, BottomNavigation } from '@/shared/ui';
 
+import { useElderAlbum } from './model/useElderAlbum';
+
 const sampleSource = require('../../../assets/images/album-sample.png');
+
+const resolvePhotoSource = (imageKey?: string) =>
+  imageKey && (imageKey.startsWith('http') || imageKey.startsWith('file'))
+    ? { uri: imageKey }
+    : sampleSource;
 
 /** Figma node 1408:5813 — 어르신 추억앨범 목록 */
 export default function ElderAlbumScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const theme = useTheme();
-  const { colors } = theme;
+  const { colors, palette } = theme;
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const { data: items, isLoading, refetch } = useAlbumItems();
+  const { memories, isLoading, refetch } = useElderAlbum();
 
   useFocusEffect(
     useCallback(() => {
@@ -36,7 +42,7 @@ export default function ElderAlbumScreen() {
         <View style={styles.centerFill}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
-      ) : !items || items.length === 0 ? (
+      ) : !memories || memories.length === 0 ? (
         <View style={styles.centerFill}>
           <Text style={styles.emptyText}>아직 남겨진 추억이 없어요</Text>
         </View>
@@ -46,30 +52,28 @@ export default function ElderAlbumScreen() {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          {items.map((item) => (
+          {memories.map((memory) => (
             <Pressable
-              key={item.id}
+              key={memory.id}
               accessibilityRole="button"
-              onPress={() => router.push({ pathname: '/album/[id]', params: { id: item.id } })}
+              onPress={() => router.push({ pathname: '/album/[id]', params: { id: memory.id } })}
               style={({ pressed }) => [styles.card, pressed && styles.pressed]}
             >
               <Image
-                source={item.photoUrl ? { uri: item.photoUrl } : sampleSource}
+                source={resolvePhotoSource(memory.imageKeys[0])}
                 style={styles.photo}
                 resizeMode="cover"
               />
               <View style={styles.cardInfo}>
-                <Text style={styles.cardYear}>{item.year ?? item.date}</Text>
+                <Text style={styles.cardYear}>{memory.memoryYear}년</Text>
                 <Text style={styles.cardTitle} numberOfLines={1}>
-                  {item.title}
+                  {memory.title}
                 </Text>
-                {item.tags && item.tags.length > 0 && (
+                {memory.creatorRoleLabel && (
                   <View style={styles.tagRow}>
-                    {item.tags.slice(0, 3).map((tag, index) => (
-                      <View key={`${tag}-${index}`} style={styles.tag}>
-                        <Text style={styles.tagText}>{tag}</Text>
-                      </View>
-                    ))}
+                    <View style={[styles.tag, { backgroundColor: palette.orange[90] }]}>
+                      <Text style={styles.tagText}>{memory.creatorRoleLabel}</Text>
+                    </View>
                   </View>
                 )}
               </View>
@@ -157,7 +161,6 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
       height: 31,
       paddingHorizontal: 10,
       borderRadius: 5,
-      backgroundColor: palette.orange[90],
       justifyContent: 'center',
       alignItems: 'center',
     },
