@@ -1,6 +1,7 @@
 import type { Href } from 'expo-router';
 
 import { CALENDAR_XML, HEART_XML } from '@/pages/CaregiverHome/assets';
+import { colors } from '@/shared/constants';
 
 export type ActivitySegment = {
   color: string;
@@ -43,26 +44,11 @@ export const CAREGIVER_HOME_COPY = {
   recordMore: '자세히 보기',
 } as const;
 
-export const CAREGIVER_COLORS = {
-  orange: '#fd6941',
-  orangeDeep: '#fd6035',
-  orangeSoft: '#fff3f0',
-  orangeLine: '#fed7cd',
-  text: '#3c3e3f',
-  textMuted: '#5a5c5d',
-  textAssistive: '#76787a',
-  lineNormal: '#c1c2c3',
-  fill: '#f7f7f7',
-  error: '#ee2a2b',
-  blue: '#38a9fa',
-  white: '#ffffff',
-} as const;
-
 export const SEGMENT_COLORS = {
-  answer: CAREGIVER_COLORS.error,
-  album: CAREGIVER_COLORS.orange,
-  word: '#fd8768',
-  training: CAREGIVER_COLORS.orangeLine,
+  answer: colors.status.error,
+  album: colors.light.primary,
+  word: colors.palette.red[70],
+  training: colors.palette.orange[90],
 } as const;
 
 export const WEEKLY_ACTIVITY_LEGEND: LegendItem[] = [
@@ -75,7 +61,7 @@ export const WEEKLY_ACTIVITY_LEGEND: LegendItem[] = [
 export const WEEKLY_ACTIVITY_DAYS: WeeklyActivityDay[] = [
   {
     label: '일',
-    color: CAREGIVER_COLORS.error,
+    color: colors.status.error,
     segments: [
       { color: SEGMENT_COLORS.training, height: 8 },
       { color: SEGMENT_COLORS.word, height: 9 },
@@ -85,7 +71,7 @@ export const WEEKLY_ACTIVITY_DAYS: WeeklyActivityDay[] = [
   },
   {
     label: '월',
-    color: CAREGIVER_COLORS.lineNormal,
+    color: colors.light.line.normal,
     segments: [
       { color: SEGMENT_COLORS.training, height: 8 },
       { color: SEGMENT_COLORS.word, height: 8 },
@@ -94,17 +80,17 @@ export const WEEKLY_ACTIVITY_DAYS: WeeklyActivityDay[] = [
   },
   {
     label: '화',
-    color: CAREGIVER_COLORS.lineNormal,
+    color: colors.light.line.normal,
     segments: [{ color: SEGMENT_COLORS.training, height: 4 }],
   },
   {
     label: '수',
-    color: CAREGIVER_COLORS.lineNormal,
+    color: colors.light.line.normal,
     segments: [{ color: SEGMENT_COLORS.training, height: 4 }],
   },
   {
     label: '목',
-    color: CAREGIVER_COLORS.lineNormal,
+    color: colors.light.line.normal,
     segments: [
       { color: SEGMENT_COLORS.training, height: 7 },
       { color: SEGMENT_COLORS.word, height: 5 },
@@ -112,7 +98,7 @@ export const WEEKLY_ACTIVITY_DAYS: WeeklyActivityDay[] = [
   },
   {
     label: '금',
-    color: CAREGIVER_COLORS.lineNormal,
+    color: colors.light.line.normal,
     segments: [
       { color: SEGMENT_COLORS.training, height: 7 },
       { color: SEGMENT_COLORS.word, height: 5 },
@@ -120,7 +106,7 @@ export const WEEKLY_ACTIVITY_DAYS: WeeklyActivityDay[] = [
   },
   {
     label: '토',
-    color: CAREGIVER_COLORS.blue,
+    color: colors.palette.blue[60],
     segments: [
       { color: SEGMENT_COLORS.training, height: 8 },
       { color: SEGMENT_COLORS.word, height: 8 },
@@ -133,7 +119,7 @@ export const CAREGIVER_TASKS: CaregiverTask[] = [
   {
     label: '오늘의 한마디',
     accessibilityLabel: '오늘의 한마디',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.palette.neutral[95],
     iconXml: HEART_XML,
     completionKey: 'greetingCompleted',
     href: CAREGIVER_HOME_ROUTES.familyMemories,
@@ -141,7 +127,7 @@ export const CAREGIVER_TASKS: CaregiverTask[] = [
   {
     label: '추억 등록',
     accessibilityLabel: '추억 등록',
-    backgroundColor: CAREGIVER_COLORS.orangeSoft,
+    backgroundColor: colors.palette.orange[97],
     iconXml: CALENDAR_XML,
     completionKey: 'memoryCompleted',
     href: CAREGIVER_HOME_ROUTES.memoryRegister,

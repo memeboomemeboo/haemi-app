@@ -12,7 +12,6 @@ import {
   RING_XML,
 } from '@/pages/CaregiverHome/assets';
 import {
-  CAREGIVER_COLORS,
   CAREGIVER_HOME_COPY,
   CAREGIVER_TASKS,
   WEEKLY_ACTIVITY_DAYS,
@@ -20,24 +19,23 @@ import {
   type CaregiverTask,
 } from '@/pages/CaregiverHome/constants';
 import { useCaregiverHome } from '@/pages/CaregiverHome/model/useCaregiverHome';
+import { colors } from '@/shared/constants';
 import type {
   CaregiverActivityItem,
   CaregiverHomeChallenge,
   CaregiverHomeElder,
 } from '@/shared/types';
 
-const {
-  fill: FILL,
-  lineNormal: LINE_NORMAL,
-  orange: ORANGE,
-  orangeDeep: ORANGE_DEEP,
-  orangeLine: ORANGE_LINE,
-  orangeSoft: ORANGE_SOFT,
-  text: TEXT,
-  textAssistive: TEXT_ASSISTIVE,
-  textMuted: TEXT_MUTED,
-  white: WHITE,
-} = CAREGIVER_COLORS;
+const ORANGE = colors.light.primary;
+const ORANGE_DEEP = colors.light.primary;
+const ORANGE_LINE = colors.palette.orange[90];
+const ORANGE_SOFT = colors.palette.orange[97];
+const TEXT = colors.light.label.neutral;
+const TEXT_ASSISTIVE = colors.light.label.assistive;
+const TEXT_MUTED = colors.light.label.alternative;
+const LINE_NORMAL = colors.light.line.normal;
+const FILL = colors.light.fill.normal;
+const WHITE = colors.light.background.normal;
 
 export default function CaregiverHomeScreen() {
   const {
@@ -575,7 +573,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: WHITE,
     overflow: 'hidden',
-    shadowColor: '#000000',
+    shadowColor: colors.light.label.strong,
     shadowOpacity: 0.1,
     shadowRadius: 2.3,
     shadowOffset: { width: 0, height: 0 },
