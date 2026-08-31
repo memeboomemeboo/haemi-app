@@ -4,7 +4,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useElderProfile } from '@/entities/elder';
-import { authService } from '@/shared/api';
+import { authService, isApiError, isNetworkError } from '@/shared/api';
 import { pinStorage } from '@/features/auth';
 import { setAuthToken, setRefreshToken } from '@/shared/api/client';
 import { useUserContext } from '@/shared/context/UserContext';
@@ -42,6 +42,25 @@ export default function ElderLoginScreen() {
 
   const keypad = useMemo(() => buildKeypad(digits), [digits]);
 
+  /** 로그인 실패 원인을 어르신이 이해할 수 있는 안내 문구로 바꾼다. */
+  const toLoginErrorMessage = (error: unknown): string => {
+    if (isNetworkError(error)) {
+      return '인터넷 연결을 확인한 뒤 다시 해주세요.';
+    }
+    if (isApiError(error)) {
+      if (error.code === 'AUTH_ACCOUNT_LOCKED' || error.statusCode === 423) {
+        return '비밀번호를 여러 번 틀려서 잠겼어요.\n조금 뒤에 다시 해주세요.';
+      }
+      if (error.code === 'INVALID_CREDENTIALS' || error.statusCode === 401) {
+        return '비밀번호가 올바르지 않아요.';
+      }
+      if (error.statusCode >= 500) {
+        return '잠시 문제가 생겼어요. 조금 뒤에 다시 해주세요.';
+      }
+    }
+    return '로그인하지 못했어요. 잠시 뒤에 다시 해주세요.';
+  };
+
   const handleDigitPress = async (digit: string) => {
     if (pin.length >= PIN_LENGTH) {
       return;
@@ -50,29 +69,43 @@ export default function ElderLoginScreen() {
     setPin(nextPin);
     setErrorMessage(null);
 
-    if (nextPin.length === PIN_LENGTH) {
-      try {
-        const loginId = await pinStorage.getElderLoginId();
-        if (!loginId) {
-          setErrorMessage('먼저 초기 설정이 필요합니다.');
-          setPin('');
-          setDigits(shuffleArray(DIGITS));
-          router.replace('/elder-signup' as Href);
-          return;
-        }
-        const deviceId = await getOrCreateDeviceId();
-        const tokens = await authService.loginWithPin({ loginId, pin: nextPin, deviceId });
-        await setAuthToken(tokens.accessToken);
-        await setRefreshToken(tokens.refreshToken);
-        setToken(tokens.accessToken);
-        setRole('ELDER');
-        router.replace('/elder-home' as Href);
-      } catch {
-        setPin('');
-        setDigits(shuffleArray(DIGITS));
-        setErrorMessage('비밀번호가 올바르지 않아요.');
-      }
+    if (nextPin.length !== PIN_LENGTH) {
+      return;
     }
+
+    const loginId = await pinStorage.getElderLoginId();
+    if (!loginId) {
+      setPin('');
+      setDigits(shuffleArray(DIGITS));
+      router.replace('/elder-signup' as Href);
+      return;
+    }
+
+    let tokens;
+    try {
+      const deviceId = await getOrCreateDeviceId();
+      tokens = await authService.loginWithPin({ loginId, pin: nextPin, deviceId });
+    } catch (error) {
+      setPin('');
+      setDigits(shuffleArray(DIGITS));
+      setErrorMessage(toLoginErrorMessage(error));
+      return;
+    }
+
+    // 로그인 자체는 성공했으므로, 이후 저장 실패는 비밀번호 오류로 안내하지 않는다.
+    try {
+      await setAuthToken(tokens.accessToken);
+      await setRefreshToken(tokens.refreshToken);
+    } catch {
+      setPin('');
+      setDigits(shuffleArray(DIGITS));
+      setErrorMessage('로그인 정보를 저장하지 못했어요. 다시 해주세요.');
+      return;
+    }
+
+    setToken(tokens.accessToken);
+    setRole('ELDER');
+    router.replace('/elder-home' as Href);
   };
 
   const handleDelete = () => {
@@ -220,6 +253,7 @@ const createStyles = ({ colors, status }: ReturnType<typeof useTheme>) =>
       backgroundColor: colors.primary,
     },
     errorText: {
+      textAlign: 'center',
       fontSize: 18,
       fontWeight: '500',
       color: status.error,
