@@ -8,7 +8,6 @@ export { default as MemberEdit } from './MemberEdit';
 export { default as Quiz } from './Quiz';
 export { default as Report } from './Report';
 export { default as Setting } from './Setting';
-export { default as ElderLogin } from './ElderLogin';
 export { default as ElderHome } from './ElderHome';
 export { default as ReportDetail } from './ReportDetail';
 export { default as MyPage } from './MyPage';

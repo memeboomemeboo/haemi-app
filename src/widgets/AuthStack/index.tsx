@@ -5,7 +5,7 @@ import { PinScreen, pinStorage } from '@/features/auth';
 import { authService, getErrorMessage } from '@/shared/api';
 import { useUserContext } from '@/shared/context/UserContext';
 import { colors } from '@/shared/constants';
-import { getOrCreateDeviceId } from '@/shared/lib';
+import { getOrCreateDeviceId, getRoleFromToken } from '@/shared/lib';
 import type { TokenResponse } from '@/shared/types';
 
 type AuthMode = 'loading' | 'signup' | 'pin-setup' | 'pin-login';
@@ -40,7 +40,7 @@ export default function AuthStack() {
     } catch (caught) {
       throw new Error(`로그인 정보 저장 실패: ${getErrorMessage(caught)}`);
     }
-    setRole('FAMILY');
+    setRole(getRoleFromToken(tokens.accessToken) ?? 'FAMILY');
     setToken(tokens.accessToken);
   }, [isSignupRegistered, setRole, setToken, signupDraft]);
   const loginWithPin = useCallback(async (pin: string) => {
@@ -49,7 +49,7 @@ export default function AuthStack() {
     const tokens = await authService.loginWithPin({ loginId, pin, deviceId: await getOrCreateDeviceId() });
     await authService.setToken(tokens.accessToken);
     await authService.setRefreshToken(tokens.refreshToken);
-    setRole('FAMILY');
+    setRole(getRoleFromToken(tokens.accessToken) ?? 'FAMILY');
     setToken(tokens.accessToken);
   }, [setRole, setToken]);
   if (mode === 'loading') return <View style={styles.loading}><ActivityIndicator color={colors.primary} /></View>;

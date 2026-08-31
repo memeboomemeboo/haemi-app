@@ -33,8 +33,6 @@ export {
 // 서비스
 export { authService } from './auth';
 export { groupService } from './group';
-export { elderService } from './elder';
-export type { ElderSignupRequest, ElderSignupResponse, ElderSessionRefreshRequest, ElderSessionRefreshResponse } from './elder';
 export { getElderHome } from './elderHome';
 export type { ElderHomeResponse, ElderHomeGreeting, ElderHomeMemory, ElderHomeTraining } from './elderHome';
 export { myPageService } from './my-page';
