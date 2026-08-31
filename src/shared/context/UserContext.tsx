@@ -5,6 +5,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { getAuthToken, authService, setOnUnauthorizedCallback } from '@/shared/api';
 import { initializeTestToken } from '@/shared/lib/auth';
+import { getRoleFromToken } from '@/shared/lib';
 import type { UserRole, Relation, Group } from '@/shared/types';
 
 interface UserContextType {
@@ -42,18 +43,32 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // 2. 저장된 토큰 복구
         const savedToken = await getAuthToken();
         if (savedToken) {
-          setTokenState(savedToken);
-          // 토큰이 유효한지 확인하고 사용자 정보 로드
-          try {
-            const meResponse = await authService.getMe();
-            if (meResponse.success && meResponse.data) {
-              setRoleState(meResponse.data.role || null);
-            }
-          } catch (error) {
-            // 토큰이 만료되었거나 유효하지 않음 - 로그아웃 처리
-            setTokenState(null);
+          // 역할은 액세스 토큰의 role 클레임으로 판별한다.
+          // 서버 조회 없이 결정되므로 어르신·보호자 모두 같은 경로로 복구된다.
+          const tokenRole = getRoleFromToken(savedToken);
+          if (!tokenRole) {
+            // 형식이 깨졌거나 우리가 모르는 role — 신뢰할 수 없으므로 미로그인 취급
             if (__DEV__) {
-              console.warn('Failed to hydrate user:', error);
+              console.warn('Failed to read role from saved token');
+            }
+            return;
+          }
+
+          setTokenState(savedToken);
+          setRoleState(tokenRole);
+
+          // 보호자만 프로필을 추가로 불러온다(어르신 전용 계정은 이 엔드포인트 접근 권한이 없다).
+          // 실패하더라도 토큰 자체는 유효하므로 로그인 상태를 유지한다.
+          if (tokenRole === 'FAMILY') {
+            try {
+              const meResponse = await authService.getMe();
+              if (meResponse.success && meResponse.data?.role) {
+                setRoleState(meResponse.data.role);
+              }
+            } catch (error) {
+              if (__DEV__) {
+                console.warn('Failed to load guardian profile during hydration:', error);
+              }
             }
           }
         }
