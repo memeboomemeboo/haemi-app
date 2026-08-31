@@ -3,9 +3,8 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { getAuthToken, setOnUnauthorizedCallback } from '@/shared/api';
+import { getAuthToken, authService, setOnUnauthorizedCallback } from '@/shared/api';
 import { initializeTestToken } from '@/shared/lib/auth';
-import { getRoleFromToken } from '@/shared/lib';
 import type { UserRole, Relation, Group } from '@/shared/types';
 
 interface UserContextType {
@@ -40,16 +39,29 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // 1. 개발 환경에서 테스트 토큰 초기화 (hydration 전)
         await initializeTestToken();
 
-        // 2. 저장된 토큰 복구 — role은 서버 왕복 없이 토큰 자체에서 읽는다
-        // (보호자/어르신 모두 같은 경로로 복구되고, 프로필 조회 실패가 로그아웃을 유발하지 않는다)
+        // 2. 저장된 토큰 복구
         const savedToken = await getAuthToken();
         if (savedToken) {
-          const role = getRoleFromToken(savedToken);
-          if (role) {
-            setTokenState(savedToken);
-            setRoleState(role);
-          } else if (__DEV__) {
-            console.warn('Failed to parse role from saved token');
+          setTokenState(savedToken);
+          const savedRole = await authService.getStoredRole();
+          if (savedRole) {
+            setRoleState(savedRole);
+            return;
+          }
+          // 기존 설치 데이터는 보호자 프로필 조회로 한 번 마이그레이션한다.
+          try {
+            const meResponse = await authService.getMe();
+            if (meResponse.success && meResponse.data) {
+              const hydratedRole = meResponse.data.role || null;
+              setRoleState(hydratedRole);
+              await authService.setStoredRole(hydratedRole);
+            }
+          } catch (error) {
+            // 토큰이 만료되었거나 유효하지 않음 - 로그아웃 처리
+            setTokenState(null);
+            if (__DEV__) {
+              console.warn('Failed to hydrate role during startup:', error);
+            }
           }
         }
       } catch (error) {
@@ -85,6 +97,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const logout = useCallback(() => {
+    void authService.setStoredRole(null);
     setTokenState(null);
     setRoleState(null);
     setRelationState(null);
