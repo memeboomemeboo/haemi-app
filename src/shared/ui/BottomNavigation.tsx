@@ -37,7 +37,7 @@ const TAB_ROUTES: Record<NavigationTab, Href> = {
   Setting: '/my-page' as Href,
 };
 
-const TABS: NavigationTab[] = ['Home', 'Album', 'Report', 'Setting'];
+const TABS: NavigationTab[] = ['Home', 'Memory', 'Report', 'Setting'];
 
 const ACTIVE_COLOR = '#fd6941';
 const INACTIVE_COLOR = '#dadbdc';
