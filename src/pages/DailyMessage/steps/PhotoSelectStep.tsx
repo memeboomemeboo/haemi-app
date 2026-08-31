@@ -21,6 +21,7 @@ export function PhotoSelectStep({ memoryId, onPicked, onCancelled }: PhotoSelect
   useEffect(() => {
     if (hasLaunchedRef.current) return;
     hasLaunchedRef.current = true;
+    const controller = new AbortController();
 
     const pickAndSendPhoto = async () => {
       try {
@@ -49,21 +50,31 @@ export function PhotoSelectStep({ memoryId, onPicked, onCancelled }: PhotoSelect
 
         const { mediaRefId } = await uploadMediaFile({
           uri: asset.uri,
-          mediaType: 'ELDER_RESPONSE_IMAGE',
+          mediaType: 'RESPONSE_IMAGE',
           filename,
           contentType,
           sizeBytes: asset.fileSize,
+          signal: controller.signal,
         });
-        await elderMemoryResponseService.postImageResponse(memoryId, mediaRefId);
+        if (controller.signal.aborted) return;
+        await elderMemoryResponseService.postImageResponse(
+          memoryId,
+          mediaRefId,
+          controller.signal,
+        );
 
+        if (controller.signal.aborted) return;
         onPicked();
       } catch {
+        if (controller.signal.aborted) return;
         Alert.alert('사진을 보내지 못했어요', '잠시 후 다시 시도해주세요.');
         onCancelled();
       }
     };
 
     void pickAndSendPhoto();
+
+    return () => controller.abort();
   }, [memoryId, onCancelled, onPicked]);
 
   return (

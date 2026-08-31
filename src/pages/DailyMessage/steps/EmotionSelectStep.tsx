@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { elderMemoryResponseService, type MemoryResponseEmotion } from '@/shared/api';
@@ -32,6 +32,9 @@ export function EmotionSelectStep({ memoryId, onSent }: EmotionSelectStepProps) 
   const styles = createStyles(colors);
   const [selected, setSelected] = useState<string[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const sendControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => () => sendControllerRef.current?.abort(), []);
 
   const toggleEmotion = (key: string) => {
     setSelected((current) => {
@@ -51,13 +54,26 @@ export function EmotionSelectStep({ memoryId, onSent }: EmotionSelectStepProps) 
     );
 
     setIsSending(true);
+    const controller = new AbortController();
+    sendControllerRef.current = controller;
     try {
-      await elderMemoryResponseService.postEmotionResponse(memoryId, emotions);
+      await elderMemoryResponseService.postEmotionResponse(
+        memoryId,
+        emotions,
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
       onSent();
     } catch {
+      if (controller.signal.aborted) return;
       Alert.alert('전송하지 못했어요', '잠시 후 다시 시도해주세요.');
     } finally {
-      setIsSending(false);
+      if (sendControllerRef.current === controller) {
+        sendControllerRef.current = null;
+      }
+      if (!controller.signal.aborted) {
+        setIsSending(false);
+      }
     }
   };
 

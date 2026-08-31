@@ -21,10 +21,15 @@ export interface MemoryResponse {
 
 export const elderMemoryResponseService = {
   /** 음성으로 이야기 전하기 — mediaRefId는 shared/api/media.ts의 업로드 흐름으로 먼저 발급받는다 */
-  async postVoiceResponse(memoryId: string, mediaRefId: string): Promise<string> {
+  async postVoiceResponse(
+    memoryId: string,
+    mediaRefId: string,
+    signal?: AbortSignal,
+  ): Promise<string> {
     const response = await post<SwaggerApiResponse<string>>(
       `/elder/memories/${memoryId}/responses/voice`,
-      { mediaRefId }
+      { mediaRefId },
+      { signal },
     );
     return response.data;
   },
@@ -38,18 +43,28 @@ export const elderMemoryResponseService = {
   },
 
   /** 사진으로 이야기 전하기 — mediaRefId는 shared/api/media.ts의 업로드 흐름으로 먼저 발급받는다 */
-  async postImageResponse(memoryId: string, mediaRefId: string): Promise<string> {
+  async postImageResponse(
+    memoryId: string,
+    mediaRefId: string,
+    signal?: AbortSignal,
+  ): Promise<string> {
     const response = await post<SwaggerApiResponse<string>>(
       `/elder/memories/${memoryId}/responses/image`,
-      { mediaRefId }
+      { mediaRefId },
+      { signal },
     );
     return response.data;
   },
 
-  async postEmotionResponse(memoryId: string, emotions: MemoryResponseEmotion[]): Promise<string> {
+  async postEmotionResponse(
+    memoryId: string,
+    emotions: MemoryResponseEmotion[],
+    signal?: AbortSignal,
+  ): Promise<string> {
     const response = await post<SwaggerApiResponse<string>>(
       `/elder/memories/${memoryId}/responses/emotion`,
-      { emotions }
+      { emotions },
+      { signal },
     );
     return response.data;
   },

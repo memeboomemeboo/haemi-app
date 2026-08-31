@@ -1,14 +1,19 @@
 import { post } from './client';
 import type { SwaggerApiResponse } from '@/shared/types';
 
-/** 서버 MediaType — 업로드 대상별로 값이 다르다 (프로필 사진 외 값은 백엔드 확정 전 추정치) */
-export type MediaType = 'PROFILE_IMAGE' | 'ELDER_RESPONSE_VOICE' | 'ELDER_RESPONSE_IMAGE';
+/** 백엔드 MediaType enum과 동일하게 유지한다. */
+export type MediaType =
+  | 'MEMORY_IMAGE'
+  | 'PROFILE_IMAGE'
+  | 'RESPONSE_VOICE'
+  | 'RESPONSE_IMAGE';
 
 export interface RequestMediaUploadInput {
   mediaType: MediaType;
   originalFilename: string;
   contentType: string;
-  declaredSizeBytes?: number;
+  declaredSizeBytes: number;
+  declaredDurationSeconds?: number;
 }
 
 export interface RequestMediaUploadResponse {
@@ -20,9 +25,14 @@ export interface RequestMediaUploadResponse {
 
 /** presigned URL 발급 요청 — 실제 파일 업로드 전 호출 */
 export async function requestMediaUpload(
-  data: RequestMediaUploadInput
+  data: RequestMediaUploadInput,
+  signal?: AbortSignal,
 ): Promise<RequestMediaUploadResponse> {
-  const response = await post<SwaggerApiResponse<RequestMediaUploadResponse>>('/media/upload-request', data);
+  const response = await post<SwaggerApiResponse<RequestMediaUploadResponse>>(
+    '/media/upload-request',
+    data,
+    { signal },
+  );
   return response.data;
 }
 
@@ -41,8 +51,10 @@ export async function uploadMediaBytes(presignedUrl: string, uri: string, conten
 }
 
 /** 업로드 확정 — 완료된 mediaRefId를 서비스에 알리고 서빙 URL을 받는다 */
-export async function confirmMediaUpload(mediaRefId: string): Promise<string> {
-  const response = await post<SwaggerApiResponse<string>>(`/media/${mediaRefId}/confirm`);
+export async function confirmMediaUpload(mediaRefId: string, signal?: AbortSignal): Promise<string> {
+  const response = await post<SwaggerApiResponse<string>>(`/media/${mediaRefId}/confirm`, undefined, {
+    signal,
+  });
   return response.data;
 }
 
@@ -56,19 +68,34 @@ export async function uploadMediaFile({
   filename,
   contentType,
   sizeBytes,
+  durationSeconds,
+  signal,
 }: {
   uri: string;
   mediaType: MediaType;
   filename: string;
   contentType: string;
   sizeBytes?: number;
+  durationSeconds?: number;
+  signal?: AbortSignal;
 }): Promise<{ mediaRefId: string; servingUrl?: string }> {
-  const upload = await requestMediaUpload({
-    mediaType,
-    originalFilename: filename,
-    contentType,
-    declaredSizeBytes: sizeBytes,
-  });
+  const fileBlob = await (await fetch(uri, { signal })).blob();
+  const declaredSizeBytes = sizeBytes ?? fileBlob.size;
+
+  if (declaredSizeBytes <= 0) {
+    throw new Error('File size must be greater than zero');
+  }
+
+  const upload = await requestMediaUpload(
+    {
+      mediaType,
+      originalFilename: filename,
+      contentType,
+      declaredSizeBytes,
+      declaredDurationSeconds: durationSeconds,
+    },
+    signal,
+  );
 
   if (upload.duplicate) {
     return { mediaRefId: upload.mediaRefId, servingUrl: upload.servingUrl };
@@ -78,8 +105,17 @@ export async function uploadMediaFile({
     throw new Error('Missing upload URL');
   }
 
-  await uploadMediaBytes(upload.presignedUrl, uri, contentType);
-  const servingUrl = await confirmMediaUpload(upload.mediaRefId);
+  const putResponse = await fetch(upload.presignedUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType },
+    body: fileBlob,
+    signal,
+  });
+
+  if (!putResponse.ok) {
+    throw new Error('Upload failed');
+  }
+  const servingUrl = await confirmMediaUpload(upload.mediaRefId, signal);
 
   return { mediaRefId: upload.mediaRefId, servingUrl };
 }

@@ -4,7 +4,7 @@ import {
   setAudioModeAsync,
   useAudioRecorder,
 } from 'expo-audio';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { elderMemoryResponseService, uploadMediaFile } from '@/shared/api';
@@ -15,6 +15,7 @@ const VOICE_RECORDING_OPTIONS = {
   ...RecordingPresets.HIGH_QUALITY,
   directory: 'document' as const,
 };
+const MAX_RECORDING_SECONDS = 60;
 
 function formatDuration(seconds: number): string {
   const totalSeconds = Math.max(0, Math.floor(seconds));
@@ -39,21 +40,60 @@ export function VoiceRecordStep({ memoryId, onSent }: VoiceRecordStepProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [recordingStartedAt, setRecordingStartedAt] = useState<number | null>(null);
   const [recordedUri, setRecordedUri] = useState<string | null>(null);
+  const isStoppingRef = useRef(false);
+  const sendControllerRef = useRef<AbortController | null>(null);
+
+  const stopRecording = useCallback(async () => {
+    if (isStoppingRef.current) return;
+    isStoppingRef.current = true;
+
+    try {
+      await audioRecorder.stop();
+      const uri = audioRecorder.uri;
+
+      try {
+        await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+      } finally {
+        setIsRecording(false);
+        setRecordingStartedAt(null);
+        setHasRecorded(uri !== null);
+        setRecordedUri(uri);
+      }
+
+      if (!uri) {
+        throw new Error('Recorded file URI is missing');
+      }
+    } finally {
+      isStoppingRef.current = false;
+    }
+  }, [audioRecorder]);
 
   useEffect(() => {
     if (!isRecording || recordingStartedAt === null) return undefined;
 
     const timerId = setInterval(() => {
-      setElapsedSeconds((Date.now() - recordingStartedAt) / 1000);
+      const nextElapsedSeconds = (Date.now() - recordingStartedAt) / 1000;
+      if (nextElapsedSeconds >= MAX_RECORDING_SECONDS) {
+        setElapsedSeconds(MAX_RECORDING_SECONDS);
+        void stopRecording().catch(() =>
+          Alert.alert('녹음을 저장하지 못했어요', '잠시 후 다시 시도해주세요.'),
+        );
+        return;
+      }
+      setElapsedSeconds(nextElapsedSeconds);
     }, 100);
 
     return () => clearInterval(timerId);
-  }, [isRecording, recordingStartedAt]);
+  }, [isRecording, recordingStartedAt, stopRecording]);
 
   useEffect(
     () => () => {
+      sendControllerRef.current?.abort();
       if (audioRecorder.isRecording) {
-        void audioRecorder.stop().catch(() => undefined);
+        void audioRecorder
+          .stop()
+          .then(() => setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }))
+          .catch(() => undefined);
       }
     },
     [audioRecorder],
@@ -73,22 +113,8 @@ export function VoiceRecordStep({ memoryId, onSent }: VoiceRecordStepProps) {
     setElapsedSeconds(0);
     setRecordingStartedAt(Date.now());
     setHasRecorded(false);
+    setRecordedUri(null);
     setIsRecording(true);
-  };
-
-  const stopRecording = async () => {
-    await audioRecorder.stop();
-    const uri = audioRecorder.uri;
-
-    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
-    setIsRecording(false);
-    setRecordingStartedAt(null);
-    setHasRecorded(uri !== null);
-    setRecordedUri(uri);
-
-    if (!uri) {
-      throw new Error('Recorded file URI is missing');
-    }
   };
 
   const handleMicPress = () => {
@@ -113,19 +139,34 @@ export function VoiceRecordStep({ memoryId, onSent }: VoiceRecordStepProps) {
     if (!recordedUri) return;
 
     setIsSending(true);
+    const controller = new AbortController();
+    sendControllerRef.current = controller;
     try {
       const { mediaRefId } = await uploadMediaFile({
         uri: recordedUri,
-        mediaType: 'ELDER_RESPONSE_VOICE',
+        mediaType: 'RESPONSE_VOICE',
         filename: `voice-${Date.now()}.m4a`,
-        contentType: 'audio/m4a',
+        contentType: 'audio/mp4',
+        durationSeconds: Math.max(1, Math.ceil(elapsedSeconds)),
+        signal: controller.signal,
       });
-      await elderMemoryResponseService.postVoiceResponse(memoryId, mediaRefId);
+      await elderMemoryResponseService.postVoiceResponse(
+        memoryId,
+        mediaRefId,
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
       onSent();
     } catch {
+      if (controller.signal.aborted) return;
       Alert.alert('전송하지 못했어요', '잠시 후 다시 시도해주세요.');
     } finally {
-      setIsSending(false);
+      if (sendControllerRef.current === controller) {
+        sendControllerRef.current = null;
+      }
+      if (!controller.signal.aborted) {
+        setIsSending(false);
+      }
     }
   };
 

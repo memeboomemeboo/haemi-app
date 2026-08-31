@@ -36,6 +36,8 @@ export default function DailyMessageScreen() {
   const { colors } = useTheme();
   const { memoryId } = useLocalSearchParams<{ memoryId?: string }>();
   const [step, setStep] = useState<Step>('method');
+  const handleSent = useCallback(() => setStep('done'), []);
+  const handlePhotoCancelled = useCallback(() => setStep('method'), []);
 
   const handleBack = useCallback(() => {
     if (step === 'method') {
@@ -65,16 +67,16 @@ export default function DailyMessageScreen() {
               <MethodSelectStep onNext={(method) => setStep(METHOD_STEP[method])} />
             )}
             {step === 'voice' && (
-              <VoiceRecordStep memoryId={memoryId} onSent={() => setStep('done')} />
+              <VoiceRecordStep memoryId={memoryId} onSent={handleSent} />
             )}
             {step === 'emotion' && (
-              <EmotionSelectStep memoryId={memoryId} onSent={() => setStep('done')} />
+              <EmotionSelectStep memoryId={memoryId} onSent={handleSent} />
             )}
             {step === 'photo' && (
               <PhotoSelectStep
                 memoryId={memoryId}
-                onPicked={() => setStep('done')}
-                onCancelled={() => setStep('method')}
+                onPicked={handleSent}
+                onCancelled={handlePhotoCancelled}
               />
             )}
             {step === 'done' && <DoneStep onRestart={() => router.replace('/')} />}
