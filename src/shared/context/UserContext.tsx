@@ -5,6 +5,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { getAuthToken, authService, setOnUnauthorizedCallback } from '@/shared/api';
 import { initializeTestToken } from '@/shared/lib/auth';
+import { getRoleFromToken } from '@/shared/lib';
 import type { UserRole, Relation, Group } from '@/shared/types';
 
 interface UserContextType {
@@ -42,18 +43,29 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // 2. 저장된 토큰 복구
         const savedToken = await getAuthToken();
         if (savedToken) {
-          setTokenState(savedToken);
-          // 토큰이 유효한지 확인하고 사용자 정보 로드
-          try {
-            const meResponse = await authService.getMe();
-            if (meResponse.success && meResponse.data) {
-              setRoleState(meResponse.data.role || null);
-            }
-          } catch (error) {
-            // 토큰이 만료되었거나 유효하지 않음 - 로그아웃 처리
-            setTokenState(null);
+          const tokenRole = getRoleFromToken(savedToken);
+
+          if (!tokenRole) {
             if (__DEV__) {
-              console.warn('Failed to hydrate user:', error);
+              console.warn('Failed to read role from saved token');
+            }
+            return;
+          }
+
+          setTokenState(savedToken);
+          setRoleState(tokenRole);
+
+          // 보호자 프로필만 추가로 불러온다. 어르신 토큰은 이 엔드포인트 권한이 없다.
+          if (tokenRole === 'FAMILY') {
+            try {
+              const meResponse = await authService.getMe();
+              if (meResponse.success && meResponse.data?.role) {
+                setRoleState(meResponse.data.role);
+              }
+            } catch (error) {
+              if (__DEV__) {
+                console.warn('Failed to load guardian profile during hydration:', error);
+              }
             }
           }
         }
