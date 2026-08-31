@@ -1,6 +1,6 @@
 import { View, ActivityIndicator } from 'react-native';
 import { useEffect } from 'react';
-import HomeScreen from '@/pages/Home';
+import CaregiverHomeScreen from '@/pages/CaregiverHome';
 import ElderHomeScreen from '@/pages/ElderHome';
 import AuthStack from '@/pages/Auth/AuthStack';
 import { useUserGroup } from '@/entities/user';
@@ -42,5 +42,5 @@ export default function RootScreen() {
     return <ElderHomeScreen />;
   }
 
-  return <HomeScreen />;
+  return <CaregiverHomeScreen />;
 }
