@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
+import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -30,6 +31,12 @@ export default function QuizScreen() {
   const handleComplete = () => {
     router.replace('/elder-home' as Href);
   };
+
+  useEffect(() => {
+    if (mode === 'completed') {
+      router.replace('/elder-home' as Href);
+    }
+  }, [mode, router]);
 
   return (
     <View style={styles.container}>
