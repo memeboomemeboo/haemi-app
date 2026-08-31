@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import SignupScreen, { type GuardianSignupDraft } from '@/pages/Auth/SignupScreen';
+import ElderLoginScreen from '@/pages/ElderLogin';
 import { PinScreen, pinStorage } from '@/features/auth';
 import { authService, getErrorMessage } from '@/shared/api';
 import { useUserContext } from '@/shared/context/UserContext';
@@ -8,13 +9,22 @@ import { colors } from '@/shared/constants';
 import { getOrCreateDeviceId } from '@/shared/lib';
 import type { TokenResponse } from '@/shared/types';
 
-type AuthMode = 'loading' | 'signup' | 'pin-setup' | 'pin-login';
+type AuthMode = 'loading' | 'signup' | 'pin-setup' | 'pin-login' | 'elder-login';
 export default function AuthStack() {
   const [mode, setMode] = useState<AuthMode>('loading');
   const [signupDraft, setSignupDraft] = useState<GuardianSignupDraft | null>(null);
   const [isSignupRegistered, setSignupRegistered] = useState(false);
   const { setToken, setRole } = useUserContext();
-  useEffect(() => { void pinStorage.hasLoginId().then((hasLoginId) => setMode(hasLoginId ? 'pin-login' : 'signup')); }, []);
+  // 이 기기에 어르신 아이디가 저장돼 있으면 어르신 PIN 로그인을 먼저 보여준다.
+  useEffect(() => {
+    void (async () => {
+      if (await pinStorage.hasElderLoginId()) {
+        setMode('elder-login');
+        return;
+      }
+      setMode((await pinStorage.hasLoginId()) ? 'pin-login' : 'signup');
+    })();
+  }, []);
   const finishSignup = useCallback(async (pin: string) => {
     if (!signupDraft) throw new Error('회원가입 정보가 없습니다.');
     if (!isSignupRegistered) {
@@ -53,6 +63,7 @@ export default function AuthStack() {
     setToken(tokens.accessToken);
   }, [setRole, setToken]);
   if (mode === 'loading') return <View style={styles.loading}><ActivityIndicator color={colors.primary} /></View>;
+  if (mode === 'elder-login') return <ElderLoginScreen />;
   if (mode === 'pin-setup') return <PinScreen mode="setup" onComplete={finishSignup} onBackToSignup={() => { setSignupRegistered(false); setMode('signup'); }} />;
   if (mode === 'pin-login') return <PinScreen mode="login" onComplete={loginWithPin} onBackToSignup={() => setMode('signup')} />;
   return <SignupScreen onContinue={(draft) => { setSignupDraft(draft); setSignupRegistered(false); setMode('pin-setup'); }} onLoginPress={() => setMode('pin-login')} />;
