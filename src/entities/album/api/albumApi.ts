@@ -1,40 +1,78 @@
-import { apiClient } from '@/shared/api';
-import type { AlbumItem, NewAlbumItemInput } from '../model/types';
-import { addAlbumItem, findAlbumItem, getAlbumItems } from './store';
+import { guardianMemoryService, myPageService } from '@/shared/api';
+import type { GuardianMemoryDetail, GuardianMemorySummary } from '@/shared/api';
+import { formatRelativeKoreanDate } from '@/shared/lib';
+import type { AlbumElderOption, AlbumItem, NewAlbumItemInput } from '../model/types';
 
-/** API 서버가 준비되면 false로 바꾸면 실제 엔드포인트로 연결된다. */
-const USE_MOCK = true;
+/** 보호자가 접근 가능한 어르신 목록 — 앨범 필터 탭과 등록 화면의 대상 선택에 쓰인다 */
+export async function fetchAlbumElders(): Promise<AlbumElderOption[]> {
+  const profile = await myPageService.getProfile();
+  return profile.elders.map((elder) => ({ id: elder.elderId, name: elder.name }));
+}
 
-export async function fetchAlbumItems(): Promise<AlbumItem[]> {
-  if (USE_MOCK) {
-    return getAlbumItems();
-  }
-  return apiClient.get<AlbumItem[]>('/albums');
+function toAlbumItem(memory: GuardianMemorySummary, elderName: string): AlbumItem {
+  return {
+    id: memory.id,
+    elderId: memory.elderId,
+    title: memory.title,
+    elderName,
+    location: memory.place,
+    photoUrl: memory.thumbnailKey,
+    year: `${memory.memoryYear}년`,
+    responded: memory.responded,
+    senderRelation: memory.creatorRoleLabel,
+  };
+}
+
+function toAlbumItemDetail(memory: GuardianMemoryDetail, elderName: string): AlbumItem {
+  return {
+    id: memory.id,
+    elderId: memory.elderId,
+    title: memory.title,
+    elderName,
+    location: memory.place,
+    year: `${memory.memoryYear}년`,
+    photos: memory.imageKeys,
+    memo: memory.memo,
+    responded: memory.responded,
+    senderRelation: memory.creatorRoleLabel,
+    conversation: {
+      question: memory.message,
+      askedRelativeTime: formatRelativeKoreanDate(memory.createdAt),
+    },
+  };
+}
+
+/** elderId를 지정하면 해당 어르신 추억만, 미지정 시 접근 가능한 전 어르신 추억을 통합('전체' 탭) 조회한다 */
+export async function fetchAlbumItems(elderId?: string): Promise<AlbumItem[]> {
+  const [memories, elders] = await Promise.all([
+    guardianMemoryService.getMemories(elderId),
+    fetchAlbumElders(),
+  ]);
+  const elderNameById = new Map(elders.map((elder) => [elder.id, elder.name]));
+  return memories.map((memory) => toAlbumItem(memory, elderNameById.get(memory.elderId) ?? ''));
 }
 
 export async function fetchAlbumDetail(id: string): Promise<AlbumItem | null> {
-  if (USE_MOCK) {
-    return findAlbumItem(id) ?? null;
-  }
-  return apiClient.get<AlbumItem>(`/albums/${id}`);
+  const [memory, elders] = await Promise.all([
+    guardianMemoryService.getMemoryDetail(id),
+    fetchAlbumElders(),
+  ]);
+  const elderName = elders.find((elder) => elder.id === memory.elderId)?.name ?? '';
+  return toAlbumItemDetail(memory, elderName);
 }
 
-export async function createAlbumItem(input: NewAlbumItemInput): Promise<AlbumItem> {
-  if (USE_MOCK) {
-    const item: AlbumItem = {
-      id: `album-${Date.now()}`,
-      title: input.title,
-      elderName: input.elderName,
-      year: input.year,
-      memo: input.memo,
-      photos: input.photos,
-      photoUrl: input.photos?.[0],
-      conversation: input.question
-        ? { question: input.question, askedRelativeTime: '방금 전' }
-        : undefined,
-    };
-    addAlbumItem(item);
-    return item;
-  }
-  return apiClient.post<AlbumItem>('/albums', input);
+/** 등록 화면에는 연도 입력만 있어 월은 아직 받을 수 없다 — 1월로 고정한다 */
+const DEFAULT_MEMORY_MONTH = 1;
+
+export async function createAlbumItem(input: NewAlbumItemInput): Promise<string> {
+  return guardianMemoryService.createMemory({
+    elderId: input.elderId,
+    title: input.title,
+    memo: input.memo,
+    message: input.question,
+    memoryYear: Number(input.year) || new Date().getFullYear(),
+    memoryMonth: DEFAULT_MEMORY_MONTH,
+    place: input.place,
+    mediaRefIds: input.mediaRefIds,
+  });
 }

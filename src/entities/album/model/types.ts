@@ -20,20 +20,29 @@ export interface AlbumConversation {
   question: string;
   /** 질문을 남긴 상대 시간 (예: 3일전) */
   askedRelativeTime: string;
-  /** 어르신의 답변 — 아직 답하지 않았으면 없음 */
+  /**
+   * 어르신의 답변 — 실제로는 아직 답변 내용을 조회하는 API가 없어 항상 비어 있다.
+   * responded 값으로 답변 여부만 알 수 있고, 내용은 백엔드 연동 전까지 표시할 수 없다.
+   */
   answer?: AlbumConversationAnswer;
+}
+
+/** 보호자가 선택 가능한 어르신 (앨범 필터 탭, 등록 화면 대상 선택에 사용) */
+export interface AlbumElderOption {
+  id: string;
+  name: string;
 }
 
 /** 기억 앨범 항목 */
 export interface AlbumItem {
   id: string;
+  /** 이 추억을 전달받는 어르신 id */
+  elderId: string;
   /** 카드 제목 (예: 어린 시절 고향) */
   title: string;
   /** 이 추억을 전달받는 어르신 이름 (예: 박영호) — 상단 필터 탭 기준 */
   elderName: string;
-  /** 표시용 날짜 (예: 1980.04.) — 등록 화면에서는 연도만 받으므로 없을 수 있다 */
-  date?: string;
-  /** 장소 (예: 구지면) — 등록 화면에 입력 필드가 없으므로 없을 수 있다 */
+  /** 장소 */
   location?: string;
   /** 사진 URL — 없으면 위젯이 기본 샘플 이미지를 보여준다 */
   photoUrl?: string;
@@ -43,6 +52,8 @@ export interface AlbumItem {
   photos?: string[];
   /** 보호자 메모 */
   memo?: string;
+  /** 어르신이 실제로 이 추억에 응답했는지 여부 */
+  responded?: boolean;
   /** 주고 받은 이야기 스레드 — 어르신이 답변하면 그리드 카드에 "답변" 배지가 표시된다 */
   conversation?: AlbumConversation;
   /** 이 추억을 남긴 가족과의 관계 (예: 딸, 아들) — 어르신 상세 화면 프로필에 표시 */
@@ -53,11 +64,13 @@ export interface AlbumItem {
 
 /** 추억 등록 화면에서 새로 만들 때 필요한 입력 값 */
 export interface NewAlbumItemInput {
+  elderId: string;
   title: string;
-  elderName: string;
   year: string;
   memo?: string;
-  photos?: string[];
-  /** 어르신께 여쭤볼 한마디 — 있으면 답변 대기 상태의 대화가 함께 생성된다 */
-  question?: string;
+  /** 업로드를 마치고 발급받은 mediaRefId 목록 */
+  mediaRefIds?: string[];
+  /** 어르신께 여쭤볼 한마디 */
+  question: string;
+  place?: string;
 }

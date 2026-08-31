@@ -37,6 +37,13 @@ export { getElderHome } from './elderHome';
 export type { ElderHomeResponse, ElderHomeGreeting, ElderHomeMemory, ElderHomeTraining } from './elderHome';
 export { elderMemoryService } from './elderMemory';
 export type { ElderMemorySummary, ElderMemoryDetail } from './elderMemory';
+export { guardianMemoryService } from './guardianMemory';
+export type {
+  GuardianMemorySummary,
+  GuardianMemoryDetail,
+  CreateGuardianMemoryRequest,
+  UpdateGuardianMemoryRequest,
+} from './guardianMemory';
 export { elderMemoryResponseService } from './elderMemoryResponse';
 export type {
   MemoryResponse,

@@ -2,7 +2,7 @@ import { post } from './client';
 import type { SwaggerApiResponse } from '@/shared/types';
 
 /** 서버 MediaType — 업로드 대상별로 값이 다르다 (프로필 사진 외 값은 백엔드 확정 전 추정치) */
-export type MediaType = 'PROFILE_IMAGE' | 'ELDER_RESPONSE_VOICE' | 'ELDER_RESPONSE_IMAGE';
+export type MediaType = 'PROFILE_IMAGE' | 'ELDER_RESPONSE_VOICE' | 'ELDER_RESPONSE_IMAGE' | 'MEMORY_IMAGE';
 
 export interface RequestMediaUploadInput {
   mediaType: MediaType;

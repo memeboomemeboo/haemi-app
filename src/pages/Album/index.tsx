@@ -3,7 +3,7 @@ import { useCallback, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useAlbumFilter, useAlbumItems } from '@/entities/album';
+import { useAlbumElders, useAlbumFilter, useAlbumItems } from '@/entities/album';
 import { useTheme } from '@/shared/hooks';
 import { BottomNavigation, Fab } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
@@ -16,19 +16,19 @@ export default function AlbumScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { data: items = [], isLoading, refetch } = useAlbumItems();
-  // 어르신별 필터링 (Figma node 1325:8142 / 1386:2794) — 등장하는 이름만큼 탭이 생긴다
-  const { filter, setFilter, filterOptions, visibleItems } = useAlbumFilter(items);
+  const { data: elders } = useAlbumElders();
+  // 어르신별 필터링 (Figma node 1325:8142 / 1386:2794) — 접근 가능한 어르신 수만큼 탭이 생긴다
+  const { filter, setFilter, filterOptions, selectedElderId } = useAlbumFilter(elders);
+  const { data: items, isLoading, refetch } = useAlbumItems(selectedElderId);
 
-  // 등록 화면에서 저장하고 돌아왔을 때 새 추억이 바로 보이도록 화면에 포커스될 때마다 다시 불러온다
+  // 등록 화면에서 저장하고 돌아왔을 때, 또는 필터 탭을 바꿨을 때 다시 불러온다
   useFocusEffect(
     useCallback(() => {
       refetch();
     }, [refetch]),
   );
 
-  // API 연결 후에도 그대로 동작: 로딩이 끝났는데 사진이 없으면 빈 화면 표시
-  const isEmpty = !isLoading && (visibleItems?.length ?? 0) === 0;
+  const isEmpty = !isLoading && (items?.length ?? 0) === 0;
 
   return (
     <View style={styles.container}>
@@ -50,7 +50,7 @@ export default function AlbumScreen() {
           showsVerticalScrollIndicator={false}
         >
           <AlbumGrid
-            items={visibleItems}
+            items={items ?? []}
             onItemPress={(item) => router.push(`/album/${item.id}` as Href)}
           />
         </ScrollView>
