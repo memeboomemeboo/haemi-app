@@ -45,6 +45,10 @@ export interface AlbumItem {
   memo?: string;
   /** 주고 받은 이야기 스레드 — 어르신이 답변하면 그리드 카드에 "답변" 배지가 표시된다 */
   conversation?: AlbumConversation;
+  /** 이 추억을 남긴 가족과의 관계 (예: 딸, 아들) — 어르신 상세 화면 프로필에 표시 */
+  senderRelation?: string;
+  /** 목록 카드에 표시할 태그 (예: 등장 인물) */
+  tags?: string[];
 }
 
 /** 추억 등록 화면에서 새로 만들 때 필요한 입력 값 */

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import SignupScreen, { type GuardianSignupDraft } from '@/pages/Auth/SignupScreen';
+import SignupScreen, { type GuardianSignupDraft } from './SignupScreen';
 import { PinScreen, pinStorage } from '@/features/auth';
 import { authService, getErrorMessage } from '@/shared/api';
 import { useUserContext } from '@/shared/context/UserContext';

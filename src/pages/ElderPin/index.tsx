@@ -218,8 +218,9 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   padSpecialButton: {
+    width: 62,
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   padSpecialButtonText: {
     fontSize: 24,

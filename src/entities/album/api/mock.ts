@@ -10,6 +10,8 @@ export const MOCK_ALBUM_ITEMS: AlbumItem[] = [
     year: '1975년',
     memo: '가족끼리 나들이에 갔던 날이에요',
     photos: ['photo-1-1', 'photo-1-2', 'photo-1-3', 'photo-1-4', 'photo-1-5'],
+    senderRelation: '딸',
+    tags: ['아버지', '어머니', '할머니'],
     conversation: {
       question: '이 사진, 기억나세요?',
       askedRelativeTime: '3일전',
@@ -32,6 +34,8 @@ export const MOCK_ALBUM_ITEMS: AlbumItem[] = [
     year: '1978년',
     memo: '아버지가 뒤에서 잡아주셨던 자전거예요',
     photos: ['photo-2-1', 'photo-2-2'],
+    senderRelation: '아들',
+    tags: ['아버지'],
     conversation: {
       question: '누가 자전거 타는 법을 가르쳐주셨어요?',
       askedRelativeTime: '5일전',
@@ -58,6 +62,8 @@ export const MOCK_ALBUM_ITEMS: AlbumItem[] = [
     year: '2005년',
     memo: '첫 손주를 안았던 날, 정말 기뻤어요',
     photos: ['photo-4-1'],
+    senderRelation: '딸',
+    tags: ['손주'],
     conversation: {
       question: '손주를 처음 안았을 때 기분이 어떠셨어요?',
       askedRelativeTime: '4일전',

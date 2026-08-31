@@ -4,18 +4,26 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/shared/hooks';
-import { DailyMessageHeader } from './DailyMessageHeader';
-import { MethodSelectStep } from './steps/MethodSelectStep';
+import { BackHeader } from '@/shared/ui';
+import { MethodSelectStep, type DailyMessageMethod } from './steps/MethodSelectStep';
 import { VoiceRecordStep } from './steps/VoiceRecordStep';
 import { EmotionSelectStep } from './steps/EmotionSelectStep';
+import { PhotoSelectStep } from './steps/PhotoSelectStep';
 import { DoneStep } from './steps/DoneStep';
 
-type Step = 'method' | 'voice' | 'emotion' | 'done';
+type Step = 'method' | 'voice' | 'emotion' | 'photo' | 'done';
 
 const STEP_TITLE: Record<Exclude<Step, 'done'>, string> = {
   method: '이야기 전하기',
   voice: '이야기 말하기',
   emotion: '마음 전하기',
+  photo: '사진 고르기',
+};
+
+const METHOD_STEP: Record<DailyMessageMethod, Step> = {
+  voice: 'voice',
+  emotion: 'emotion',
+  photo: 'photo',
 };
 
 /**
@@ -45,15 +53,20 @@ export default function DailyMessageScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {step !== 'done' && <DailyMessageHeader title={STEP_TITLE[step]} onBack={handleBack} />}
+        {step !== 'done' && (
+          <BackHeader title={STEP_TITLE[step]} onBack={handleBack} style={styles.header} />
+        )}
         {step === 'method' && (
-          <MethodSelectStep
-            onSelectVoice={() => setStep('voice')}
-            onSelectEmotion={() => setStep('emotion')}
-          />
+          <MethodSelectStep onNext={(method) => setStep(METHOD_STEP[method])} />
         )}
         {step === 'voice' && <VoiceRecordStep onSent={() => setStep('done')} />}
         {step === 'emotion' && <EmotionSelectStep onSent={() => setStep('done')} />}
+        {step === 'photo' && (
+          <PhotoSelectStep
+            onPicked={() => setStep('done')}
+            onCancelled={() => setStep('method')}
+          />
+        )}
         {step === 'done' && <DoneStep onRestart={() => router.replace('/')} />}
       </ScrollView>
     </View>
@@ -67,5 +80,9 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingHorizontal: 20,
+  },
+  header: {
+    marginTop: 24,
+    marginBottom: 44,
   },
 });

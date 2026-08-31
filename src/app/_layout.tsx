@@ -1,7 +1,7 @@
 import { DarkTheme, DefaultTheme, Slot, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { AnimatedSplashOverlay } from '@/shared/ui';
 import { useColorScheme } from '@/shared/hooks';
 import { UserProvider } from '@/shared/context/UserContext';
 
