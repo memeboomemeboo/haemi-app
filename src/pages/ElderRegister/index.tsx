@@ -16,9 +16,12 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authService, myPageService } from '@/shared/api';
+import type { RegisterElderRequest } from '@/shared/api';
+import { PinScreen } from '@/features/auth';
 import { Arrow, BottomNavigation } from '@/shared/ui';
 
 type Gender = 'MALE' | 'FEMALE';
+type ElderRegisterDraft = Omit<RegisterElderRequest, 'pin'>;
 
 export default function ElderRegisterScreen() {
   const router = useRouter();
@@ -30,7 +33,8 @@ export default function ElderRegisterScreen() {
   const [password, setPassword] = useState('');
   const [checkingId, setCheckingId] = useState(false);
   const [isIdAvailable, setIsIdAvailable] = useState(false);
-  const [registering, setRegistering] = useState(false);
+  const [preparingPin, setPreparingPin] = useState(false);
+  const [registerDraft, setRegisterDraft] = useState<ElderRegisterDraft | null>(null);
 
   const handlePhoneChange = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 11);
@@ -68,8 +72,8 @@ export default function ElderRegisterScreen() {
     }
   };
 
-  const handleRegister = async () => {
-    if (!name.trim() || phoneNumber.replace(/\D/g, '').length !== 11 || loginId.trim().length < 4 || !/^\d{6}$/.test(password)) {
+  const handleContinue = async () => {
+    if (!name.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate) || phoneNumber.replace(/\D/g, '').length !== 11 || loginId.trim().length < 4 || password.length < 8) {
       Alert.alert('입력 확인', '모든 정보를 올바르게 입력해주세요.');
       return;
     }
@@ -77,30 +81,44 @@ export default function ElderRegisterScreen() {
       Alert.alert('입력 확인', '아이디 중복 확인이 필요합니다.');
       return;
     }
-    setRegistering(true);
+    setPreparingPin(true);
     try {
       const family = await myPageService.getFamily();
       if (!family) {
         Alert.alert('가족 생성 필요', '어르신을 등록하려면 먼저 가족을 생성해주세요.');
         return;
       }
-      await myPageService.registerElder({
+      setRegisterDraft({
         familyId: family.familyId,
         name: name.trim(),
+        birthDate,
         phone: phoneNumber.replace(/\D/g, ''),
         gender,
         loginId: loginId.trim(),
-        pin: password,
+        password,
       });
+    } catch {
+      Alert.alert('가족 정보 확인 실패', '가족 정보를 다시 불러와주세요.');
+    } finally {
+      setPreparingPin(false);
+    }
+  };
+
+  const handleRegister = async (pin: string) => {
+    if (!registerDraft) throw new Error('어르신 등록 정보가 없습니다.');
+    try {
+      await myPageService.registerElder({ ...registerDraft, pin });
       Alert.alert('등록 완료', '어르신 계정이 생성되었습니다.', [
         { text: '확인', onPress: () => router.back() },
       ]);
     } catch (error) {
-      Alert.alert('등록 실패', error instanceof Error ? error.message : '잠시 후 다시 시도해주세요.');
-    } finally {
-      setRegistering(false);
+      throw new Error(error instanceof Error ? error.message : '어르신 등록에 실패했습니다.');
     }
   };
+
+  if (registerDraft) {
+    return <PinScreen mode="setup" onComplete={handleRegister} onBackToSignup={() => setRegisterDraft(null)} backToSignupLabel="어르신 정보 다시 입력" />;
+  }
 
   return (
     <View style={styles.screen}>
@@ -146,14 +164,14 @@ export default function ElderRegisterScreen() {
                 </View>
               </Field>
               <Field label="비밀번호">
-                <TextInput style={styles.input} placeholder="숫자 6자리" placeholderTextColor={colors.light.line.normal} value={password} onChangeText={(value) => setPassword(value.replace(/\D/g, '').slice(0, 6))} secureTextEntry keyboardType="number-pad" />
+                <TextInput style={styles.input} placeholder="8자 이상 입력" placeholderTextColor={colors.light.line.normal} value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" autoCorrect={false} />
               </Field>
             </View>
 
             <View style={styles.submitArea}>
               <Text style={styles.notice}>※이 계정은 어르신 권한으로 생성됩니다.</Text>
-              <Pressable style={({ pressed }) => [styles.submitButton, pressed && styles.pressed]} onPress={handleRegister} disabled={registering}>
-                {registering ? <ActivityIndicator color={colors.light.background.normal} /> : <Text style={styles.submitText}>어르신 등록</Text>}
+              <Pressable style={({ pressed }) => [styles.submitButton, pressed && styles.pressed]} onPress={handleContinue} disabled={preparingPin}>
+                {preparingPin ? <ActivityIndicator color={colors.light.background.normal} /> : <Text style={styles.submitText}>PIN 설정하기</Text>}
               </Pressable>
             </View>
           </ScrollView>
