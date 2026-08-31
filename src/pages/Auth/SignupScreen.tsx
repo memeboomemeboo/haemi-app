@@ -72,7 +72,15 @@ export default function SignupScreen({ onContinue, onLoginPress }: SignupScreenP
     if (password !== passwordConfirm) return setError('비밀번호가 일치하지 않습니다.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedBirthDate)) return setError('생년월일 8자리를 입력해주세요.');
     if (!/^01\d{8,9}$/.test(phoneDigits)) return setError('올바른 전화번호를 입력해주세요.');
-    onContinue({ name: name.trim(), loginId: userId.trim(), password, birthDate: normalizedBirthDate, phone: phoneDigits });
+    const trimmedInviteCode = inviteCode.trim();
+    onContinue({
+      name: name.trim(),
+      loginId: userId.trim(),
+      password,
+      birthDate: normalizedBirthDate,
+      phone: phoneDigits,
+      ...(trimmedInviteCode ? { inviteCode: trimmedInviteCode } : {}),
+    });
   };
 
   return (

@@ -18,6 +18,7 @@ export interface GuardianRegisterRequest {
   password: string;
   birthDate: string;
   pin: string;
+  inviteCode?: string;
   phone?: string;
   email?: string;
   emailVerificationId?: string;
