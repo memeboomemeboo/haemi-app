@@ -1,70 +1,77 @@
-import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useUserContext } from '@/shared/context/UserContext';
+
+import { BottomNavigation } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 import { ElderTodayTasks } from '@/widgets/ElderTodayTasks';
-import { BottomNavigation } from '@/shared/ui';
+import { colors } from '@/shared/constants';
+
+import { useElderHome } from './model/useElderHome';
+
+const light = colors.light;
 
 export default function ElderHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { group } = useUserContext();
+  const { homeData, isLoading, isError, taskStatus, handleTaskPress, refetch } = useElderHome();
 
-  const userName = group?.members?.[0]?.relation || '어르신';
-
-  const handleTaskPress = (index: number) => {
-    if (index === 1) {
-      router.push('/quiz');
-    }
-  };
+  const userName = '어르신';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <View style={styles.header}>
           <HomeHeader />
         </View>
 
-        {/* Welcome Section */}
-        <View style={styles.welcomeSection}>
-          <Text style={styles.welcomeText}>
-            {`${userName} 해미에\n오신것을 환영해요!`}
-          </Text>
+        <View style={styles.welcome}>
+          <Text style={styles.welcomeText}>{`${userName} 해미에\n오신것을 환영해요!`}</Text>
         </View>
 
-        {/* Today's Tasks */}
-        <View style={styles.tasksContainer}>
-          <ElderTodayTasks onTaskPress={handleTaskPress} />
-        </View>
+        {isLoading ? (
+          <View style={styles.loader}>
+            <ActivityIndicator size="large" color={light.primary} />
+          </View>
+        ) : isError ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>데이터를 불러오지 못했어요.</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={refetch}
+              style={({ pressed }) => [styles.retryButton, pressed && styles.retryButtonPressed]}
+            >
+              <Text style={styles.retryText}>다시 시도</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.tasks}>
+            <ElderTodayTasks status={taskStatus} onTaskPress={handleTaskPress} />
+            {homeData && homeData.training.streak > 0 && (
+              <Text style={styles.streak}>
+                {`${homeData.training.streak}일 연속 인지 훈련 중!`}
+              </Text>
+            )}
+          </View>
+        )}
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
+        <View style={styles.actions}>
           <Pressable
+            accessibilityRole="button"
             onPress={() => router.push('/album')}
-            style={({ pressed }) => [
-              styles.actionButton,
-              {
-                opacity: pressed ? 0.7 : 1,
-              },
-            ]}
+            style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}
           >
             <Text style={styles.actionButtonText}>추억 앨범</Text>
           </Pressable>
 
           <Pressable
+            accessibilityRole="button"
             onPress={() => router.push('/album')}
-            style={({ pressed }) => [
-              styles.actionButton,
-              {
-                opacity: pressed ? 0.7 : 1,
-              },
-            ]}
+            style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}
           >
             <Text style={styles.actionButtonText}>설정</Text>
           </Pressable>
@@ -79,19 +86,19 @@ export default function ElderHomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: light.background.normal,
   },
-  content: {
+  scroll: {
     flex: 1,
   },
-  contentContainer: {
+  content: {
     paddingHorizontal: 16,
     paddingBottom: 100,
   },
   header: {
     marginBottom: 32,
   },
-  welcomeSection: {
+  welcome: {
     marginBottom: 40,
     alignItems: 'center',
   },
@@ -100,13 +107,51 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 36.4,
     letterSpacing: -0.56,
-    color: '#3c3e3f',
+    color: light.label.neutral,
     textAlign: 'center',
   },
-  tasksContainer: {
+  loader: {
+    height: 220,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorBox: {
+    height: 220,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  errorText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: light.label.alternative,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: light.primary,
+  },
+  retryButtonPressed: {
+    opacity: 0.7,
+  },
+  retryText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: light.label.buttonText,
+  },
+  tasks: {
     marginBottom: 24,
   },
-  actionButtons: {
+  streak: {
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
+    color: light.primary,
+    marginTop: -8,
+    marginBottom: 12,
+  },
+  actions: {
     flexDirection: 'row',
     gap: 16,
   },
@@ -115,16 +160,19 @@ const styles = StyleSheet.create({
     height: 69,
     borderRadius: 15,
     borderWidth: 1.5,
-    borderColor: '#e8e8e9',
-    backgroundColor: '#fafafa',
+    borderColor: light.line.alternative,
+    backgroundColor: light.background.alternative,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  actionButtonPressed: {
+    opacity: 0.7,
   },
   actionButtonText: {
     fontSize: 28,
     fontWeight: '600',
     lineHeight: 36.4,
     letterSpacing: -0.56,
-    color: '#5a5c5d',
+    color: light.label.alternative,
   },
 });
