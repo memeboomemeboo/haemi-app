@@ -1,15 +1,11 @@
-import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 type CircleType = 'Check' | 'Default';
 
 interface CircleProps {
   type?: CircleType;
 }
-
-// Figma MCP 에셋들 (128-3089, 128-3093)
-const CIRCLE_CHECK_SVG = 'http://localhost:3845/assets/1d1c4950800c10f55dc78edb2dfb45021d90dad6.svg';
-const CIRCLE_DEFAULT_SVG = 'http://localhost:3845/assets/4c90b4422512b24fb05ab1fae31bf08d9b870169.svg';
 
 /**
  * Figma 128-3089/128-3093: 25×25 원형 배지
@@ -20,17 +16,17 @@ export const Circle = ({ type = 'Check' }: CircleProps) => {
   return (
     <View style={styles.circle}>
       {type === 'Check' ? (
-        <Image
-          source={CIRCLE_CHECK_SVG}
-          style={styles.icon}
-          contentFit="contain"
-        />
+        <Svg width={12} height={12} viewBox="0 0 12 12" fill="none">
+          <Path
+            d="M1.5 6.5L4.5 9.5L10.5 2.5"
+            stroke="#fd6941"
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Svg>
       ) : (
-        <Image
-          source={CIRCLE_DEFAULT_SVG}
-          style={styles.icon}
-          contentFit="contain"
-        />
+        <View style={styles.dot} />
       )}
     </View>
   );
@@ -48,8 +44,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     overflow: 'hidden' as const,
   },
-  icon: {
-    width: 25,
-    height: 25,
+  dot: {
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: '#fd6941',
   },
 });

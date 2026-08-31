@@ -11,7 +11,7 @@ export function useElderHome() {
 
   const taskStatus = data
     ? {
-        greetingCompleted: data.greeting.totalToday > data.greeting.unread,
+        greetingCompleted: data.greeting.totalToday > 0 && data.greeting.unread === 0,
         trainingCompleted: data.training.completedToday,
         memoryCompleted:
           data.recentMemories.length > 0 && data.recentMemories.every((m) => m.responded),

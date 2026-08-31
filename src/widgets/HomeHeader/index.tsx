@@ -11,11 +11,12 @@ import {
 } from 'react-native';
 
 import { Alarm, Setting } from '@/shared/ui/Icon';
+import { authService } from '@/shared/api';
+import { useUserContext } from '@/shared/context/UserContext';
 
 const logoSource = require('../../../assets/images/haemi-logo-small.png');
 const ORANGE = '#fd6941';
 const TEXT = '#3c3e3f';
-const TEXT_MUTED = '#5a5c5d';
 const TEXT_ASSISTIVE = '#76787a';
 const LINE_NORMAL = '#c1c2c3';
 const FILL = '#f7f7f7';
@@ -36,6 +37,7 @@ export const HomeHeader = ({
   style,
 }: HomeHeaderProps) => {
   const router = useRouter();
+  const { logout } = useUserContext();
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
@@ -56,6 +58,13 @@ export const HomeHeader = ({
 
   const closeLogoutDialog = () => {
     setIsLogoutDialogOpen(false);
+  };
+
+  const confirmLogout = async () => {
+    setIsLogoutDialogOpen(false);
+    await authService.logout().catch(() => undefined);
+    logout();
+    router.replace('/');
   };
 
   return (
@@ -126,10 +135,7 @@ export const HomeHeader = ({
           <View style={styles.logoutDialog}>
             <View style={styles.logoutDialogCopy}>
               <Text style={styles.logoutDialogTitle}>로그아웃</Text>
-              <Text style={styles.logoutDialogText}>
-                정말 <Text style={styles.logoutDialogUser}>꾸이익(seunga418)</Text> 의 계정에서{'\n'}
-                로그아웃하시겠습니까?
-              </Text>
+              <Text style={styles.logoutDialogText}>정말 로그아웃하시겠습니까?</Text>
             </View>
             <View style={styles.logoutDialogActions}>
               <Pressable
@@ -144,7 +150,7 @@ export const HomeHeader = ({
                 accessibilityRole="button"
                 accessibilityLabel="로그아웃 확인"
                 style={({ pressed }) => [styles.logoutConfirmButton, pressed && styles.pressed]}
-                onPress={closeLogoutDialog}
+                onPress={confirmLogout}
               >
                 <Text style={styles.logoutConfirmText}>로그아웃</Text>
               </Pressable>
@@ -242,13 +248,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: '500',
     letterSpacing: -0.28,
-  },
-  logoutDialogUser: {
-    color: TEXT_MUTED,
-    fontSize: 16,
-    lineHeight: 21,
-    fontWeight: '600',
-    letterSpacing: -0.32,
   },
   logoutDialogActions: {
     flexDirection: 'row',
