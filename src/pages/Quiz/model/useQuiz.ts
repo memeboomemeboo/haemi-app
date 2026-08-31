@@ -147,7 +147,10 @@ export const useQuiz = () => {
     setMode('active');
   }, [hasAnswered, pendingSession]);
 
+  const answerMode = session?.currentQuestion?.answerMode ?? 'CHOICE';
+
   return {
+    answerMode,
     answerOptions,
     answerQuestion,
     errorMessage,

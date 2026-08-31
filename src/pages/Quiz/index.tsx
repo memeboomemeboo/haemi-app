@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
-import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Arrow } from '@/shared/ui';
@@ -12,6 +12,7 @@ import { type QuizAnswerValue, useQuiz } from './model/useQuiz';
 export default function QuizScreen() {
   const router = useRouter();
   const {
+    answerMode,
     answerOptions,
     answerQuestion,
     errorMessage,
@@ -27,16 +28,11 @@ export default function QuizScreen() {
     selectedAnswer,
     total,
   } = useQuiz();
+  const [textAnswer, setTextAnswer] = useState('');
 
   const handleComplete = () => {
     router.replace('/elder-home' as Href);
   };
-
-  useEffect(() => {
-    if (mode === 'completed') {
-      router.replace('/elder-home' as Href);
-    }
-  }, [mode, router]);
 
   return (
     <View style={styles.container}>
@@ -80,17 +76,43 @@ export default function QuizScreen() {
                   </Text>
                   {question.hint && <Text style={styles.hintText}>{question.hint}</Text>}
 
-                  <View style={styles.answersRow}>
-                    {answerOptions.map((answer, index) => (
-                      <AnswerCard
-                        key={`${answer}-${index}`}
-                        answer={answer}
-                        disabled={hasAnswered || isSubmitting}
-                        isSelected={selectedAnswer === answer}
-                        onPress={() => answerQuestion(answer)}
+                  {answerMode === 'TEXT_OR_VOICE' ? (
+                    <View style={styles.textAnswerContainer}>
+                      <TextInput
+                        style={styles.textAnswerInput}
+                        placeholder="답변을 입력해주세요"
+                        placeholderTextColor={COLORS.textAssistive}
+                        value={textAnswer}
+                        onChangeText={setTextAnswer}
+                        editable={!hasAnswered && !isSubmitting}
+                        multiline
                       />
-                    ))}
-                  </View>
+                      <Pressable
+                        accessibilityRole="button"
+                        disabled={hasAnswered || isSubmitting || textAnswer.trim().length === 0}
+                        onPress={() => { answerQuestion(textAnswer.trim()); setTextAnswer(''); }}
+                        style={({ pressed }) => [
+                          styles.textSubmitButton,
+                          (hasAnswered || isSubmitting || textAnswer.trim().length === 0) && styles.primaryButtonDisabled,
+                          pressed && styles.pressed,
+                        ]}
+                      >
+                        <Text style={styles.textSubmitButtonText}>답변 제출</Text>
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <View style={styles.answersRow}>
+                      {answerOptions.map((answer, index) => (
+                        <AnswerCard
+                          key={`${answer}-${index}`}
+                          answer={answer}
+                          disabled={hasAnswered || isSubmitting}
+                          isSelected={selectedAnswer === answer}
+                          onPress={() => answerQuestion(answer)}
+                        />
+                      ))}
+                    </View>
+                  )}
                 </View>
 
                 {hasAnswered && (
@@ -552,5 +574,36 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.75,
+  },
+  textAnswerContainer: {
+    width: '100%',
+    gap: 16,
+  },
+  textAnswerInput: {
+    width: '100%',
+    minHeight: 120,
+    padding: 18,
+    borderRadius: 15,
+    borderWidth: 1.5,
+    borderColor: COLORS.line,
+    backgroundColor: COLORS.white,
+    color: COLORS.text,
+    fontSize: 22,
+    fontWeight: '500',
+    lineHeight: 30,
+    textAlignVertical: 'top',
+  },
+  textSubmitButton: {
+    height: 54,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+  },
+  textSubmitButtonText: {
+    color: COLORS.white,
+    fontSize: 22,
+    fontWeight: '600',
+    lineHeight: 30,
   },
 });
