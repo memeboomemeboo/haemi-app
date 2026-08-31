@@ -1,20 +1,21 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useTheme } from '@/shared/hooks';
-import { Arrow } from '@/shared/ui';
+import { Arrow } from '@/shared/ui/Icon';
 
-interface DailyMessageHeaderProps {
+interface BackHeaderProps {
   title: string;
   onBack: () => void;
+  style?: StyleProp<ViewStyle>;
 }
 
-/** Figma node 1408:5926 등 — 하루 한마디 플로우 공용 상단바 */
-export function DailyMessageHeader({ title, onBack }: DailyMessageHeaderProps) {
+/** "‹ 이전으로 / 제목" 형태의 큰 글씨 상단바. 여백은 호출부에서 style로 지정한다. */
+export function BackHeader({ title, onBack, style }: BackHeaderProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, style]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="이전으로"
@@ -37,8 +38,6 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginTop: 24,
-      marginBottom: 44,
     },
     backButton: {
       minHeight: 42,

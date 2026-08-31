@@ -5,12 +5,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAlbumDetail, useAlbumItems } from '@/entities/album';
 import { useTheme } from '@/shared/hooks';
-import { Arrow, Profile } from '@/shared/ui';
+import { BackHeader, Profile } from '@/shared/ui';
 
 const sampleSource = require('../../../assets/images/album-sample.png');
 
 const DEFAULT_QUESTION = '이 사진, 기억나세요?';
 const DEFAULT_SENDER_RELATION = '가족';
+
+const resolvePhotoSource = (photo: string) =>
+  photo.startsWith('http') || photo.startsWith('file') ? { uri: photo } : sampleSource;
 
 interface ElderAlbumDetailScreenProps {
   id: string;
@@ -42,19 +45,11 @@ export default function ElderAlbumDetailScreen({ id }: ElderAlbumDetailScreenPro
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="이전으로"
-          hitSlop={8}
-          onPress={() => router.back()}
-          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
-        >
-          <Arrow color={colors.label.neutral} size={34} style={styles.backIcon} />
-          <Text style={styles.headerText}>이전으로</Text>
-        </Pressable>
-        <Text style={styles.headerText}>추억 앨범</Text>
-      </View>
+      <BackHeader
+        title="추억 앨범"
+        onBack={() => router.back()}
+        style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}
+      />
 
       {isLoading && (
         <View style={styles.centerFill}>
@@ -98,7 +93,7 @@ export default function ElderAlbumDetailScreen({ id }: ElderAlbumDetailScreenPro
                 {item.photos.slice(0, 4).map((photo, index) => (
                   <Image
                     key={`${photo}-${index}`}
-                    source={item.photoUrl ? { uri: item.photoUrl } : sampleSource}
+                    source={resolvePhotoSource(photo)}
                     style={styles.photo}
                     resizeMode="cover"
                   />
@@ -147,28 +142,8 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
       backgroundColor: colors.background.normal,
     },
     header: {
-      height: 42,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
       paddingHorizontal: 20,
       marginBottom: 24,
-    },
-    backButton: {
-      minHeight: 42,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-    },
-    backIcon: {
-      transform: [{ scaleX: -1 }],
-    },
-    headerText: {
-      color: colors.label.neutral,
-      fontSize: 32,
-      fontWeight: '600',
-      lineHeight: 42,
-      letterSpacing: -0.64,
     },
     pressed: {
       opacity: 0.85,

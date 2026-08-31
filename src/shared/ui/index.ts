@@ -1,5 +1,7 @@
 // Export UI components from shared
+export { AnimatedSplashOverlay } from './AnimatedSplashOverlay';
 export { AsyncContainer } from './AsyncContainer';
+export { BackHeader } from './BackHeader';
 export { BottomNavigation, type NavigationTab } from './BottomNavigation';
 export { Fab } from './Fab';
 export {

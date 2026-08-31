@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/shared/hooks';
-import { DailyMessageHeader } from './DailyMessageHeader';
+import { BackHeader } from '@/shared/ui';
 import { MethodSelectStep, type DailyMessageMethod } from './steps/MethodSelectStep';
 import { VoiceRecordStep } from './steps/VoiceRecordStep';
 import { EmotionSelectStep } from './steps/EmotionSelectStep';
@@ -53,7 +53,9 @@ export default function DailyMessageScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {step !== 'done' && <DailyMessageHeader title={STEP_TITLE[step]} onBack={handleBack} />}
+        {step !== 'done' && (
+          <BackHeader title={STEP_TITLE[step]} onBack={handleBack} style={styles.header} />
+        )}
         {step === 'method' && (
           <MethodSelectStep onNext={(method) => setStep(METHOD_STEP[method])} />
         )}
@@ -78,5 +80,9 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingHorizontal: 20,
+  },
+  header: {
+    marginTop: 24,
+    marginBottom: 44,
   },
 });

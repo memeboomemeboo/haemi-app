@@ -1,11 +1,11 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAlbumItems } from '@/entities/album';
 import { useTheme } from '@/shared/hooks';
-import { Arrow, BottomNavigation } from '@/shared/ui';
+import { BackHeader, BottomNavigation } from '@/shared/ui';
 
 const sampleSource = require('../../../assets/images/album-sample.png');
 
@@ -15,7 +15,7 @@ export default function ElderAlbumScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { colors } = theme;
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const { data: items, isLoading, refetch } = useAlbumItems();
 
   useFocusEffect(
@@ -26,19 +26,11 @@ export default function ElderAlbumScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="이전으로"
-          hitSlop={8}
-          onPress={() => router.back()}
-          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
-        >
-          <Arrow color={colors.label.neutral} size={34} style={styles.backIcon} />
-          <Text style={styles.headerText}>이전으로</Text>
-        </Pressable>
-        <Text style={styles.headerText}>추억앨범</Text>
-      </View>
+      <BackHeader
+        title="추억앨범"
+        onBack={() => router.back()}
+        style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}
+      />
 
       {isLoading ? (
         <View style={styles.centerFill}>
@@ -73,8 +65,8 @@ export default function ElderAlbumScreen() {
                 </Text>
                 {item.tags && item.tags.length > 0 && (
                   <View style={styles.tagRow}>
-                    {item.tags.slice(0, 3).map((tag) => (
-                      <View key={tag} style={styles.tag}>
+                    {item.tags.slice(0, 3).map((tag, index) => (
+                      <View key={`${tag}-${index}`} style={styles.tag}>
                         <Text style={styles.tagText}>{tag}</Text>
                       </View>
                     ))}
@@ -98,28 +90,8 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
       backgroundColor: colors.background.normal,
     },
     header: {
-      height: 42,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
       paddingHorizontal: 20,
       marginBottom: 24,
-    },
-    backButton: {
-      minHeight: 42,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-    },
-    backIcon: {
-      transform: [{ scaleX: -1 }],
-    },
-    headerText: {
-      color: colors.label.neutral,
-      fontSize: 32,
-      fontWeight: '600',
-      lineHeight: 42,
-      letterSpacing: -0.64,
     },
     pressed: {
       opacity: 0.85,
