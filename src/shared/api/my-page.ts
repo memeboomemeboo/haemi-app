@@ -40,6 +40,9 @@ export interface FamilyDetailResponse {
 }
 
 export interface UpdateGuardianProfileRequest {
+  name?: string;
+  birthDate?: string;
+  phone?: string;
   loginId?: string;
   profileImageMediaRefId?: string;
   elderRoles?: Record<string, GuardianRole>;
