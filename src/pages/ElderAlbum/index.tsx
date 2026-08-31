@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,11 +22,16 @@ export default function ElderAlbumScreen() {
   const theme = useTheme();
   const { colors, palette } = theme;
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const { memories, isLoading, refetch } = useElderAlbum();
+  const { memories, isLoading, isError, refetch } = useElderAlbum();
+  const hasFocusedRef = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
-      refetch();
+      if (hasFocusedRef.current) {
+        void refetch();
+      } else {
+        hasFocusedRef.current = true;
+      }
     }, [refetch]),
   );
 
@@ -41,6 +46,18 @@ export default function ElderAlbumScreen() {
       {isLoading ? (
         <View style={styles.centerFill}>
           <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : isError ? (
+        <View style={styles.centerFill}>
+          <Text style={styles.emptyText}>추억을 불러오지 못했어요</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="추억 다시 불러오기"
+            onPress={() => void refetch()}
+            style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+          >
+            <Text style={styles.retryText}>다시 시도</Text>
+          </Pressable>
         </View>
       ) : !memories || memories.length === 0 ? (
         <View style={styles.centerFill}>
@@ -104,11 +121,23 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+      gap: 16,
     },
     emptyText: {
       fontSize: 20,
       fontWeight: '500',
       color: colors.label.assistive,
+    },
+    retryButton: {
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 10,
+      backgroundColor: colors.primary,
+    },
+    retryText: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.background.normal,
     },
     scroll: {
       flex: 1,

@@ -26,7 +26,7 @@ export default function ElderAlbumDetailScreen({ id }: ElderAlbumDetailScreenPro
   const theme = useTheme();
   const { colors } = theme;
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const { memory, isLoading } = useElderAlbumDetail(id);
+  const { memory, isLoading, isError, refetch } = useElderAlbumDetail(id);
   const { memories } = useElderAlbum();
 
   const nextItemId = useMemo(() => {
@@ -57,7 +57,21 @@ export default function ElderAlbumDetailScreen({ id }: ElderAlbumDetailScreenPro
         </View>
       )}
 
-      {!isLoading && !memory && (
+      {!isLoading && isError && (
+        <View style={styles.centerFill}>
+          <Text style={styles.emptyText}>추억을 불러오지 못했어요</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="추억 다시 불러오기"
+            onPress={() => void refetch()}
+            style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+          >
+            <Text style={styles.retryText}>다시 시도</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {!isLoading && !isError && !memory && (
         <View style={styles.centerFill}>
           <Text style={styles.emptyText}>추억을 찾을 수 없어요</Text>
         </View>
@@ -148,11 +162,23 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+      gap: 16,
     },
     emptyText: {
       fontSize: 20,
       fontWeight: '500',
       color: colors.label.assistive,
+    },
+    retryButton: {
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 10,
+      backgroundColor: colors.primary,
+    },
+    retryText: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.background.normal,
     },
     scroll: {
       flex: 1,
