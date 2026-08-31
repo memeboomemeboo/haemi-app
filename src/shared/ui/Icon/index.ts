@@ -28,6 +28,7 @@ export {
   Replay,
   Mail,
   PlayTriangle,
+  Pause,
   Backspace,
   Close,
   Mic,

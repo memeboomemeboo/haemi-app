@@ -9,6 +9,8 @@ export interface ElderInboxItem {
   text?: string;
   mediaKey?: string;
   durationSeconds?: number;
+  guardianName?: string;
+  guardianRoleLabel?: string;
   read: boolean;
 }
 
