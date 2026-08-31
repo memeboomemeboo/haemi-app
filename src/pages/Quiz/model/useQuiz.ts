@@ -1,112 +1,165 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { getQuizQuestions, submitQuizAnswer, type QuizQuestion } from '@/shared/api/quiz';
+import { getErrorMessage } from '@/shared/api';
+import {
+  completeCurrentTrainingQuestion,
+  enterTrainingSession,
+  type QuizQuestion,
+  type TrainingQuestion,
+  type TrainingSession,
+} from '@/shared/api/quiz';
 
-import { FALLBACK_QUESTIONS, QUIZ_LIMIT } from '../constants';
+export type QuizMode = 'loading' | 'active' | 'completed' | 'error';
+export type QuizAnswerValue = string;
 
-export type QuizMode = 'loading' | 'active' | 'completed';
-export type QuizAnswerValue = 'O' | 'X';
+const EMPTY_OPTIONS = ['확인했어요'];
 
-const normalizeQuestions = (questions: QuizQuestion[]): QuizQuestion[] => {
-  const availableQuestions = questions.length > 0 ? questions : FALLBACK_QUESTIONS;
+function toQuizQuestion(question: TrainingQuestion): QuizQuestion {
+  const options = question.options && question.options.length > 0 ? question.options : EMPTY_OPTIONS;
 
-  return availableQuestions.slice(0, QUIZ_LIMIT);
-};
+  return {
+    id: question.id,
+    question: question.prompt,
+    options,
+    answerMode: question.answerMode,
+    questionNumber: question.questionNumber,
+    hint: question.hint,
+  };
+}
 
 export const useQuiz = () => {
-  const [questions, setQuestions] = useState<QuizQuestion[]>(FALLBACK_QUESTIONS);
+  const [session, setSession] = useState<TrainingSession | null>(null);
+  const [pendingSession, setPendingSession] = useState<TrainingSession | null>(null);
   const [mode, setMode] = useState<QuizMode>('loading');
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<QuizAnswerValue | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadQuestions = async () => {
+    const loadInitialSession = async () => {
       try {
-        const data = await getQuizQuestions({ limit: QUIZ_LIMIT });
+        const trainingSession = await enterTrainingSession();
 
-        if (isMounted) {
-          setQuestions(normalizeQuestions(data));
+        if (!isMounted) {
+          return;
         }
-      } catch (error) {
-        console.warn('Failed to load quiz questions from API, using fallback data', error);
 
-        if (isMounted) {
-          setQuestions(FALLBACK_QUESTIONS);
+        setSession(trainingSession);
+        setMode(trainingSession.status === 'COMPLETED' ? 'completed' : 'active');
+      } catch (caught) {
+        if (!isMounted) {
+          return;
         }
-      } finally {
-        if (isMounted) {
-          setCurrentIndex(0);
-          setSelectedAnswer(null);
-          setMode('active');
-        }
+
+        setSession(null);
+        setMode('error');
+        setErrorMessage(getErrorMessage(caught));
       }
     };
 
-    void loadQuestions();
+    void loadInitialSession();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  const question = questions[currentIndex] ?? FALLBACK_QUESTIONS[0];
-  const progress = currentIndex + 1;
-  const total = questions.length;
-  const progressPercent = useMemo(
-    () => `${(progress / total) * 100}%` as `${number}%`,
-    [progress, total],
-  );
+  const retry = useCallback(async () => {
+    setMode('loading');
+    setSelectedAnswer(null);
+    setPendingSession(null);
+    setFeedbackMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const trainingSession = await enterTrainingSession();
+      setSession(trainingSession);
+      setMode(trainingSession.status === 'COMPLETED' ? 'completed' : 'active');
+    } catch (caught) {
+      setSession(null);
+      setMode('error');
+      setErrorMessage(getErrorMessage(caught));
+    }
+  }, []);
+
+  const question = session?.currentQuestion ? toQuizQuestion(session.currentQuestion) : null;
+  const answerOptions = question?.options ?? EMPTY_OPTIONS;
+  const progress = session?.currentQuestionNumber ?? question?.questionNumber ?? 1;
+  const total = session?.totalQuestionCount ?? 1;
+  const progressPercent = useMemo(() => {
+    const safeTotal = Math.max(1, total);
+    const safeProgress = Math.min(Math.max(1, progress), safeTotal);
+    return `${(safeProgress / safeTotal) * 100}%` as `${number}%`;
+  }, [progress, total]);
   const hasAnswered = selectedAnswer !== null;
-  const isCorrect = hasAnswered && selectedAnswer === question.correctAnswer;
-  const isLastQuestion = currentIndex === questions.length - 1;
 
   const answerQuestion = useCallback(
     async (answer: QuizAnswerValue) => {
-      if (hasAnswered || isSubmitting) {
+      if (!session?.currentQuestion || hasAnswered || isSubmitting) {
         return;
       }
 
+      const currentQuestion = session.currentQuestion;
       setSelectedAnswer(answer);
+      setFeedbackMessage(null);
+      setErrorMessage(null);
 
       try {
         setIsSubmitting(true);
-        await submitQuizAnswer(question.id, answer);
-      } catch (error) {
-        console.warn('Failed to submit answer', error);
+        const nextSession = await completeCurrentTrainingQuestion({
+          sessionId: session.id,
+          questionId: currentQuestion.id,
+          questionNumber: currentQuestion.questionNumber,
+          selectedOption: currentQuestion.answerMode === 'CHOICE' ? answer : undefined,
+          textAnswer: currentQuestion.answerMode === 'TEXT_OR_VOICE' ? answer : undefined,
+        });
+
+        setPendingSession(nextSession);
+        setFeedbackMessage(nextSession.feedback || '답변을 기록했어요.');
+      } catch (caught) {
+        setSelectedAnswer(null);
+        setErrorMessage(getErrorMessage(caught));
       } finally {
         setIsSubmitting(false);
       }
     },
-    [hasAnswered, isSubmitting, question.id],
+    [hasAnswered, isSubmitting, session],
   );
 
   const goToNext = useCallback(() => {
-    if (!hasAnswered) {
+    if (!hasAnswered || !pendingSession) {
       return;
     }
 
-    if (isLastQuestion) {
+    setSession(pendingSession);
+    setPendingSession(null);
+    setSelectedAnswer(null);
+    setFeedbackMessage(null);
+
+    if (pendingSession.status === 'COMPLETED' || !pendingSession.currentQuestion) {
       setMode('completed');
       return;
     }
 
-    setCurrentIndex((index) => index + 1);
-    setSelectedAnswer(null);
-  }, [hasAnswered, isLastQuestion]);
+    setMode('active');
+  }, [hasAnswered, pendingSession]);
 
   return {
+    answerOptions,
     answerQuestion,
+    errorMessage,
+    feedbackMessage,
     goToNext,
     hasAnswered,
-    isCorrect,
     isSubmitting,
     mode,
     progress,
     progressPercent,
     question,
+    retry,
     selectedAnswer,
     total,
   };

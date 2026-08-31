@@ -1,67 +1,77 @@
-import { apiClient } from './client';
+import { get, post } from './client';
+import type { SwaggerApiResponse } from '@/shared/types';
+
+export type TrainingStatus = 'IN_PROGRESS' | 'COMPLETED';
+export type TrainingStep = 'ORIENTATION' | 'RECALL' | 'LANGUAGE' | 'DELAYED_RECALL';
+export type TrainingAnswerMode = 'CHOICE' | 'TEXT_OR_VOICE';
+
+export interface TrainingQuestion {
+  id: string;
+  questionNumber: number;
+  questionType: TrainingStep;
+  answerMode: TrainingAnswerMode;
+  prompt: string;
+  imageKey?: string | null;
+  options?: string[];
+  hint?: string | null;
+}
+
+export interface TrainingResult {
+  sessionId: string;
+  participationSeconds: number;
+  delayedRecallSuccessCount: number;
+  completedAt: string;
+  unlockedBadges: string[];
+}
+
+export interface TrainingSession {
+  id: string;
+  status: TrainingStatus;
+  currentStep: TrainingStep;
+  currentQuestionNumber: number;
+  totalQuestionCount: number;
+  startedAt: string;
+  completedAt?: string | null;
+  inactivityReminderSeconds?: number | null;
+  feedback?: string | null;
+  currentQuestion?: TrainingQuestion | null;
+  result?: TrainingResult | null;
+}
+
+export interface CompleteTrainingQuestionRequest {
+  sessionId: string;
+  questionId: string;
+  questionNumber: number;
+  selectedOption?: string;
+  textAnswer?: string;
+  voiceMediaRefId?: string;
+}
 
 export interface QuizQuestion {
   id: string;
   question: string;
-  correctAnswer: 'O' | 'X';
-  explanation: string;
-  category?: string;
-  difficulty?: number;
+  options: string[];
+  answerMode: TrainingAnswerMode;
+  questionNumber: number;
+  hint?: string | null;
 }
 
-export interface QuizAnswer {
-  questionId: string;
-  userAnswer: 'O' | 'X';
-  isCorrect: boolean;
-  explanation: string;
-  elapsedSeconds: number;
+export async function enterTrainingSession(): Promise<TrainingSession> {
+  const response = await post<SwaggerApiResponse<TrainingSession>>('/elder/training/session/enter');
+  return response.data;
 }
 
-export interface QuizSession {
-  sessionId: string;
-  totalQuestions: number;
-  correctCount: number;
-  accuracy: number;
-  averageResponseTime: number;
+export async function completeCurrentTrainingQuestion(
+  request: CompleteTrainingQuestionRequest,
+): Promise<TrainingSession> {
+  const response = await post<SwaggerApiResponse<TrainingSession>>(
+    '/elder/training/session/current-question/complete',
+    request,
+  );
+  return response.data;
 }
 
-/**
- * 퀴즈 문제 목록 조회
- * @param params - 조회 파라미터
- */
-export async function getQuizQuestions(params?: {
-  limit?: number;
-  difficulty?: number;
-  category?: string;
-}): Promise<QuizQuestion[]> {
-  const queryString = params
-    ? `?${new URLSearchParams(
-        Object.entries(params)
-          .filter(([, v]) => v !== undefined)
-          .map(([k, v]) => [k, String(v)]) as [string, string][]
-      ).toString()}`
-    : '';
-
-  return apiClient.get<QuizQuestion[]>(`/quiz/questions${queryString}`);
-}
-
-/**
- * 퀴즈 답변 제출
- */
-export async function submitQuizAnswer(questionId: string, answer: 'O' | 'X'): Promise<QuizAnswer> {
-  return apiClient.post<QuizAnswer>(`/quiz/${questionId}/answer`, { answer });
-}
-
-/**
- * 퀴즈 세션 결과 조회
- */
-export async function getQuizSessionResult(sessionId: string): Promise<QuizSession> {
-  return apiClient.get<QuizSession>(`/quiz/sessions/${sessionId}`);
-}
-
-/**
- * 퀴즈 세션 종료
- */
-export async function endQuizSession(sessionId: string): Promise<QuizSession> {
-  return apiClient.post<QuizSession>(`/quiz/sessions/${sessionId}/end`, {});
+export async function getTrainingSessionResult(): Promise<TrainingSession> {
+  const response = await get<SwaggerApiResponse<TrainingSession>>('/elder/training/session/result');
+  return response.data;
 }
