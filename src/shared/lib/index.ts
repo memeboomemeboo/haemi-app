@@ -1,5 +1,5 @@
 // Export utility functions from shared
-export { formatKoreanDate } from './date';
+export { formatKoreanDate, formatRelativeKoreanDate } from './date';
 export { shuffleArray } from './array';
 export { getOrCreateDeviceId } from './deviceId';
 export { getRoleFromToken, isAccessTokenExpired, parseAccessToken } from './jwt';

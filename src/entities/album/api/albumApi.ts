@@ -1,194 +1,78 @@
-import { apiClient, myPageService, uploadMediaFile } from '@/shared/api';
-import type { SwaggerApiResponse } from '@/shared/types';
-import type { AlbumConversationAnswer, AlbumItem, NewAlbumItemInput } from '../model/types';
+import { guardianMemoryService, myPageService } from '@/shared/api';
+import type { GuardianMemoryDetail, GuardianMemorySummary } from '@/shared/api';
+import { formatRelativeKoreanDate } from '@/shared/lib';
+import type { AlbumElderOption, AlbumItem, NewAlbumItemInput } from '../model/types';
 
-interface MemorySummaryResponse {
-  id: string;
-  elderId: string;
-  title: string;
-  thumbnailKey?: string;
-  responded: boolean;
-  place?: string;
-  memoryYear?: number;
-  memoryMonth?: number;
-  creatorRoleLabel?: string;
+/** 보호자가 접근 가능한 어르신 목록 — 앨범 필터 탭과 등록 화면의 대상 선택에 쓰인다 */
+export async function fetchAlbumElders(): Promise<AlbumElderOption[]> {
+  const profile = await myPageService.getProfile();
+  return profile.elders.map((elder) => ({ id: elder.elderId, name: elder.name }));
 }
 
-interface MemoryDetailResponse {
-  id: string;
-  elderId: string;
-  title: string;
-  memo?: string;
-  message?: string;
-  memoryYear?: number;
-  memoryMonth?: number;
-  place?: string;
-  imageKeys?: string[];
-  responded: boolean;
-  createdAt?: string;
-  creatorRoleLabel?: string;
-}
-
-interface MemoryResponseItem {
-  responseType: 'EMOTION' | 'TEXT' | 'IMAGE' | 'VOICE' | string;
-  emotions?: string[];
-  text?: string;
-  durationSeconds?: number;
-  createdAt?: string;
-}
-
-interface RegisterMemoryRequest {
-  elderId: string;
-  title: string;
-  memo?: string;
-  message: string;
-  memoryYear?: number;
-  mediaRefIds: string[];
-}
-
-const EMOTION_LABELS: Record<string, string> = {
-  LOVE: '사랑',
-  HAPPY: '행복',
-  JOY: '기쁨',
-  MISS: '그리움',
-  LONGING: '그리움',
-  SAD: '슬픔',
-  ANGRY: '화남',
-};
-
-const formatMemoryDate = (year?: number, month?: number): string | undefined => {
-  if (!year) return undefined;
-  return month ? `${year}.${String(month).padStart(2, '0')}.` : `${year}.`;
-};
-
-const formatRelativeTime = (createdAt?: string): string => {
-  if (!createdAt) return '';
-  const days = Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000));
-  return days === 0 ? '오늘' : `${days}일전`;
-};
-
-const formatClock = (createdAt?: string): string => {
-  if (!createdAt) return '';
-  return new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit' }).format(
-    new Date(createdAt),
-  );
-};
-
-const formatDuration = (seconds = 0): string =>
-  `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-
-const toConversationAnswer = (
-  responses: MemoryResponseItem[],
-  elderName: string,
-): AlbumConversationAnswer | undefined => {
-  if (responses.length === 0) return undefined;
-  const sorted = [...responses].sort((a, b) =>
-    (b.createdAt ?? '').localeCompare(a.createdAt ?? ''),
-  );
-  const latest = sorted[0];
-  const textResponse = sorted.find((response) => response.text?.trim());
-  const voiceResponse = sorted.find((response) => response.responseType === 'VOICE');
-  const tags = Array.from(
-    new Set(
-      responses
-        .flatMap((response) => response.emotions ?? [])
-        .map((value) => EMOTION_LABELS[value] ?? value),
-    ),
-  );
-
-  return {
-    authorName: `${elderName} 님`,
-    relativeTime: formatRelativeTime(latest.createdAt),
-    time: formatClock(latest.createdAt),
-    tags,
-    quote: textResponse?.text?.trim() || '음성으로 답변을 남겼어요.',
-    audioDuration: formatDuration(voiceResponse?.durationSeconds),
-  };
-};
-
-export async function fetchAlbumItems(): Promise<AlbumItem[]> {
-  const response = await apiClient.get<SwaggerApiResponse<MemorySummaryResponse[]>>(
-    '/guardian/memories',
-  );
-
-  return response.data.map((memory) => ({
-    id: memory.id,
-    elderId: memory.elderId,
-    title: memory.title,
-    elderName: '어르신',
-    date: formatMemoryDate(memory.memoryYear, memory.memoryMonth),
-    location: memory.place,
-    photoUrl: memory.thumbnailKey,
-    year: memory.memoryYear ? `${memory.memoryYear}년` : undefined,
-    senderRelation: memory.creatorRoleLabel,
-    responded: memory.responded,
-  }));
-}
-
-export async function fetchAlbumDetail(id: string): Promise<AlbumItem | null> {
-  const [detailResponse, responsesResponse, profile] = await Promise.all([
-    apiClient.get<SwaggerApiResponse<MemoryDetailResponse>>(`/guardian/memories/${id}`),
-    apiClient.get<SwaggerApiResponse<MemoryResponseItem[]>>(`/guardian/memories/${id}/responses`),
-    myPageService.getProfile(),
-  ]);
-  const memory = detailResponse.data;
-  if (!memory) return null;
-  const elderName = profile.elders.find((elder) => elder.elderId === memory.elderId)?.name ?? '어르신';
-  const answer = toConversationAnswer(responsesResponse.data ?? [], elderName);
-
+function toAlbumItem(memory: GuardianMemorySummary, elderName: string): AlbumItem {
   return {
     id: memory.id,
     elderId: memory.elderId,
     title: memory.title,
     elderName,
-    date: formatMemoryDate(memory.memoryYear, memory.memoryMonth),
     location: memory.place,
-    photoUrl: memory.imageKeys?.[0],
-    photos: memory.imageKeys,
-    year: memory.memoryYear ? `${memory.memoryYear}년` : undefined,
-    memo: memory.memo,
-    senderRelation: memory.creatorRoleLabel,
+    photoUrl: memory.thumbnailKey,
+    year: `${memory.memoryYear}년`,
     responded: memory.responded,
-    conversation: memory.message
-      ? { question: memory.message, askedRelativeTime: formatRelativeTime(memory.createdAt), answer }
-      : undefined,
+    senderRelation: memory.creatorRoleLabel,
   };
 }
 
-export async function createAlbumItem(input: NewAlbumItemInput): Promise<AlbumItem> {
-  const uploads = await Promise.all(
-    (input.photos ?? []).map((photo) =>
-      uploadMediaFile({
-        uri: photo.uri,
-        mediaType: 'MEMORY_IMAGE',
-        filename: photo.fileName,
-        contentType: photo.contentType,
-        sizeBytes: photo.sizeBytes,
-      }),
-    ),
-  );
-  const memoryYear = Number.parseInt(input.year, 10);
-  const payload: RegisterMemoryRequest = {
-    elderId: input.elderId,
-    title: input.title,
-    memo: input.memo,
-    message: input.question ?? '',
-    memoryYear: Number.isFinite(memoryYear) ? memoryYear : undefined,
-    mediaRefIds: uploads.map((upload) => upload.mediaRefId),
-  };
-  const response = await apiClient.post<SwaggerApiResponse<string>>('/guardian/memories', payload);
-
+function toAlbumItemDetail(memory: GuardianMemoryDetail, elderName: string): AlbumItem {
   return {
-    id: response.data,
+    id: memory.id,
+    elderId: memory.elderId,
+    title: memory.title,
+    elderName,
+    location: memory.place,
+    year: `${memory.memoryYear}년`,
+    photos: memory.imageKeys,
+    memo: memory.memo,
+    responded: memory.responded,
+    senderRelation: memory.creatorRoleLabel,
+    conversation: {
+      question: memory.message,
+      askedRelativeTime: formatRelativeKoreanDate(memory.createdAt),
+    },
+  };
+}
+
+/** elderId를 지정하면 해당 어르신 추억만, 미지정 시 접근 가능한 전 어르신 추억을 통합('전체' 탭) 조회한다 */
+export async function fetchAlbumItems(elderId?: string): Promise<AlbumItem[]> {
+  const [memories, elders] = await Promise.all([
+    guardianMemoryService.getMemories(elderId),
+    fetchAlbumElders(),
+  ]);
+  const elderNameById = new Map(elders.map((elder) => [elder.id, elder.name]));
+  return memories.map((memory) => toAlbumItem(memory, elderNameById.get(memory.elderId) ?? ''));
+}
+
+export async function fetchAlbumDetail(id: string): Promise<AlbumItem | null> {
+  const [memory, elders] = await Promise.all([
+    guardianMemoryService.getMemoryDetail(id),
+    fetchAlbumElders(),
+  ]);
+  const elderName = elders.find((elder) => elder.id === memory.elderId)?.name ?? '';
+  return toAlbumItemDetail(memory, elderName);
+}
+
+/** 등록 화면에는 연도 입력만 있어 월은 아직 받을 수 없다 — 1월로 고정한다 */
+const DEFAULT_MEMORY_MONTH = 1;
+
+export async function createAlbumItem(input: NewAlbumItemInput): Promise<string> {
+  return guardianMemoryService.createMemory({
     elderId: input.elderId,
     title: input.title,
-    elderName: input.elderName,
-    year: payload.memoryYear ? `${payload.memoryYear}년` : undefined,
     memo: input.memo,
-    photos: uploads.map((upload, index) => upload.servingUrl ?? input.photos?.[index].uri ?? ''),
-    photoUrl: uploads[0]?.servingUrl,
-    conversation: input.question
-      ? { question: input.question, askedRelativeTime: '방금 전' }
-      : undefined,
-  };
+    message: input.question,
+    memoryYear: Number(input.year) || new Date().getFullYear(),
+    memoryMonth: DEFAULT_MEMORY_MONTH,
+    place: input.place,
+    mediaRefIds: input.mediaRefIds,
+  });
 }

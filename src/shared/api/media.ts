@@ -6,7 +6,10 @@ export type MediaType =
   | 'MEMORY_IMAGE'
   | 'PROFILE_IMAGE'
   | 'RESPONSE_VOICE'
-  | 'RESPONSE_IMAGE';
+  | 'RESPONSE_IMAGE'
+  | 'ELDER_RESPONSE_VOICE'
+  | 'ELDER_RESPONSE_IMAGE'
+  | 'GUARDIAN_DAILY_CARE_VOICE';
 
 export interface RequestMediaUploadInput {
   mediaType: MediaType;

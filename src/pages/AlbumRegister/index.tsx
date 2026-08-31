@@ -1,17 +1,17 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { createAlbumItem } from '@/entities/album';
-import { myPageService } from '@/shared/api';
-import { useAsyncData, useTheme } from '@/shared/hooks';
+import { createAlbumItem, useAlbumElders } from '@/entities/album';
+import { uploadMediaFile } from '@/shared/api';
+import { useTheme } from '@/shared/hooks';
 import { Arrow, BottomNavigation, Calendar, Picture, Plus } from '@/shared/ui';
+import { HomeHeader } from '@/widgets/HomeHeader';
 
 const MEMO_MAX_LENGTH = 200;
 const MAX_PHOTOS = 4;
-const fetchGuardianProfile = () => myPageService.getProfile();
 
 export default function AlbumRegisterScreen() {
   const router = useRouter();
@@ -19,19 +19,18 @@ export default function AlbumRegisterScreen() {
   const theme = useTheme();
   const { colors } = theme;
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { data: elders, isLoading: isLoadingElders } = useAlbumElders();
 
-  const { data: profile, isLoading: isProfileLoading } = useAsyncData(fetchGuardianProfile);
-  const [elderId, setElderId] = useState('');
-  const [title, setTitle] = useState('어린 시절 고향');
+  const [elderId, setElderId] = useState<string | null>(null);
+  const [title, setTitle] = useState('');
   // 같은 사진을 두 번 고를 수도 있으므로 uri가 아닌 별도 id로 각 항목을 구분한다
-  const [photos, setPhotos] = useState<
-    { id: string; uri: string; fileName: string; contentType: string; sizeBytes?: number }[]
-  >([]);
-  const [memo, setMemo] = useState('가족끼리 나들이에 갔던 날이에요');
-  const [question, setQuestion] = useState('이 사진, 기억나세요?');
-  const [year, setYear] = useState('1975');
+  const [photos, setPhotos] = useState<{ id: string; uri: string }[]>([]);
+  const [memo, setMemo] = useState('');
+  const [question, setQuestion] = useState('');
+  const [year, setYear] = useState(String(new Date().getFullYear()));
   const [isSaving, setIsSaving] = useState(false);
-  const selectedElderId = elderId || profile?.elders[0]?.elderId || '';
+
+  const selectedElderId = elderId ?? elders?.[0]?.id ?? null;
 
   const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -39,19 +38,9 @@ export default function AlbumRegisterScreen() {
       quality: 0.8,
     });
     if (!result.canceled) {
-      const asset = result.assets[0];
-      const uri = asset.uri;
+      const uri = result.assets[0].uri;
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      setPhotos((current) => [
-        ...current,
-        {
-          id,
-          uri,
-          fileName: asset.fileName ?? `memory-${id}.jpg`,
-          contentType: asset.mimeType ?? 'image/jpeg',
-          sizeBytes: asset.fileSize,
-        },
-      ].slice(0, MAX_PHOTOS));
+      setPhotos((current) => [...current, { id, uri }].slice(0, MAX_PHOTOS));
     }
   };
 
@@ -60,15 +49,16 @@ export default function AlbumRegisterScreen() {
   };
 
   const handleSave = async () => {
+    if (!selectedElderId) {
+      Alert.alert('추억을 보낼 어르신이 없어요');
+      return;
+    }
     if (!title.trim()) {
       Alert.alert('추억 이름을 입력해주세요');
       return;
     }
-    const selectedElder = profile?.elders.find(
-      (candidate) => candidate.elderId === selectedElderId,
-    );
-    if (!selectedElder) {
-      Alert.alert('추억을 전달할 어르신을 선택해주세요');
+    if (!question.trim()) {
+      Alert.alert('어르신께 여쭤볼 한마디를 입력해주세요');
       return;
     }
     if (isSaving) {
@@ -77,19 +67,25 @@ export default function AlbumRegisterScreen() {
 
     setIsSaving(true);
     try {
+      const mediaRefIds = await Promise.all(
+        photos.map(async (photo) => {
+          const { mediaRefId } = await uploadMediaFile({
+            uri: photo.uri,
+            mediaType: 'MEMORY_IMAGE',
+            filename: `${photo.id}.jpg`,
+            contentType: 'image/jpeg',
+          });
+          return mediaRefId;
+        }),
+      );
+
       await createAlbumItem({
+        elderId: selectedElderId,
         title: title.trim(),
-        elderId: selectedElder.elderId,
-        elderName: selectedElder.name,
         year,
         memo: memo.trim() || undefined,
-        photos: photos.map(({ uri, fileName, contentType, sizeBytes }) => ({
-          uri,
-          fileName,
-          contentType,
-          sizeBytes,
-        })),
-        question: question.trim() || undefined,
+        mediaRefIds,
+        question: question.trim(),
       });
       router.back();
     } catch {
@@ -101,12 +97,13 @@ export default function AlbumRegisterScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={[styles.fixedTop, { paddingTop: Math.max(insets.top, 20) }]}>
+        <HomeHeader style={styles.header} />
+      </View>
+
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: Math.max(insets.top, 20) + 28 },
-        ]}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         {/* 뒤로가기 + 타이틀 */}
@@ -127,25 +124,28 @@ export default function AlbumRegisterScreen() {
             {/* 보낼 어르신 */}
             <View style={styles.field}>
               <Text style={styles.fieldLabel}>보낼 어르신</Text>
-              <View style={styles.elderRow}>
-                {profile?.elders.map((candidate) => {
-                  const isSelected = candidate.elderId === selectedElderId;
-                  return (
-                    <Pressable
-                      key={candidate.elderId}
-                      style={[styles.elderChip, isSelected && styles.elderChipSelected]}
-                      onPress={() => setElderId(candidate.elderId)}
-                    >
-                      <Text style={[styles.elderChipText, isSelected && styles.elderChipTextSelected]}>
-                        {candidate.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-                {!isProfileLoading && profile?.elders.length === 0 && (
-                  <Text style={styles.noElderText}>등록된 어르신이 없어요</Text>
-                )}
-              </View>
+              {isLoadingElders ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : !elders || elders.length === 0 ? (
+                <Text style={styles.noElderText}>등록된 어르신이 없어요</Text>
+              ) : (
+                <View style={styles.elderRow}>
+                  {elders.map((elder) => {
+                    const isSelected = elder.id === selectedElderId;
+                    return (
+                      <Pressable
+                        key={elder.id}
+                        style={[styles.elderChip, isSelected && styles.elderChipSelected]}
+                        onPress={() => setElderId(elder.id)}
+                      >
+                        <Text style={[styles.elderChipText, isSelected && styles.elderChipTextSelected]}>
+                          {elder.name}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
             </View>
 
             {/* 추억 이름 */}
@@ -258,7 +258,7 @@ export default function AlbumRegisterScreen() {
                 pressed && styles.pressed,
                 isSaving && styles.saveButtonDisabled,
               ]}
-              onPress={handleSave}
+              onPress={() => void handleSave()}
               disabled={isSaving}
             >
               <Text style={styles.saveButtonText}>{isSaving ? '저장 중...' : '저장'}</Text>
@@ -277,6 +277,13 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
     container: {
       flex: 1,
       backgroundColor: colors.background.normal,
+    },
+    fixedTop: {
+      paddingHorizontal: 26,
+      backgroundColor: colors.background.normal,
+    },
+    header: {
+      marginBottom: 26,
     },
     scroll: {
       flex: 1,
@@ -321,13 +328,19 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
       letterSpacing: -0.36,
       lineHeight: 23,
     },
+    noElderText: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: colors.label.assistive,
+    },
     elderRow: {
       flexDirection: 'row',
       gap: 8,
     },
     elderChip: {
-      width: 80,
+      minWidth: 80,
       height: 31,
+      paddingHorizontal: 14,
       borderRadius: 100,
       borderWidth: 1,
       borderColor: colors.label.disabled,
@@ -346,13 +359,6 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
     },
     elderChipTextSelected: {
       color: colors.primary,
-    },
-    noElderText: {
-      fontSize: 16,
-      fontWeight: '500',
-      color: colors.label.assistive,
-      letterSpacing: -0.32,
-      lineHeight: 21,
     },
     textInput: {
       height: 46,

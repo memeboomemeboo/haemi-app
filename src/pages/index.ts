@@ -13,6 +13,7 @@ export { default as ProfileEdit } from './ProfileEdit';
 export { default as MyFamily } from './MyFamily';
 export { default as ElderRegister } from './ElderRegister';
 export { default as DailyMessage } from './DailyMessage';
+export { default as GuardianDailyMessage } from './GuardianDailyMessage';
 export { default as ElderAlbum } from './ElderAlbum';
 export { default as ElderAlbumDetail } from './ElderAlbumDetail';
 export { default as FamilyCreate } from './FamilyCreate';
