@@ -1,22 +1,20 @@
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, Image, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useMemo } from 'react';
 
-import { BottomNavigation } from '@/shared/ui';
-import { HomeHeader } from '@/widgets/HomeHeader';
-import { ElderTodayTasks } from '@/widgets/ElderTodayTasks';
-import { colors } from '@/shared/constants';
+import { useTheme } from '@/shared/hooks';
 
-import { useElderHome } from './model/useElderHome';
-
-const light = colors.light;
+const PROFILE_ICON = 'https://www.figma.com/api/mcp/asset/c1ca85c6-9a42-43d2-be9d-1350bd51ad78.svg';
 
 export default function ElderHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { homeData, isLoading, isError, taskStatus, handleTaskPress, refetch } = useElderHome();
+  const theme = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
-  const userName = '어르신';
+  const userName = '순자님';
+  const currentDate = '9월 8일 화요일';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -25,71 +23,221 @@ export default function ElderHomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* 헤더: 이름 + 날짜 + 프로필 */}
         <View style={styles.header}>
-          <HomeHeader />
+          <View style={styles.headerLeft}>
+            <Text style={styles.headerName}>{userName}</Text>
+            <Text style={styles.headerDate}>{currentDate}</Text>
+          </View>
+          <Image
+            source={{ uri: PROFILE_ICON }}
+            style={styles.profileIcon}
+            resizeMode="contain"
+          />
         </View>
 
-        <View style={styles.welcome}>
-          <Text style={styles.welcomeText}>{`${userName} 해미에\n오신것을 환영해요!`}</Text>
+        {/* 오늘의 인지 활동 카드 */}
+        <View style={styles.activityCard}>
+          <View style={styles.activityContent}>
+            <Text style={styles.activityTitle}>오늘의 인지 활동</Text>
+            <Text style={styles.activitySubtitle}>5분이면 충분해요. 오늘도 함께 해요!</Text>
+          </View>
+          <Pressable
+            onPress={() => router.push('/quiz')}
+            style={({ pressed }) => [
+              styles.activityButton,
+              pressed && styles.activityButtonPressed,
+            ]}
+          >
+            <Text style={styles.activityButtonText}>활동 시작하기</Text>
+          </Pressable>
         </View>
 
-        {isLoading ? (
-          <View style={styles.loader}>
-            <ActivityIndicator size="large" color={light.primary} />
-          </View>
-        ) : isError ? (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>데이터를 불러오지 못했어요.</Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={refetch}
-              style={({ pressed }) => [styles.retryButton, pressed && styles.retryButtonPressed]}
-            >
-              <Text style={styles.retryText}>다시 시도</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <View style={styles.tasks}>
-            <ElderTodayTasks status={taskStatus} onTaskPress={handleTaskPress} />
-            {homeData && homeData.training.streak > 0 && (
-              <Text style={styles.streak}>
-                {`${homeData.training.streak}일 연속 인지 훈련 중!`}
-              </Text>
-            )}
-          </View>
-        )}
-
+        {/* 새 추억이 왔어요 카드 */}
         <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push('/daily-message')}
-          style={({ pressed }) => [styles.dailyMessageButton, pressed && styles.actionButtonPressed]}
+          onPress={() => router.push('/album')}
+          style={({ pressed }) => [
+            styles.notificationCard,
+            pressed && styles.notificationCardPressed,
+          ]}
         >
-          <Text style={styles.dailyMessageButtonText}>하루 한마디 전하기</Text>
+          <View style={styles.notificationIcon} />
+          <View style={styles.notificationContent}>
+            <View style={styles.notificationTitleRow}>
+              <Text style={styles.notificationTitle}>새 추억이 왔어요</Text>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>1</Text>
+              </View>
+            </View>
+            <Text style={styles.notificationSubtitle}>딸 정은님이 추억을 보냈어요</Text>
+          </View>
         </Pressable>
 
-        <View style={styles.actions}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/album')}
-            style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}
-          >
-            <Text style={styles.actionButtonText}>추억 앨범</Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/album')}
-            style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}
-          >
-            <Text style={styles.actionButtonText}>설정</Text>
-          </Pressable>
-        </View>
+        {/* 하루 한마디 도착 카드 */}
+        <Pressable
+          onPress={() => router.push('/daily-message')}
+          style={({ pressed }) => [
+            styles.notificationCard,
+            pressed && styles.notificationCardPressed,
+          ]}
+        >
+          <View style={styles.notificationIcon} />
+          <View style={styles.notificationContent}>
+            <Text style={styles.notificationTitle}>하루 한마디 도착</Text>
+            <Text style={styles.notificationSubtitle}>
+              딸이 보낸 음성 메세지 · 00:24
+            </Text>
+          </View>
+        </Pressable>
       </ScrollView>
-
-      <BottomNavigation activeTab="Home" />
     </View>
   );
 }
+
+const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background.normal,
+    },
+    scroll: {
+      flex: 1,
+    },
+    content: {
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 100,
+      gap: 22,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 12,
+    },
+    headerLeft: {
+      gap: 9,
+    },
+    headerName: {
+      fontSize: 28,
+      fontWeight: '600',
+      color: colors.label.neutral,
+      letterSpacing: -0.56,
+      lineHeight: 36,
+    },
+    headerDate: {
+      fontSize: 20,
+      fontWeight: '500',
+      color: colors.label.assistive,
+      letterSpacing: -0.4,
+      lineHeight: 26,
+      textAlign: 'center',
+    },
+    profileIcon: {
+      width: 53,
+      height: 53,
+    },
+    activityCard: {
+      backgroundColor: '#fff3f0',
+      borderRadius: 15,
+      padding: 19,
+      gap: 22,
+    },
+    activityContent: {
+      gap: 5,
+    },
+    activityTitle: {
+      fontSize: 28,
+      fontWeight: '600',
+      color: colors.label.neutral,
+      letterSpacing: -0.56,
+      lineHeight: 36,
+    },
+    activitySubtitle: {
+      fontSize: 18,
+      fontWeight: '500',
+      color: colors.label.alternative,
+      letterSpacing: -0.36,
+      lineHeight: 23,
+    },
+    activityButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 10,
+      height: 37,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    activityButtonPressed: {
+      opacity: 0.8,
+    },
+    activityButtonText: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.background.normal,
+      letterSpacing: -0.36,
+      lineHeight: 23,
+    },
+    notificationCard: {
+      backgroundColor: colors.background.normal,
+      borderRadius: 15,
+      borderWidth: 1.5,
+      borderColor: colors.fill.neutral,
+      padding: 23,
+      flexDirection: 'row',
+      gap: 22,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.07,
+      shadowRadius: 6,
+      elevation: 2,
+    },
+    notificationCardPressed: {
+      opacity: 0.8,
+    },
+    notificationIcon: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: colors.background.neutral,
+    },
+    notificationContent: {
+      flex: 1,
+      gap: 4,
+    },
+    notificationTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 19,
+    },
+    notificationTitle: {
+      fontSize: 24,
+      fontWeight: '600',
+      color: colors.label.neutral,
+      letterSpacing: -0.48,
+      lineHeight: 31,
+    },
+    badge: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    badgeText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.background.normal,
+      letterSpacing: -0.32,
+    },
+    notificationSubtitle: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: colors.label.alternative,
+      letterSpacing: -0.32,
+      lineHeight: 21,
+    },
+  });
 
 const styles = StyleSheet.create({
   container: {

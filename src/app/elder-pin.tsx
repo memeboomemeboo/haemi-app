@@ -1,14 +1,14 @@
 import { useRouter } from 'expo-router';
 import ElderPinScreen from '@/pages/ElderPin';
 
-export default function RootScreen() {
+export default function ElderPinRoute() {
   const router = useRouter();
 
-  const handlePinComplete = (pin: string) => {
+  const handleComplete = (pin: string) => {
+    // PIN 검증 후 홈으로 이동
     console.log('PIN entered:', pin);
     router.replace('/elder-home');
   };
 
-  // 어르신 화면: PIN 입력 → 홈
-  return <ElderPinScreen onComplete={handlePinComplete} />;
+  return <ElderPinScreen onComplete={handleComplete} />;
 }
