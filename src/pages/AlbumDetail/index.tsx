@@ -22,7 +22,7 @@ export default function AlbumDetailScreen({ id }: AlbumDetailScreenProps) {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) + 28 }]}>
         <View style={styles.headerRow}>
           <Pressable
             accessibilityRole="button"
@@ -96,7 +96,7 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
       backgroundColor: colors.background.normal,
     },
     header: {
-      paddingHorizontal: 16,
+      paddingHorizontal: 26,
       backgroundColor: colors.background.normal,
     },
     headerRow: {
@@ -104,7 +104,7 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       height: 31,
-      marginBottom: 20,
+      marginBottom: 47,
     },
     headerLeft: {
       flex: 1,
@@ -137,7 +137,7 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
       flex: 1,
     },
     content: {
-      paddingHorizontal: 14,
+      paddingHorizontal: 26,
       paddingBottom: 40,
       gap: 46,
     },

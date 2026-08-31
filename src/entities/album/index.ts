@@ -11,5 +11,6 @@ export {
   ALL_FILTER_VALUE,
   type AlbumFilter,
   type AlbumFilterOption,
+  type AlbumElderOption,
 } from './model/useAlbumFilter';
 export { fetchAlbumItems, fetchAlbumDetail, createAlbumItem } from './api/albumApi';
