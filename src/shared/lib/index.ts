@@ -2,4 +2,4 @@
 export { formatKoreanDate, formatRelativeKoreanDate } from './date';
 export { shuffleArray } from './array';
 export { getOrCreateDeviceId } from './deviceId';
-export { getRoleFromToken } from './jwt';
+export { getRoleFromToken, isAccessTokenExpired, parseAccessToken } from './jwt';

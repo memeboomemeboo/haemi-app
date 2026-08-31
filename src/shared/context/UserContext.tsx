@@ -50,14 +50,28 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (savedRole) {
             setRoleState(savedRole);
           } else {
-            // 2) 저장된 role이 없는 기존 설치는 토큰 자체에서 role을 읽어 마이그레이션한다
-            //    (보호자/어르신 모두 같은 경로로 복구되고, 서버 왕복 실패가 로그아웃을 유발하지 않는다)
+            // 2) 저장된 role이 없는 기존 설치는 토큰의 role 클레임으로 먼저 복구한다.
+            //    (어르신 토큰으로 보호자 전용 프로필 API를 호출해 로그아웃되는 것을 방지한다)
             const tokenRole = getRoleFromToken(savedToken);
             if (tokenRole) {
               setRoleState(tokenRole);
               await authService.setStoredRole(tokenRole);
-            } else if (__DEV__) {
-              console.warn('Failed to parse role from saved token');
+            } else {
+              // 3) role 클레임이 없는 레거시 보호자 토큰만 프로필 조회로 마이그레이션한다.
+              try {
+                const meResponse = await authService.getMe();
+                if (meResponse.success && meResponse.data) {
+                  const hydratedRole = meResponse.data.role || null;
+                  setRoleState(hydratedRole);
+                  await authService.setStoredRole(hydratedRole);
+                }
+              } catch (error) {
+                // 토큰이 만료되었거나 유효하지 않음 - 로그아웃 처리
+                setTokenState(null);
+                if (__DEV__) {
+                  console.warn('Failed to hydrate role during startup:', error);
+                }
+              }
             }
           }
         }
