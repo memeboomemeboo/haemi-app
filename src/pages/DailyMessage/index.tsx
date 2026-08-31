@@ -96,8 +96,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   header: {
-    marginTop: 24,
-    marginBottom: 44,
+    marginTop: 12,
   },
   errorText: {
     fontSize: 20,

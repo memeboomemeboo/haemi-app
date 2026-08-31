@@ -125,7 +125,8 @@ export function EmotionSelectStep({ memoryId, onSent }: EmotionSelectStepProps) 
 const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
   StyleSheet.create({
     container: {
-      gap: 40,
+      paddingTop: 63,
+      gap: 59,
     },
     intro: {
       alignItems: 'center',
@@ -148,12 +149,14 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       textAlign: 'center',
     },
     grid: {
+      width: 335,
+      alignSelf: 'center',
       flexDirection: 'row',
       flexWrap: 'wrap',
       gap: 16,
     },
     card: {
-      width: '47%',
+      width: 159.5,
       height: 138,
       borderRadius: 10,
       borderWidth: 1,
@@ -185,6 +188,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       backgroundColor: colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
+      marginTop: -43,
     },
     submitButtonText: {
       fontSize: 28,

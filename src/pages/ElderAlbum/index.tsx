@@ -40,7 +40,7 @@ export default function ElderAlbumScreen() {
       <BackHeader
         title="추억앨범"
         onBack={() => router.back()}
-        style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}
+        style={[styles.header, { height: insets.top + 54, paddingTop: insets.top + 12 }]}
       />
 
       {isLoading ? (
@@ -76,24 +76,26 @@ export default function ElderAlbumScreen() {
               onPress={() => router.push({ pathname: '/album/[id]', params: { id: memory.id } })}
               style={({ pressed }) => [styles.card, pressed && styles.pressed]}
             >
-              <Image
-                source={resolvePhotoSource(memory.imageKeys[0])}
-                style={styles.photo}
-                resizeMode="cover"
-              />
-              <View style={styles.cardInfo}>
-                <Text style={styles.cardYear}>{memory.memoryYear}년</Text>
-                <Text style={styles.cardTitle} numberOfLines={1}>
-                  {memory.title}
-                </Text>
-                {memory.creatorRoleLabel && (
-                  <View style={styles.tagRow}>
-                    <View style={[styles.tag, { backgroundColor: palette.orange[90] }]}>
-                      <Text style={styles.tagText}>{memory.creatorRoleLabel}</Text>
-                    </View>
-                  </View>
-                )}
+              <View style={styles.cardTop}>
+                <Image
+                  source={resolvePhotoSource(memory.imageKeys[0])}
+                  style={styles.photo}
+                  resizeMode="cover"
+                />
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardYear}>{memory.memoryYear}년</Text>
+                  <Text style={styles.cardTitle} numberOfLines={1}>
+                    {memory.title}
+                  </Text>
+                </View>
               </View>
+              {memory.creatorRoleLabel && (
+                <View style={styles.tagRow}>
+                  <View style={[styles.tag, { backgroundColor: palette.orange[90] }]}>
+                    <Text style={styles.tagText}>{memory.creatorRoleLabel}</Text>
+                  </View>
+                </View>
+              )}
             </Pressable>
           ))}
         </ScrollView>
@@ -110,7 +112,7 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
     },
     header: {
       paddingHorizontal: 20,
-      marginBottom: 24,
+      marginBottom: 44,
     },
     pressed: {
       opacity: 0.85,
@@ -146,6 +148,7 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
       gap: 20,
     },
     card: {
+      height: 164,
       borderRadius: 15,
       backgroundColor: colors.background.normal,
       shadowColor: '#000',
@@ -153,7 +156,11 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
       shadowOpacity: 0.2,
       shadowRadius: 4,
       elevation: 3,
-      padding: 15,
+      paddingHorizontal: 17,
+      paddingVertical: 15,
+      gap: 15,
+    },
+    cardTop: {
       flexDirection: 'row',
       gap: 15,
     },
@@ -182,7 +189,6 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
     tagRow: {
       flexDirection: 'row',
       gap: 8,
-      marginTop: 6,
     },
     tag: {
       height: 31,
