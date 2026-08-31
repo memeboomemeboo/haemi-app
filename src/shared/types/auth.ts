@@ -18,6 +18,7 @@ export interface GuardianRegisterRequest {
   password: string;
   birthDate: string;
   pin: string;
+  inviteCode?: string;
   phone?: string;
   email?: string;
   emailVerificationId?: string;
@@ -45,6 +46,14 @@ export interface PinLoginRequest {
   loginId: string;
   pin: string;
   deviceId: string;
+}
+
+export interface ElderPinLoginRequest {
+  pin: string;
+}
+
+export interface ElderPinLoginResponse {
+  accessToken: string;
 }
 
 export interface PasswordLoginRequest {

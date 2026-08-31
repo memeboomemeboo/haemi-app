@@ -5,7 +5,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { getAuthToken, authService, setOnUnauthorizedCallback } from '@/shared/api';
 import { initializeTestToken } from '@/shared/lib/auth';
-import { getRoleFromToken } from '@/shared/lib';
 import type { UserRole, Relation, Group } from '@/shared/types';
 
 interface UserContextType {
@@ -43,29 +42,25 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // 2. 저장된 토큰 복구
         const savedToken = await getAuthToken();
         if (savedToken) {
-          const tokenRole = getRoleFromToken(savedToken);
-
-          if (!tokenRole) {
-            if (__DEV__) {
-              console.warn('Failed to read role from saved token');
-            }
+          setTokenState(savedToken);
+          const savedRole = await authService.getStoredRole();
+          if (savedRole) {
+            setRoleState(savedRole);
             return;
           }
-
-          setTokenState(savedToken);
-          setRoleState(tokenRole);
-
-          // 보호자 프로필만 추가로 불러온다. 어르신 토큰은 이 엔드포인트 권한이 없다.
-          if (tokenRole === 'FAMILY') {
-            try {
-              const meResponse = await authService.getMe();
-              if (meResponse.success && meResponse.data?.role) {
-                setRoleState(meResponse.data.role);
-              }
-            } catch (error) {
-              if (__DEV__) {
-                console.warn('Failed to load guardian profile during hydration:', error);
-              }
+          // 기존 설치 데이터는 보호자 프로필 조회로 한 번 마이그레이션한다.
+          try {
+            const meResponse = await authService.getMe();
+            if (meResponse.success && meResponse.data) {
+              const hydratedRole = meResponse.data.role || null;
+              setRoleState(hydratedRole);
+              await authService.setStoredRole(hydratedRole);
+            }
+          } catch (error) {
+            // 토큰이 만료되었거나 유효하지 않음 - 로그아웃 처리
+            setTokenState(null);
+            if (__DEV__) {
+              console.warn('Failed to hydrate role during startup:', error);
             }
           }
         }
@@ -102,6 +97,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const logout = useCallback(() => {
+    void authService.setStoredRole(null);
     setTokenState(null);
     setRoleState(null);
     setRelationState(null);
