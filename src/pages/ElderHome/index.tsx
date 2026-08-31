@@ -16,14 +16,14 @@ export default function ElderHomeScreen() {
   const theme = useTheme();
   const { colors } = theme;
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const { homeData, isLoading, isError, refetch } = useElderHome();
+  const { homeData, unreadInboxCount, isLoading, isError, refetch } = useElderHome();
 
   const unrespondedMemoryCount =
     homeData?.recentMemories.filter((memory) => !memory.responded).length ?? 0;
   const latestMemoryTitle = homeData?.recentMemories[0]?.title;
   const hasMemories = (homeData?.recentMemories.length ?? 0) > 0;
   const hasNewMemory = unrespondedMemoryCount > 0;
-  const hasTodayMessage = (homeData?.greeting.totalToday ?? 0) > 0;
+  const hasUnreadMessage = unreadInboxCount > 0;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -109,7 +109,7 @@ export default function ElderHomeScreen() {
               onPress={() => router.push('/album')}
               style={({ pressed }) => [
                 styles.notificationCard,
-                !hasTodayMessage && styles.notificationCardEmpty,
+                !hasUnreadMessage && styles.notificationCardEmpty,
                 pressed && styles.pressed,
               ]}
             >
@@ -117,12 +117,19 @@ export default function ElderHomeScreen() {
                 <PlayTriangle size={20} color={colors.primary} />
               </View>
               <View style={styles.notificationContent}>
-                <Text style={styles.notificationTitle}>
-                  {hasTodayMessage ? '하루 한마디 도착' : '입력된 한마디가 없어요'}
-                </Text>
+                <View style={styles.notificationTitleRow}>
+                  <Text style={styles.notificationTitle}>
+                    {hasUnreadMessage ? '하루 한마디 도착' : '입력된 한마디가 없어요'}
+                  </Text>
+                  {hasUnreadMessage && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{unreadInboxCount}</Text>
+                    </View>
+                  )}
+                </View>
                 <Text style={styles.notificationSubtitle}>
-                  {hasTodayMessage
-                    ? `가족이 보낸 메시지 ${homeData?.greeting.unread ?? 0}개`
+                  {hasUnreadMessage
+                    ? `가족이 보낸 메시지 ${unreadInboxCount}개`
                     : '아직 음성 메시지가 오지 않았어요'}
                 </Text>
               </View>
