@@ -6,6 +6,7 @@ import type {
   FamilyMemoryPost,
   GetFamilyMemoryFeedParams,
 } from '@/shared/types/family-memories';
+import { getAuthToken } from './client';
 
 // 기본 API URL (환경변수)
 const HAEMI_API_BASE_URL = `${process.env.EXPO_PUBLIC_API_URL}/api/v1`;
@@ -24,10 +25,6 @@ class HaemiApiError extends Error {
   }
 }
 
-function getAccessToken() {
-  return process.env.EXPO_PUBLIC_HAEMI_ACCESS_TOKEN;
-}
-
 async function readResponse<T>(response: Response): Promise<T> {
   const text = await response.text();
   const body = text ? (JSON.parse(text) as FamilyMemoryApiResponse<T>) : undefined;
@@ -39,8 +36,8 @@ async function readResponse<T>(response: Response): Promise<T> {
   return (body?.data ?? (body as T)) as T;
 }
 
-function getAuthHeaders(): Record<string, string> {
-  const token = getAccessToken();
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const token = await getAuthToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -59,7 +56,7 @@ export async function getFamilyMemoryFeed({
   });
 
   const response = await fetch(`${HAEMI_API_BASE_URL}/albums/${albumId}/feed?${searchParams}`, {
-    headers: getAuthHeaders(),
+    headers: await getAuthHeaders(),
   });
 
   return readResponse<FamilyMemoryFeed>(response);
@@ -79,7 +76,7 @@ export async function createFamilyMemoryPost({ albumId, data, photos = [] }: Cre
 
   const response = await fetch(`${HAEMI_API_BASE_URL}/albums/${albumId}/posts`, {
     method: 'POST',
-    headers: getAuthHeaders(),
+    headers: await getAuthHeaders(),
     body: formData,
   });
 
@@ -94,7 +91,7 @@ export async function updateFamilyMemoryPost(
   const response = await fetch(`${HAEMI_API_BASE_URL}/albums/${albumId}/posts/${postId}`, {
     method: 'PATCH',
     headers: {
-      ...getAuthHeaders(),
+      ...(await getAuthHeaders()),
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
@@ -106,7 +103,7 @@ export async function updateFamilyMemoryPost(
 export async function deleteFamilyMemoryPost(albumId: string, postId: string) {
   const response = await fetch(`${HAEMI_API_BASE_URL}/albums/${albumId}/posts/${postId}`, {
     method: 'DELETE',
-    headers: getAuthHeaders(),
+    headers: await getAuthHeaders(),
   });
 
   return readResponse<void>(response);
@@ -118,7 +115,7 @@ export async function toggleFamilyMemoryLike(albumId: string, postId: string, me
     `${HAEMI_API_BASE_URL}/albums/${albumId}/posts/${postId}/like?${searchParams}`,
     {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: await getAuthHeaders(),
     }
   );
 

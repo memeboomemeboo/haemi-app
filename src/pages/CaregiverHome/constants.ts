@@ -39,6 +39,7 @@ export type CaregiverRecord = {
 export const CAREGIVER_HOME_MAX_WIDTH = 402;
 
 export const CAREGIVER_HOME_ROUTES = {
+  dailyMessage: '/daily-message-guardian',
   familyMemories: '/family-memories',
   memoryRegister: '/memory-register',
 } as const satisfies Record<string, Href>;
@@ -115,7 +116,7 @@ export const CAREGIVER_TASKS: CaregiverTask[] = [
     accessibilityLabel: '오늘의 한마디',
     backgroundColor: '#f5f5f5',
     iconXml: HEART_XML,
-    href: CAREGIVER_HOME_ROUTES.familyMemories,
+    href: CAREGIVER_HOME_ROUTES.dailyMessage,
     completionKey: 'greetingCompleted',
   },
   {

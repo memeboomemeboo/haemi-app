@@ -20,7 +20,7 @@ export const Fab: React.FC<FabProps> = ({ onPress, accessibilityLabel, style }) 
     style={[styles.fab, style]}
     onPress={onPress}
   >
-    <Plus size={51} color="#f5f5f5" />
+    <Plus size={32} color="#f5f5f5" />
   </Pressable>
 );
 

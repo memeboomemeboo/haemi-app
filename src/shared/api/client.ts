@@ -245,10 +245,10 @@ export async function fetchApi<T>(
   const { skipAuth = false, timeout = 30000, headers: customHeaders, ...fetchOptions } = options;
 
   const url = `${API_BASE_URL}${endpoint}`;
-  const headers = await getHeaders(skipAuth);
-  const mergedHeaders = { ...headers, ...(customHeaders as HeadersInit) };
 
   const makeRequest = async (): Promise<Response> => {
+    const headers = await getHeaders(skipAuth);
+    const mergedHeaders = { ...headers, ...(customHeaders as HeadersInit) };
     return withTimeout(
       fetch(url, {
         ...fetchOptions,

@@ -33,10 +33,32 @@ export {
 // 서비스
 export { authService } from './auth';
 export { groupService } from './group';
-export { elderService } from './elder';
-export type { ElderSignupRequest, ElderSignupResponse, ElderSessionRefreshRequest, ElderSessionRefreshResponse } from './elder';
 export { getElderHome } from './elderHome';
 export type { ElderHomeResponse, ElderHomeGreeting, ElderHomeMemory, ElderHomeTraining } from './elderHome';
+export { elderMemoryService } from './elderMemory';
+export type { ElderMemorySummary, ElderMemoryDetail } from './elderMemory';
+export { elderInboxService } from './elderInbox';
+export type { ElderInboxItem } from './elderInbox';
+export { guardianMemoryService } from './guardianMemory';
+export type {
+  GuardianMemorySummary,
+  GuardianMemoryDetail,
+  CreateGuardianMemoryRequest,
+  UpdateGuardianMemoryRequest,
+} from './guardianMemory';
+export { guardianDailyCareService } from './guardianDailyCare';
+export type { DailyCareType, DailyCareSent, SendVoiceDailyCareRequest } from './guardianDailyCare';
+export { elderMemoryResponseService } from './elderMemoryResponse';
+export type {
+  MemoryResponse,
+  MemoryResponseType,
+  MemoryResponseEmotion,
+  TranscriptionStatus,
+} from './elderMemoryResponse';
+export { requestMediaUpload, uploadMediaBytes, confirmMediaUpload, uploadMediaFile } from './media';
+export type { MediaType, RequestMediaUploadInput, RequestMediaUploadResponse } from './media';
+export { getCaregiverActivities, getCaregiverHome } from './caregiver-home';
+export type { CaregiverHomeInitialData } from './caregiver-home';
 export { myPageService } from './my-page';
 export type {
   GuardianRole,
