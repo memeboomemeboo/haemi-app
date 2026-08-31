@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 
 import {
@@ -26,7 +26,6 @@ import {
 import { useReportDetail } from '@/pages/ReportDetail/model/useReportDetail';
 import { HomeHeader } from '@/widgets/HomeHeader';
 
-const palette = colors.palette;
 const light = colors.light;
 
 export default function ReportDetailScreen() {
@@ -39,6 +38,8 @@ export default function ReportDetailScreen() {
     goBack,
     header,
     highlights,
+    isLoading,
+    isError,
     profile,
     supportGuides,
   } = useReportDetail();
@@ -67,17 +68,27 @@ export default function ReportDetailScreen() {
         </View>
       </View>
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingBottom: contentPaddingBottom }]}
-        showsVerticalScrollIndicator={false}
-      >
-        <ProfileSummary profile={profile} />
-        <AttendanceSection attendance={attendance} copy={attendanceCopy} />
-        <CognitiveSection cognitiveStatus={cognitiveStatus} />
-        <HighlightSection highlights={highlights} />
-        <SupportGuideSection guides={supportGuides} />
-      </ScrollView>
+      {isError ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorText}>데이터를 불러오지 못했어요.</Text>
+        </View>
+      ) : isLoading || !profile || !attendanceCopy ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator color={light.primary} size="large" />
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[styles.content, { paddingBottom: contentPaddingBottom }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <ProfileSummary profile={profile} />
+          <AttendanceSection attendance={attendance} copy={attendanceCopy} />
+          <CognitiveSection cognitiveStatus={cognitiveStatus} />
+          {highlights.length > 0 && <HighlightSection highlights={highlights} />}
+          {supportGuides.length > 0 && <SupportGuideSection guides={supportGuides} />}
+        </ScrollView>
+      )}
 
       <BottomNavigation activeTab="Report" />
     </View>
@@ -98,7 +109,7 @@ function ProfileSummary({ profile }: { profile: ReportDetailProfile }) {
           </View>
         </View>
 
-        <View style={styles.watchPill}>
+        <View style={[styles.watchPill, { backgroundColor: profile.badgeColor }]}>
           <Text style={styles.watchPillText}>{profile.badge}</Text>
         </View>
       </View>
@@ -207,7 +218,7 @@ function HighlightSection({ highlights }: { highlights: Highlight[] }) {
 
       <View style={styles.highlightCard}>
         {highlights.map((item, index) => (
-          <View key={item.eyebrow}>
+          <View key={`${index}_${item.eyebrow}`}>
             <View style={styles.highlightItem}>
               <View style={styles.highlightTextGroup}>
                 <Text style={styles.highlightEyebrow}>{item.eyebrow}</Text>
@@ -269,6 +280,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: light.background.normal,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorText: {
+    color: light.label.assistive,
+    fontSize: 16,
+    fontWeight: '500',
   },
   header: {
     paddingHorizontal: 26,
@@ -391,7 +412,6 @@ const styles = StyleSheet.create({
     minWidth: 66,
     height: 19,
     borderRadius: 100,
-    backgroundColor: palette.red[60],
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
