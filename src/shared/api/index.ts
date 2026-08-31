@@ -37,6 +37,8 @@ export { elderService } from './elder';
 export type { ElderSignupRequest, ElderSignupResponse, ElderSessionRefreshRequest, ElderSessionRefreshResponse } from './elder';
 export { getElderHome } from './elderHome';
 export type { ElderHomeResponse, ElderHomeGreeting, ElderHomeMemory, ElderHomeTraining } from './elderHome';
+export { getCaregiverActivities, getCaregiverHome } from './caregiver-home';
+export type { CaregiverHomeInitialData } from './caregiver-home';
 export { myPageService } from './my-page';
 export type {
   GuardianRole,
