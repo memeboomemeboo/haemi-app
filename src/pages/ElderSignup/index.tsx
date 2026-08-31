@@ -6,7 +6,7 @@ import { elderService, getErrorMessage } from '@/shared/api';
 import { setAuthToken, setRefreshToken } from '@/shared/api/client';
 import { useUserContext } from '@/shared/context/UserContext';
 import { useToast } from '@/shared/hooks';
-import * as Device from 'expo-device';
+import { getOrCreateDeviceId } from '@/shared/lib';
 
 const colors = {
   primary: '#fd6941',
@@ -95,8 +95,8 @@ export default function ElderSignupScreen() {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      // 기기 ID 가져오기
-      const deviceId = Device.modelId || Device.osBuildFingerprint || 'unknown-device';
+      // 기기 ID 가져오기 (설치 단위 고유값 — 보호자 로그인과 동일한 소스를 쓴다)
+      const deviceId = await getOrCreateDeviceId();
 
       // 어르신 초대 수락
       const response = await elderService.acceptElderInvitation({
