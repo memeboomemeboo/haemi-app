@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/shared/hooks';
 import { formatKoreanDate } from '@/shared/lib';
-import { BottomNavigation, Mail, Profile, Waveform } from '@/shared/ui';
+import { Mail, Profile, Waveform } from '@/shared/ui';
 
 import { useElderHome } from './model/useElderHome';
 
@@ -111,8 +111,6 @@ export default function ElderHomeScreen() {
           </>
         )}
       </ScrollView>
-
-      <BottomNavigation activeTab="Home" />
     </View>
   );
 }
@@ -129,7 +127,7 @@ const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
     content: {
       paddingHorizontal: 20,
       paddingTop: 20,
-      paddingBottom: 100,
+      paddingBottom: 40,
       gap: 22,
     },
     header: {

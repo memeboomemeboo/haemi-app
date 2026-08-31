@@ -4,7 +4,7 @@ import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/shared/hooks';
-import { BackHeader, BottomNavigation } from '@/shared/ui';
+import { BackHeader } from '@/shared/ui';
 
 import { useElderAlbum } from './model/useElderAlbum';
 
@@ -81,8 +81,6 @@ export default function ElderAlbumScreen() {
           ))}
         </ScrollView>
       )}
-
-      <BottomNavigation activeTab="Album" />
     </View>
   );
 }
@@ -115,7 +113,7 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
     },
     content: {
       paddingHorizontal: 20,
-      paddingBottom: 100,
+      paddingBottom: 40,
       gap: 20,
     },
     card: {
