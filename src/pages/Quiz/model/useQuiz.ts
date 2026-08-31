@@ -24,6 +24,7 @@ function toQuizQuestion(question: TrainingQuestion): QuizQuestion {
     answerMode: question.answerMode,
     questionNumber: question.questionNumber,
     hint: question.hint,
+    imageKey: question.imageKey,
   };
 }
 
@@ -129,6 +130,39 @@ export const useQuiz = () => {
     [hasAnswered, isSubmitting, session],
   );
 
+  const answerWithVoice = useCallback(
+    async (voiceMediaRefId: string) => {
+      if (!session?.currentQuestion || hasAnswered || isSubmitting) {
+        return;
+      }
+
+      const currentQuestion = session.currentQuestion;
+      setSelectedAnswer('voice');
+      setFeedbackMessage(null);
+      setErrorMessage(null);
+
+      try {
+        setIsSubmitting(true);
+        const nextSession = await completeCurrentTrainingQuestion({
+          sessionId: session.id,
+          questionId: currentQuestion.id,
+          questionNumber: currentQuestion.questionNumber,
+          voiceMediaRefId,
+        });
+
+        setPendingSession(nextSession);
+        setFeedbackMessage(nextSession.feedback || '말씀해주신 답변을 기록했어요.');
+      } catch (caught) {
+        setSelectedAnswer(null);
+        setErrorMessage(getErrorMessage(caught));
+        throw caught;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [hasAnswered, isSubmitting, session],
+  );
+
   const goToNext = useCallback(() => {
     if (!hasAnswered || !pendingSession) {
       return;
@@ -153,6 +187,7 @@ export const useQuiz = () => {
     answerMode,
     answerOptions,
     answerQuestion,
+    answerWithVoice,
     errorMessage,
     feedbackMessage,
     goToNext,
@@ -164,6 +199,7 @@ export const useQuiz = () => {
     question,
     retry,
     selectedAnswer,
+    result: session?.result ?? pendingSession?.result ?? null,
     total,
   };
 };

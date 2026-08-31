@@ -4,6 +4,7 @@
  */
 
 import { setAuthToken as setClientToken, getAuthToken as getClientToken } from '@/shared/api';
+import { isAccessTokenExpired } from './jwt';
 
 export const getAuthToken = async () => getClientToken();
 
@@ -23,6 +24,16 @@ export const initializeTestToken = async () => {
   if (__DEV__) {
     const testToken = process.env.EXPO_PUBLIC_TEST_TOKEN;
     if (testToken) {
+      if (isAccessTokenExpired(testToken)) {
+        const storedToken = await getClientToken();
+        if (storedToken === testToken) {
+          await setClientToken(null);
+        }
+        if (__DEV__) {
+          console.warn('EXPO_PUBLIC_TEST_TOKEN이 만료되어 자동 로그인을 건너뜁니다.');
+        }
+        return;
+      }
       await setCurrentAuthToken(testToken);
     }
   }
