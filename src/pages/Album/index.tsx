@@ -106,6 +106,6 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       paddingBottom: 40,
     },
     fab: {
-      bottom: 93,
+      bottom: 124,
     },
   });
