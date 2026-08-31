@@ -46,10 +46,7 @@ function formatDuration(seconds: number): string {
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 }
 
-/**
- * Figma 1325:6129 / 1338:10387 / 1340:10612 — 하루 한마디 (보호자)
- * [임시: 보호자 홈 작업이 완료될 경우 하루 한마디 버튼과 연결 요망]
- */
+/** Figma 1325:6129 / 1338:10387 / 1340:10612 — 하루 한마디 (보호자) */
 export default function GuardianDailyMessageScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();

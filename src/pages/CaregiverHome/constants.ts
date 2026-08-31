@@ -33,6 +33,7 @@ export const CAREGIVER_HOME_MAX_WIDTH = 402;
 export const CAREGIVER_HOME_ROUTES = {
   familyMemories: '/family-memories',
   memoryRegister: '/memory-register',
+  dailyMessage: '/daily-message-guardian',
 } as const satisfies Record<string, Href>;
 
 export const CAREGIVER_HOME_COPY = {
@@ -122,7 +123,7 @@ export const CAREGIVER_TASKS: CaregiverTask[] = [
     backgroundColor: colors.palette.neutral[95],
     iconXml: HEART_XML,
     completionKey: 'greetingCompleted',
-    href: CAREGIVER_HOME_ROUTES.familyMemories,
+    href: CAREGIVER_HOME_ROUTES.dailyMessage,
   },
   {
     label: '추억 등록',
