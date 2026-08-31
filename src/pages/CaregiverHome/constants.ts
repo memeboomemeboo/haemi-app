@@ -1,6 +1,6 @@
 import type { Href } from 'expo-router';
 
-import { CALENDAR_XML, CIRCLE_CHECK_XML, CIRCLE_EMPTY_XML, HEART_XML } from '@/pages/CaregiverHome/assets';
+import { CALENDAR_XML, HEART_XML } from '@/pages/CaregiverHome/assets';
 
 export type ActivitySegment = {
   color: string;
@@ -23,14 +23,8 @@ export type CaregiverTask = {
   accessibilityLabel: string;
   backgroundColor: string;
   iconXml: string;
-  statusXml: string;
+  completionKey: 'greetingCompleted' | 'memoryCompleted';
   href: Href;
-};
-
-export type CaregiverRecord = {
-  title: string;
-  time: string;
-  detail: string;
 };
 
 export const CAREGIVER_HOME_MAX_WIDTH = 402;
@@ -41,8 +35,6 @@ export const CAREGIVER_HOME_ROUTES = {
 } as const satisfies Record<string, Href>;
 
 export const CAREGIVER_HOME_COPY = {
-  greetingTitle: '승아님, 안녕하세요',
-  greetingSubtitle: '어머니와의 소중한 추억을 함께 만들어가요.',
   conditionTitle: '오늘 컨디션 좋아요',
   conditionMeta: '마지막 접속 1시간 전',
   conditionLabel: '양호',
@@ -50,10 +42,6 @@ export const CAREGIVER_HOME_COPY = {
   recordTitle: '오늘의 기록',
   recordMore: '자세히 보기',
 } as const;
-
-export const CAREGIVER_PATIENTS = ['박영호 님', '이순자 님'] as const;
-
-export type CaregiverPatient = (typeof CAREGIVER_PATIENTS)[number];
 
 export const CAREGIVER_COLORS = {
   orange: '#fd6941',
@@ -141,31 +129,13 @@ export const WEEKLY_ACTIVITY_DAYS: WeeklyActivityDay[] = [
   },
 ];
 
-export const CAREGIVER_RECORDS: CaregiverRecord[] = [
-  {
-    title: '인지 활동 완료',
-    time: '오전 9:20',
-    detail: '기억력 게임 5분 · 정답률 80%',
-  },
-  {
-    title: '음성 메세지 도착',
-    time: '오전 11:05',
-    detail: '“밥 잘 먹었다"',
-  },
-  {
-    title: '추억 앨범 확인',
-    time: '오후 2:40',
-    detail: '올려주신 사진 3장을 보셨어요',
-  },
-];
-
 export const CAREGIVER_TASKS: CaregiverTask[] = [
   {
     label: '오늘의 한마디',
     accessibilityLabel: '오늘의 한마디',
     backgroundColor: '#f5f5f5',
     iconXml: HEART_XML,
-    statusXml: CIRCLE_EMPTY_XML,
+    completionKey: 'greetingCompleted',
     href: CAREGIVER_HOME_ROUTES.familyMemories,
   },
   {
@@ -173,7 +143,7 @@ export const CAREGIVER_TASKS: CaregiverTask[] = [
     accessibilityLabel: '추억 등록',
     backgroundColor: CAREGIVER_COLORS.orangeSoft,
     iconXml: CALENDAR_XML,
-    statusXml: CIRCLE_CHECK_XML,
+    completionKey: 'memoryCompleted',
     href: CAREGIVER_HOME_ROUTES.memoryRegister,
   },
 ];
