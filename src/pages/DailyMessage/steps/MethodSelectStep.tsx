@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/shared/hooks';
@@ -14,9 +13,9 @@ interface MethodOption {
 }
 
 const METHOD_OPTIONS: MethodOption[] = [
-  { key: 'voice', label: '말하기', icon: Mic, iconSize: 40 },
-  { key: 'emotion', label: '마음 전하기', icon: Heart, iconSize: 30 },
-  { key: 'photo', label: '사진 고르기', icon: Picture, iconSize: 34 },
+  { key: 'voice', label: '말하기', icon: Mic, iconSize: 58 },
+  { key: 'emotion', label: '마음 전하기', icon: Heart, iconSize: 43 },
+  { key: 'photo', label: '사진 고르기', icon: Picture, iconSize: 48 },
 ];
 
 interface MethodSelectStepProps {
@@ -27,7 +26,6 @@ interface MethodSelectStepProps {
 export function MethodSelectStep({ onNext }: MethodSelectStepProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
-  const [selectedMethod, setSelectedMethod] = useState<DailyMessageMethod | null>(null);
 
   return (
     <View style={styles.container}>
@@ -35,28 +33,20 @@ export function MethodSelectStep({ onNext }: MethodSelectStepProps) {
 
       <View style={styles.buttonGroup}>
         {METHOD_OPTIONS.map(({ key, label, icon: MethodIcon, iconSize }) => {
-          const isSelected = selectedMethod === key;
           return (
             <Pressable
               key={key}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: isSelected }}
+              accessibilityRole="button"
               accessibilityLabel={label}
-              onPress={() => setSelectedMethod(key)}
-              style={({ pressed }) => [
-                styles.methodButton,
-                isSelected && styles.methodButtonSelected,
-                pressed && styles.pressed,
-              ]}
+              onPress={() => onNext(key)}
+              style={({ pressed }) => [styles.methodButton, pressed && styles.pressed]}
             >
               <MethodIcon
                 size={iconSize}
-                color={isSelected ? colors.background.normal : colors.label.assistive}
+                color={colors.background.normal}
                 style={styles.methodIcon}
               />
-              <Text style={[styles.methodLabel, isSelected && styles.methodLabelSelected]}>
-                {label}
-              </Text>
+              <Text style={styles.methodLabel}>{label}</Text>
             </Pressable>
           );
         })}
@@ -64,15 +54,6 @@ export function MethodSelectStep({ onNext }: MethodSelectStepProps) {
 
       <Text style={styles.footnote}>※ 마음에 드는 방법을 골라주세요</Text>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="다음"
-        disabled={!selectedMethod}
-        onPress={() => selectedMethod && onNext(selectedMethod)}
-        style={[styles.nextButton, !selectedMethod && styles.nextButtonDisabled]}
-      >
-        <Text style={styles.nextButtonText}>다음</Text>
-      </Pressable>
     </View>
   );
 }
@@ -81,7 +62,8 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
   StyleSheet.create({
     container: {
       alignItems: 'center',
-      gap: 48,
+      paddingTop: 82,
+      gap: 64,
     },
     title: {
       fontSize: 32,
@@ -98,15 +80,9 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     methodButton: {
       height: 86,
       borderRadius: 15,
-      borderWidth: 2,
-      borderColor: colors.line.alternative,
-      backgroundColor: colors.background.alternative,
+      backgroundColor: colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
-    },
-    methodButtonSelected: {
-      borderColor: colors.primary,
-      backgroundColor: colors.primary,
     },
     methodIcon: {
       position: 'absolute',
@@ -117,9 +93,6 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       fontWeight: '600',
       lineHeight: 36.4,
       letterSpacing: -0.56,
-      color: colors.label.assistive,
-    },
-    methodLabelSelected: {
       color: colors.background.normal,
     },
     pressed: {
@@ -132,22 +105,6 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       letterSpacing: -0.48,
       color: colors.label.alternative,
       textAlign: 'center',
-    },
-    nextButton: {
-      width: '100%',
-      height: 69,
-      borderRadius: 15,
-      backgroundColor: colors.primary,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    nextButtonDisabled: {
-      opacity: 0.5,
-    },
-    nextButtonText: {
-      fontSize: 28,
-      fontWeight: '600',
-      letterSpacing: -0.56,
-      color: colors.background.normal,
+      marginTop: -21,
     },
   });

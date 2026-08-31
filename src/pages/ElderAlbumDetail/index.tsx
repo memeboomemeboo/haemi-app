@@ -48,7 +48,7 @@ export default function ElderAlbumDetailScreen({ id }: ElderAlbumDetailScreenPro
       <BackHeader
         title="추억 앨범"
         onBack={() => router.back()}
-        style={[styles.header, { paddingTop: Math.max(insets.top, 20) }]}
+        style={[styles.header, { height: insets.top + 54, paddingTop: insets.top + 12 }]}
       />
 
       {isLoading && (
@@ -153,7 +153,7 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
     },
     header: {
       paddingHorizontal: 20,
-      marginBottom: 24,
+      marginBottom: 30,
     },
     pressed: {
       opacity: 0.85,
@@ -190,7 +190,8 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
       alignItems: 'center',
     },
     card: {
-      width: '100%',
+      width: 348,
+      minHeight: 435,
       borderRadius: 15,
       backgroundColor: colors.background.normal,
       shadowColor: '#000',

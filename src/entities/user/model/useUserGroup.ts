@@ -10,7 +10,7 @@ interface UserGroupState {
 }
 
 export const useUserGroup = () => {
-  const { token } = useUserContext();
+  const { token, role } = useUserContext();
   const [state, setState] = useState<UserGroupState>({
     group: null,
     isLoading: false,
@@ -18,7 +18,9 @@ export const useUserGroup = () => {
   });
 
   useEffect(() => {
-    if (!token) {
+    // 가족 계정에만 허용된 API다. hydration 중 role=null인 순간이나
+    // 어르신/기관 계정에서는 요청 자체를 보내지 않는다.
+    if (!token || role !== 'FAMILY') {
       return;
     }
 
@@ -79,12 +81,12 @@ export const useUserGroup = () => {
     return () => {
       isMounted = false;
     };
-  }, [token]);
+  }, [role, token]);
 
   return {
-    group: state.group,
-    isLoading: state.isLoading,
-    error: state.error,
-    hasGroup: state.group !== null,
+    group: role === 'FAMILY' ? state.group : null,
+    isLoading: role === 'FAMILY' ? state.isLoading : false,
+    error: role === 'FAMILY' ? state.error : null,
+    hasGroup: role === 'FAMILY' && state.group !== null,
   };
 };

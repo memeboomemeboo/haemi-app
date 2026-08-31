@@ -62,8 +62,9 @@ export const authService = {
     return response.data;
   },
 
-  async loginElderWithPin(data: ElderPinLoginRequest): Promise<ElderPinLoginResponse> {
-    const response = await post<SwaggerApiResponse<ElderPinLoginResponse>>('/auth/elders/login', data, {
+  async loginElderWithPin(data: ElderPinLoginRequest | string): Promise<ElderPinLoginResponse> {
+    const request = typeof data === 'string' ? { pin: data } : data;
+    const response = await post<SwaggerApiResponse<ElderPinLoginResponse>>('/auth/elders/login', request, {
       skipAuth: true,
     });
     return response.data;
@@ -138,7 +139,7 @@ export const authService = {
   },
 
   // 리프레시 토큰 설정
-  async setRefreshToken(token: string) {
+  async setRefreshToken(token: string | null) {
     await setClientRefreshToken(token);
   },
 

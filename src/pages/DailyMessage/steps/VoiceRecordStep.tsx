@@ -186,13 +186,13 @@ export function VoiceRecordStep({ memoryId, onSent }: VoiceRecordStepProps) {
           onPress={handleMicPress}
           style={({ pressed }) => [styles.micCircle, pressed && styles.pressed]}
         >
-          <Mic size={48} color={colors.background.normal} />
+          <Mic size={89} color={colors.background.normal} />
         </Pressable>
         <Text style={styles.timer}>{formatDuration(elapsedSeconds)}</Text>
 
         {isRecording ? (
           <View style={styles.statusRow}>
-            <Waveform size={20} color={colors.label.alternative} />
+            <Waveform size={31} color={colors.label.alternative} />
             <Text style={styles.statusText}>말씀을 듣고 있어요....</Text>
           </View>
         ) : hasRecorded ? (
@@ -237,6 +237,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
   StyleSheet.create({
     container: {
       alignItems: 'center',
+      paddingTop: 54,
       gap: 84,
     },
     intro: {

@@ -3,19 +3,21 @@ import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useSeniorProfile } from '@/entities/user';
 import { useTheme } from '@/shared/hooks';
 import { formatKoreanDate } from '@/shared/lib';
 import { Mail, PlayTriangle, Profile } from '@/shared/ui';
 
 import { useElderHome } from './model/useElderHome';
 
-/** Figma node 1408:5601 — 어르신 홈 */
+/** Figma node 1472:3034 — 어르신 홈 */
 export default function ElderHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { colors } = theme;
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { profile } = useSeniorProfile();
   const { homeData, unreadInboxCount, isLoading, isError, refetch } = useElderHome();
 
   const unrespondedMemoryCount =
@@ -34,7 +36,7 @@ export default function ElderHomeScreen() {
       >
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.headerName}>어르신</Text>
+            <Text style={styles.headerName}>{profile?.name ? `${profile.name}님` : '어르신'}</Text>
             <Text style={styles.headerDate}>{formatKoreanDate()}</Text>
           </View>
           <Profile size={53} color={colors.primary} />
@@ -54,23 +56,24 @@ export default function ElderHomeScreen() {
           </Pressable>
         </View>
 
-        {isLoading ? (
-          <View style={styles.loader}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        ) : isError ? (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>데이터를 불러오지 못했어요.</Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={refetch}
-              style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
-            >
-              <Text style={styles.retryText}>다시 시도</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <>
+        <View style={styles.notificationList}>
+          {isLoading ? (
+            <View style={styles.loader}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : isError ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>데이터를 불러오지 못했어요.</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={refetch}
+                style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.retryText}>다시 시도</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <>
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push('/album')}
@@ -81,7 +84,7 @@ export default function ElderHomeScreen() {
               ]}
             >
               <View style={styles.notificationIconCircle}>
-                <Mail size={24} color={colors.primary} />
+                <Mail size={50} color={colors.primary} />
               </View>
               <View style={styles.notificationContent}>
                 <View style={styles.notificationTitleRow}>
@@ -106,15 +109,17 @@ export default function ElderHomeScreen() {
 
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push('/album')}
+              onPress={() => router.push('/elder-inbox')}
               style={({ pressed }) => [
                 styles.notificationCard,
                 !hasUnreadMessage && styles.notificationCardEmpty,
                 pressed && styles.pressed,
               ]}
             >
-              <View style={[styles.notificationIconCircle, styles.notificationIconCirclePrimary]}>
-                <PlayTriangle size={20} color={colors.primary} />
+              <View style={styles.notificationIconCircle}>
+                <View style={styles.notificationIconCirclePrimary}>
+                  <PlayTriangle size={36} color={colors.primary} />
+                </View>
               </View>
               <View style={styles.notificationContent}>
                 <View style={styles.notificationTitleRow}>
@@ -134,8 +139,9 @@ export default function ElderHomeScreen() {
                 </Text>
               </View>
             </Pressable>
-          </>
-        )}
+            </>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -152,14 +158,14 @@ const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
     },
     content: {
       paddingHorizontal: 20,
-      paddingTop: 20,
+      paddingTop: 14,
       paddingBottom: 40,
-      gap: 22,
     },
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
+      marginHorizontal: 7,
     },
     headerLeft: {
       gap: 9,
@@ -181,7 +187,12 @@ const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
     activityCard: {
       backgroundColor: '#fff3f0',
       borderRadius: 15,
-      padding: 19,
+      height: 162,
+      marginTop: 38,
+      marginHorizontal: 1,
+      paddingHorizontal: 16,
+      paddingTop: 19,
+      paddingBottom: 20,
       gap: 22,
     },
     activityContent: {
@@ -245,12 +256,17 @@ const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
     pressed: {
       opacity: 0.8,
     },
+    notificationList: {
+      marginTop: 72,
+      gap: 22,
+    },
     notificationCard: {
       backgroundColor: colors.background.normal,
       borderRadius: 15,
       borderWidth: 1.5,
       borderColor: colors.fill.neutral,
-      padding: 23,
+      height: 88,
+      paddingHorizontal: 23.5,
       flexDirection: 'row',
       alignItems: 'center',
       gap: 22,
@@ -266,15 +282,18 @@ const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
     notificationIconCircle: {
       width: 50,
       height: 50,
-      borderRadius: 25,
-      backgroundColor: colors.background.neutral,
       justifyContent: 'center',
       alignItems: 'center',
     },
     notificationIconCirclePrimary: {
+      width: 41,
+      height: 41,
+      borderRadius: 20.5,
       backgroundColor: '#fff3f0',
       borderWidth: 1.087,
       borderColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     notificationContent: {
       flex: 1,
