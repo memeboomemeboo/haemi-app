@@ -40,12 +40,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // 1. 개발 환경에서 테스트 토큰 초기화 (hydration 전)
         await initializeTestToken();
 
-        // 2. 저장된 토큰 복구 — role은 서버 왕복 없이 토큰 자체에서 읽는다
-        // (보호자/어르신 모두 같은 경로로 복구되고, 프로필 조회 실패가 로그아웃을 유발하지 않는다)
+        // 2. 저장된 토큰 복구
         const savedToken = await getAuthToken();
         if (savedToken) {
           setTokenState(savedToken);
-          // 1) 저장된 role이 있으면 그대로 사용 (로그인 시 setStoredRole로 기록됨)
           const savedRole = await authService.getStoredRole();
           if (savedRole) {
             setRoleState(savedRole);

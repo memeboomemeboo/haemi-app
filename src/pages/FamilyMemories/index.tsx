@@ -200,7 +200,7 @@ export default function FamilyMemoriesScreen() {
         />
       </Link>
 
-      <BottomNavigation activeTab="Memory" />
+      <BottomNavigation activeTab="Album" />
     </View>
   );
 }

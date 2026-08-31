@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Pressable, Text, StyleSheet } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
-import { Home, Album, Heart, Report, Quiz, Setting } from './Icon';
+import { Home, Album, Report, Quiz, Setting } from './Icon';
 
-export type NavigationTab = 'Home' | 'Album' | 'Memory' | 'Report' | 'Quiz' | 'Setting';
+export type NavigationTab = 'Home' | 'Album' | 'Report' | 'Quiz' | 'Setting';
 
 interface BottomNavigationProps {
   activeTab: NavigationTab;
@@ -13,7 +13,6 @@ interface BottomNavigationProps {
 const TAB_LABELS: Record<NavigationTab, string> = {
   Home: '홈',
   Album: '앨범',
-  Memory: '추억',
   Report: '리포트',
   Quiz: '퀴즈',
   Setting: '설정',
@@ -22,7 +21,6 @@ const TAB_LABELS: Record<NavigationTab, string> = {
 const ICON_COMPONENTS: Record<NavigationTab, React.ComponentType<{ size?: number; color?: string }>> = {
   Home,
   Album,
-  Memory: Heart,
   Report,
   Quiz,
   Setting,
@@ -31,13 +29,12 @@ const ICON_COMPONENTS: Record<NavigationTab, React.ComponentType<{ size?: number
 const TAB_ROUTES: Record<NavigationTab, Href> = {
   Home: '/',
   Album: '/album',
-  Memory: '/family-memories',
   Report: '/report',
   Quiz: '/quiz',
   Setting: '/my-page' as Href,
 };
 
-const TABS: NavigationTab[] = ['Home', 'Memory', 'Report', 'Setting'];
+const TABS: NavigationTab[] = ['Home', 'Album', 'Report', 'Setting'];
 
 const ACTIVE_COLOR = '#fd6941';
 const INACTIVE_COLOR = '#dadbdc';

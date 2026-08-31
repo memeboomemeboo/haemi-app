@@ -39,7 +39,7 @@ export default function AuthStack() {
     } catch (caught) {
       throw new Error(`로그인 정보 저장 실패: ${getErrorMessage(caught)}`);
     }
-    setRole(getRoleFromToken(tokens.accessToken) ?? 'FAMILY');
+    setRole('FAMILY');
     setToken(tokens.accessToken);
   }, [isSignupRegistered, setRole, setToken, signupDraft]);
   const loginWithPin = useCallback(async (pin: string) => {
