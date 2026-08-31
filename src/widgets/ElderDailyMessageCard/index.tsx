@@ -15,10 +15,11 @@ export const ElderDailyMessageCard = ({ notification, onPress }: ElderDailyMessa
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const { title, subtitle } = getCopy(notification);
+  const isPending = notification.status === 'pending';
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.container, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.container, isPending && styles.containerPending, pressed && styles.pressed]}
       onPress={onPress}
     >
       <View style={styles.iconCircle}>
@@ -53,8 +54,8 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
       height: 88,
       borderRadius: 15,
       backgroundColor: colors.background.normal,
-      borderWidth: 1,
-      borderColor: colors.label.disabled,
+      borderWidth: 1.5,
+      borderColor: colors.fill.neutral,
       paddingHorizontal: 25,
       flexDirection: 'row',
       alignItems: 'center',
@@ -64,6 +65,9 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
       shadowOpacity: 0.07,
       shadowRadius: 6,
       elevation: 2,
+    },
+    containerPending: {
+      backgroundColor: colors.background.neutral,
     },
     pressed: {
       opacity: 0.85,
@@ -84,15 +88,17 @@ const createStyles = ({ colors, palette }: ReturnType<typeof useTheme>) =>
       gap: 4,
     },
     title: {
-      fontSize: 20,
+      fontSize: 24,
       fontWeight: '600',
+      lineHeight: 31.2,
       color: colors.label.neutral,
-      letterSpacing: -0.4,
+      letterSpacing: -0.48,
     },
     subtitle: {
       fontSize: 16,
       fontWeight: '500',
-      color: colors.label.assistive,
+      lineHeight: 20.8,
+      color: colors.label.alternative,
       letterSpacing: -0.32,
     },
   });

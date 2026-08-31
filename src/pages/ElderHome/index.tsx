@@ -1,22 +1,52 @@
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 
-import { BottomNavigation } from '@/shared/ui';
-import { HomeHeader } from '@/widgets/HomeHeader';
-import { ElderTodayTasks } from '@/widgets/ElderTodayTasks';
 import { colors } from '@/shared/constants';
-
-import { useElderHome } from './model/useElderHome';
+import { formatKoreanDate } from '@/shared/lib/date';
+import { useElderProfile } from '@/entities/elder';
+import { useElderHomeSummary } from '@/entities/elderHome';
+import {
+  ElderActivityCard,
+  ElderDailyMessageCard,
+  ElderHomeHeader,
+  ElderMemoryCard,
+} from '@/widgets';
 
 const light = colors.light;
 
 export default function ElderHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { homeData, isLoading, isError, taskStatus, handleTaskPress, refetch } = useElderHome();
+  const {
+    profile,
+    isLoading: isProfileLoading,
+    error: profileError,
+    refetch: refetchProfile,
+  } = useElderProfile();
+  const {
+    summary,
+    isLoading: isSummaryLoading,
+    error: summaryError,
+    refetch: refetchSummary,
+  } = useElderHomeSummary();
 
-  const userName = '어르신';
+  const isLoading = isProfileLoading || isSummaryLoading;
+  const hasError = Boolean(profileError || summaryError);
+  const dateLabel = formatKoreanDate();
+
+  const retry = () => {
+    void refetchProfile();
+    void refetchSummary();
+  };
+
+  const openAlbum = (albumId?: string) => {
+    if (albumId) {
+      router.push(`/album/${albumId}` as Href);
+      return;
+    }
+    router.push('/album');
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -25,60 +55,49 @@ export default function ElderHomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <HomeHeader />
-        </View>
-
-        <View style={styles.welcome}>
-          <Text style={styles.welcomeText}>{`${userName} 해미에\n오신것을 환영해요!`}</Text>
-        </View>
+        <ElderHomeHeader
+          honorificName={profile?.honorificName ?? '순자님'}
+          dateLabel={dateLabel}
+          onProfilePress={() => router.push('/my-page')}
+        />
 
         {isLoading ? (
           <View style={styles.loader}>
             <ActivityIndicator size="large" color={light.primary} />
           </View>
-        ) : isError ? (
+        ) : hasError ? (
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>데이터를 불러오지 못했어요.</Text>
             <Pressable
               accessibilityRole="button"
-              onPress={refetch}
+              onPress={retry}
               style={({ pressed }) => [styles.retryButton, pressed && styles.retryButtonPressed]}
             >
               <Text style={styles.retryText}>다시 시도</Text>
             </Pressable>
           </View>
+        ) : summary ? (
+          <>
+            <View style={styles.activityCard}>
+              <ElderActivityCard onStartPress={() => router.push('/quiz')} />
+            </View>
+            <View style={styles.notificationList}>
+              <ElderMemoryCard
+                notification={summary.memory}
+                onPress={() => openAlbum(summary.memory.albumId)}
+              />
+              <ElderDailyMessageCard
+                notification={summary.dailyMessage}
+                onPress={() => openAlbum(summary.dailyMessage.albumId)}
+              />
+            </View>
+          </>
         ) : (
-          <View style={styles.tasks}>
-            <ElderTodayTasks status={taskStatus} onTaskPress={handleTaskPress} />
-            {homeData && homeData.training.streak > 0 && (
-              <Text style={styles.streak}>
-                {`${homeData.training.streak}일 연속 인지 훈련 중!`}
-              </Text>
-            )}
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>표시할 홈 정보가 없어요.</Text>
           </View>
         )}
-
-        <View style={styles.actions}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/album')}
-            style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}
-          >
-            <Text style={styles.actionButtonText}>추억 앨범</Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/album')}
-            style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}
-          >
-            <Text style={styles.actionButtonText}>설정</Text>
-          </Pressable>
-        </View>
       </ScrollView>
-
-      <BottomNavigation activeTab="Home" />
     </View>
   );
 }
@@ -92,31 +111,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 16,
-    paddingBottom: 100,
-  },
-  header: {
-    marginBottom: 32,
-  },
-  welcome: {
-    marginBottom: 40,
-    alignItems: 'center',
-  },
-  welcomeText: {
-    fontSize: 28,
-    fontWeight: '600',
-    lineHeight: 36.4,
-    letterSpacing: -0.56,
-    color: light.label.neutral,
-    textAlign: 'center',
+    width: '100%',
+    maxWidth: 402,
+    alignSelf: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 34,
   },
   loader: {
-    height: 220,
+    height: 426,
     justifyContent: 'center',
     alignItems: 'center',
   },
   errorBox: {
-    height: 220,
+    height: 426,
     justifyContent: 'center',
     alignItems: 'center',
     gap: 16,
@@ -140,39 +148,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: light.label.buttonText,
   },
-  tasks: {
-    marginBottom: 24,
+  activityCard: {
+    marginTop: 50,
   },
-  streak: {
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
-    color: light.primary,
-    marginTop: -8,
-    marginBottom: 12,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  actionButton: {
-    flex: 1,
-    height: 69,
-    borderRadius: 15,
-    borderWidth: 1.5,
-    borderColor: light.line.alternative,
-    backgroundColor: light.background.alternative,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  actionButtonPressed: {
-    opacity: 0.7,
-  },
-  actionButtonText: {
-    fontSize: 28,
-    fontWeight: '600',
-    lineHeight: 36.4,
-    letterSpacing: -0.56,
-    color: light.label.alternative,
+  notificationList: {
+    gap: 22,
+    marginTop: 72,
   },
 });
