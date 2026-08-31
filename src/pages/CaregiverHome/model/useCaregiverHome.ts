@@ -1,82 +1,145 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
 
 import {
-  type CaregiverTask,
   CAREGIVER_HOME_MAX_WIDTH,
+  CAREGIVER_TASKS,
+  type CaregiverTask,
 } from '@/pages/CaregiverHome/constants';
-import { getCaregiverActivities, getCaregiverHome } from '@/shared/api';
+import {
+  conditionCopy,
+  elderDisplayName,
+  lastLoginMeta,
+  toCaregiverRecords,
+  toWeeklyActivityDays,
+} from '@/pages/CaregiverHome/lib';
+import { getElderActivities, getGuardianHome } from '@/shared/api/guardian-home';
+import { myPageService } from '@/shared/api/my-page';
 import { useAsyncData } from '@/shared/hooks';
-import type { CaregiverActivitiesResponse, CaregiverHomeElder } from '@/shared/types';
+import type { Href } from 'expo-router';
+import type { TodayActivities } from '@/shared/types/guardian-home';
+
+const EMPTY_ACTIVITIES: TodayActivities = { date: '', items: [] };
+
+const fetchGuardianName = () => myPageService.getProfile();
 
 export function useCaregiverHome() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const [isPatientDropdownOpen, setIsPatientDropdownOpen] = useState(false);
-  const [selectedElderId, setSelectedElderId] = useState<string | null>(null);
-  const [activities, setActivities] = useState<CaregiverActivitiesResponse | null>(null);
-  const [isActivitiesLoading, setIsActivitiesLoading] = useState(true);
-  const [activitiesError, setActivitiesError] = useState<Error | null>(null);
-
-  const homeState = useAsyncData(getCaregiverHome);
-  const elders = useMemo(() => homeState.data?.home.elders ?? [], [homeState.data]);
-  const effectiveElderId = selectedElderId ?? elders[0]?.elderId ?? null;
-
-  const loadActivities = useCallback(async () => {
-    if (!effectiveElderId) {
-      setActivities(null);
-      setIsActivitiesLoading(false);
-      return;
-    }
-
-    setIsActivitiesLoading(true);
-    setActivitiesError(null);
-    try {
-      setActivities(await getCaregiverActivities(effectiveElderId));
-    } catch (error) {
-      setActivitiesError(error instanceof Error ? error : new Error(String(error)));
-    } finally {
-      setIsActivitiesLoading(false);
-    }
-  }, [effectiveElderId]);
-
-  useEffect(() => {
-    void Promise.resolve().then(loadActivities);
-  }, [loadActivities]);
-
-  const selectedElder = useMemo(
-    () => elders.find((elder) => elder.elderId === effectiveElderId) ?? null,
-    [effectiveElderId, elders],
-  );
+  // 사용자가 명시적으로 고른 어르신. null이면 목록의 첫 어르신을 기본으로 쓴다.
+  const [pickedElderId, setPickedElderId] = useState<string | null>(null);
 
   const screenWidth = useMemo(() => Math.min(width, CAREGIVER_HOME_MAX_WIDTH), [width]);
+
+  const profileState = useAsyncData(fetchGuardianName);
+  const homeState = useAsyncData(getGuardianHome);
+
+  const elders = useMemo(() => homeState.data?.elders ?? [], [homeState.data]);
+
+  // 선택값을 effect 없이 파생한다: 고른 어르신이 목록에 있으면 그것을, 없으면 첫 어르신.
+  const selectedElderId = useMemo(() => {
+    if (pickedElderId && elders.some((e) => e.elderId === pickedElderId)) {
+      return pickedElderId;
+    }
+    return elders[0]?.elderId ?? null;
+  }, [elders, pickedElderId]);
+
+  // 어르신 변경 시 fetcher 참조가 바뀌어 오늘 기록을 재조회한다.
+  const fetchActivities = useCallback(() => {
+    if (!selectedElderId) return Promise.resolve(EMPTY_ACTIVITIES);
+    return getElderActivities(selectedElderId);
+  }, [selectedElderId]);
+
+  const activitiesState = useAsyncData(fetchActivities);
+
+  const selectedElder = useMemo(
+    () => elders.find((e) => e.elderId === selectedElderId) ?? null,
+    [elders, selectedElderId],
+  );
+
+  const condition = useMemo(
+    () => conditionCopy(selectedElder?.condition ?? null),
+    [selectedElder],
+  );
+
+  const conditionMeta = useMemo(
+    () => lastLoginMeta(selectedElder?.lastLoginAt ?? null),
+    [selectedElder],
+  );
+
+  const weeklyDays = useMemo(() => {
+    const weekly = selectedElder?.weeklyActivities ?? [];
+    const todayIso = weekly.length > 0 ? weekly[weekly.length - 1].date : '';
+    return toWeeklyActivityDays(weekly, todayIso);
+  }, [selectedElder]);
+
+  const records = useMemo(
+    () => toCaregiverRecords(activitiesState.data?.items ?? []),
+    [activitiesState.data],
+  );
+
+  const tasks = useMemo(() => {
+    const challenge = homeState.data?.challenge ?? {
+      greetingCompleted: false,
+      memoryCompleted: false,
+    };
+    return CAREGIVER_TASKS.map((task) => ({
+      ...task,
+      completed: challenge[task.completionKey],
+    }));
+  }, [homeState.data]);
+
+  const elderOptions = useMemo(
+    () => elders.map((e) => ({ elderId: e.elderId, label: elderDisplayName(e) })),
+    [elders],
+  );
+
+  const greetingTitle = profileState.data?.name
+    ? `${profileState.data.name}님, 안녕하세요`
+    : '안녕하세요';
 
   const togglePatientDropdown = useCallback(() => {
     setIsPatientDropdownOpen((current) => !current);
   }, []);
 
-  const selectPatient = useCallback((elder: CaregiverHomeElder) => {
-    setSelectedElderId(elder.elderId);
+  const selectElder = useCallback((elderId: string) => {
+    setPickedElderId(elderId);
     setIsPatientDropdownOpen(false);
   }, []);
 
-  const openTask = useCallback((href: CaregiverTask['href']) => {
-    router.push(href);
-  }, [router]);
+  const openTask = useCallback(
+    (href: Href) => {
+      router.push(href);
+    },
+    [router],
+  );
 
   return {
-    activities,
-    activitiesError,
-    elders,
-    homeState,
-    isActivitiesLoading,
-    isPatientDropdownOpen,
-    loadActivities,
-    openTask,
+    // 상태
+    isLoading: homeState.isLoading,
+    isError: homeState.isError,
+    refetch: homeState.refetch,
+    recordsLoading: activitiesState.isLoading,
+    recordsError: activitiesState.isError,
+    hasElders: elders.length > 0,
+    // 파생 데이터
+    greetingTitle,
+    condition,
+    conditionMeta,
+    weeklyDays,
+    records,
+    tasks,
+    elderOptions,
+    selectedElderLabel: selectedElder ? elderDisplayName(selectedElder) : '',
+    // 인터랙션
     screenWidth,
-    selectPatient,
-    selectedElder,
+    isPatientDropdownOpen,
     togglePatientDropdown,
+    selectElder,
+    openTask,
   };
 }
+
+export type CaregiverTaskWithStatus = CaregiverTask & { completed: boolean };
