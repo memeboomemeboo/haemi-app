@@ -1,20 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useCallback, useState } from 'react';
 import SignupScreen, { type GuardianSignupDraft } from '@/pages/Auth/SignupScreen';
-import { PinScreen, pinStorage } from '@/features/auth';
+import RoleSelectScreen from '@/pages/RoleSelect';
+import { ElderPinScreen, PinScreen, pinStorage } from '@/features/auth';
 import { authService, getErrorMessage } from '@/shared/api';
 import { useUserContext } from '@/shared/context/UserContext';
-import { colors } from '@/shared/constants';
 import { getOrCreateDeviceId } from '@/shared/lib';
 import type { TokenResponse } from '@/shared/types';
 
-type AuthMode = 'loading' | 'signup' | 'pin-setup' | 'pin-login';
+type AuthMode = 'role-select' | 'signup' | 'pin-setup' | 'guardian-pin' | 'elder-pin';
 export default function AuthStack() {
-  const [mode, setMode] = useState<AuthMode>('loading');
+  const [mode, setMode] = useState<AuthMode>('role-select');
   const [signupDraft, setSignupDraft] = useState<GuardianSignupDraft | null>(null);
   const [isSignupRegistered, setSignupRegistered] = useState(false);
   const { setToken, setRole } = useUserContext();
-  useEffect(() => { void pinStorage.hasLoginId().then((hasLoginId) => setMode(hasLoginId ? 'pin-login' : 'signup')); }, []);
   const finishSignup = useCallback(async (pin: string) => {
     if (!signupDraft) throw new Error('회원가입 정보가 없습니다.');
     if (!isSignupRegistered) {
@@ -52,9 +50,15 @@ export default function AuthStack() {
     setRole('FAMILY');
     setToken(tokens.accessToken);
   }, [setRole, setToken]);
-  if (mode === 'loading') return <View style={styles.loading}><ActivityIndicator color={colors.primary} /></View>;
+  const loginElderWithPin = useCallback(async (pin: string) => {
+    const tokens = await authService.loginElderWithPin({ pin });
+    await authService.setToken(tokens.accessToken);
+    setRole('ELDER');
+    setToken(tokens.accessToken);
+  }, [setRole, setToken]);
+  if (mode === 'role-select') return <RoleSelectScreen onElderSelect={() => setMode('elder-pin')} onGuardianSelect={() => setMode('guardian-pin')} />;
   if (mode === 'pin-setup') return <PinScreen mode="setup" onComplete={finishSignup} onBackToSignup={() => { setSignupRegistered(false); setMode('signup'); }} />;
-  if (mode === 'pin-login') return <PinScreen mode="login" onComplete={loginWithPin} onBackToSignup={() => setMode('signup')} />;
-  return <SignupScreen onContinue={(draft) => { setSignupDraft(draft); setSignupRegistered(false); setMode('pin-setup'); }} onLoginPress={() => setMode('pin-login')} />;
+  if (mode === 'guardian-pin') return <PinScreen mode="login" onComplete={loginWithPin} onBack={() => setMode('role-select')} onBackToSignup={() => setMode('signup')} />;
+  if (mode === 'elder-pin') return <ElderPinScreen onComplete={loginElderWithPin} onBack={() => setMode('role-select')} />;
+  return <SignupScreen onContinue={(draft) => { setSignupDraft(draft); setSignupRegistered(false); setMode('pin-setup'); }} onLoginPress={() => setMode('guardian-pin')} />;
 }
-const styles = StyleSheet.create({ loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.light.background.normal } });
