@@ -55,6 +55,8 @@ export type {
 } from './elderMemoryResponse';
 export { requestMediaUpload, uploadMediaBytes, confirmMediaUpload, uploadMediaFile } from './media';
 export type { MediaType, RequestMediaUploadInput, RequestMediaUploadResponse } from './media';
+export { getCaregiverActivities, getCaregiverHome } from './caregiver-home';
+export type { CaregiverHomeInitialData } from './caregiver-home';
 export { myPageService } from './my-page';
 export type {
   GuardianRole,
