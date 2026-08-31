@@ -1,4 +1,5 @@
 // Export UI components from shared
+export { AsyncContainer } from './AsyncContainer';
 export { BottomNavigation, type NavigationTab } from './BottomNavigation';
 export { Fab } from './Fab';
 export {
@@ -8,6 +9,8 @@ export {
   Home,
   Album,
   Heart,
+  HeartOutline,
+  HeartFilled,
   Report,
   Quiz,
   Alarm,
@@ -19,6 +22,7 @@ export {
   Picture,
   Comment,
   More,
+  MoreVertical,
   Sent,
   Calendar,
   Map,
@@ -29,6 +33,7 @@ export {
   Mail,
   PlayTriangle,
   Backspace,
+  Close,
   type IconName,
   type IconProps,
   type IllustrationName,

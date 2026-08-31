@@ -30,10 +30,10 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files (실제 민감 정보는 커밋 금지)
 .env
 .env*.local
-.env
+.env.production.local
 
 # typescript
 *.tsbuildinfo

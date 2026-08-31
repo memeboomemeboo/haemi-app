@@ -1,4 +1,4 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useCallback, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +16,7 @@ export default function AlbumScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { items, isLoading, refetch } = useAlbumItems();
+  const { data: items = [], isLoading, refetch } = useAlbumItems();
   // 어르신별 필터링 (Figma node 1325:8142 / 1386:2794) — 등장하는 이름만큼 탭이 생긴다
   const { filter, setFilter, filterOptions, visibleItems } = useAlbumFilter(items);
 
@@ -51,7 +51,7 @@ export default function AlbumScreen() {
         >
           <AlbumGrid
             items={visibleItems}
-            onItemPress={(item) => router.push({ pathname: '/album/[id]', params: { id: item.id } })}
+            onItemPress={(item) => router.push(`/album/${item.id}` as Href)}
           />
         </ScrollView>
       )}

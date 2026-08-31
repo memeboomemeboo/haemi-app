@@ -5,6 +5,8 @@ export {
   Home,
   Album,
   Heart,
+  HeartOutline,
+  HeartFilled,
   Report,
   Quiz,
   Alarm,
@@ -16,6 +18,7 @@ export {
   Picture,
   Comment,
   More,
+  MoreVertical,
   Sent,
   Calendar,
   Map,
@@ -26,4 +29,5 @@ export {
   Mail,
   PlayTriangle,
   Backspace,
+  Close,
 } from './icons-components';

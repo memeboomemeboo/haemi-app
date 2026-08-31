@@ -1,33 +1,40 @@
 import React from 'react';
 import { View, Pressable, Text, StyleSheet } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
-import { Home, Album, Report, Setting } from './Icon';
+import { Home, Album, Heart, Report, Quiz, Setting } from './Icon';
 
-export type NavigationTab = 'Home' | 'Album' | 'Report' | 'Setting';
+export type NavigationTab = 'Home' | 'Album' | 'Memory' | 'Report' | 'Quiz' | 'Setting';
 
 interface BottomNavigationProps {
   activeTab: NavigationTab;
+  tabs?: NavigationTab[];
 }
 
 const TAB_LABELS: Record<NavigationTab, string> = {
   Home: '홈',
-  Album: '추억',
+  Album: '앨범',
+  Memory: '추억',
   Report: '리포트',
+  Quiz: '퀴즈',
   Setting: '설정',
 };
 
 const ICON_COMPONENTS: Record<NavigationTab, React.ComponentType<{ size?: number; color?: string }>> = {
   Home,
   Album,
+  Memory: Heart,
   Report,
+  Quiz,
   Setting,
 };
 
 const TAB_ROUTES: Record<NavigationTab, Href> = {
   Home: '/',
   Album: '/album',
+  Memory: '/family-memories',
   Report: '/report',
-  Setting: '/setting',
+  Quiz: '/quiz',
+  Setting: '/my-page' as Href,
 };
 
 const TABS: NavigationTab[] = ['Home', 'Album', 'Report', 'Setting'];
@@ -35,13 +42,13 @@ const TABS: NavigationTab[] = ['Home', 'Album', 'Report', 'Setting'];
 const ACTIVE_COLOR = '#fd6941';
 const INACTIVE_COLOR = '#dadbdc';
 
-export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab }) => {
+export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, tabs = TABS }) => {
   const router = useRouter();
 
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const isActive = activeTab === tab;
           const tabColor = isActive ? ACTIVE_COLOR : INACTIVE_COLOR;
           const IconComponent = ICON_COMPONENTS[tab];
@@ -70,22 +77,20 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab })
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#ffffff',
-    height: 73,
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
+    height: 103,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.03,
     shadowRadius: 2,
-    elevation: 2,
+    elevation: 3,
   },
   content: {
     flex: 1,
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 58,
-    paddingHorizontal: 20,
+    paddingHorizontal: 45,
+    paddingBottom: 18,
   },
   tabButton: {
     alignItems: 'center',

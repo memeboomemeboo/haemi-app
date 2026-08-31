@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -46,7 +46,7 @@ export default function ElderLoginScreen() {
     if (nextPin.length === PIN_LENGTH) {
       const verified = await verifyElderPin(nextPin);
       if (verified) {
-        router.replace('/elder-home');
+        router.replace('/elder-home' as Href);
       } else {
         setPin('');
         setDigits(shuffleArray(DIGITS));
