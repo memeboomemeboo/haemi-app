@@ -220,7 +220,7 @@ export default function ProfileEditScreen() {
           <Pressable style={styles.save} onPress={save} disabled={saving || uploading}>{saving ? <ActivityIndicator color={colors.light.background.normal} /> : <Text style={styles.saveText}>저장</Text>}</Pressable>
         </ScrollView>
       </SafeAreaView>
-      <BottomNavigation activeTab="Setting" tabs={['Home', 'Album', 'Report', 'Setting']} />
+      <BottomNavigation activeTab="Setting" />
     </View>
   );
 }
