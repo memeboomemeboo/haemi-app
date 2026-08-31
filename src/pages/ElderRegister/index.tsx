@@ -23,6 +23,7 @@ type Gender = 'MALE' | 'FEMALE';
 export default function ElderRegisterScreen() {
   const router = useRouter();
   const [name, setName] = useState('');
+  const [birthDate, setBirthDate] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [gender, setGender] = useState<Gender>('FEMALE');
   const [loginId, setLoginId] = useState('');
@@ -36,6 +37,13 @@ export default function ElderRegisterScreen() {
     if (digits.length <= 3) setPhoneNumber(digits);
     else if (digits.length <= 7) setPhoneNumber(`${digits.slice(0, 3)}-${digits.slice(3)}`);
     else setPhoneNumber(`${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`);
+  };
+
+  const handleBirthDateChange = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 8);
+    if (digits.length <= 4) setBirthDate(digits);
+    else if (digits.length <= 6) setBirthDate(`${digits.slice(0, 4)}-${digits.slice(4)}`);
+    else setBirthDate(`${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`);
   };
 
   const handleLoginIdChange = (value: string) => {
@@ -116,6 +124,9 @@ export default function ElderRegisterScreen() {
             <View style={styles.form}>
               <Field label="어르신 성함">
                 <TextInput style={styles.input} placeholder="어르신 성함" placeholderTextColor={colors.light.line.normal} value={name} onChangeText={setName} />
+              </Field>
+              <Field label="생년월일">
+                <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.light.line.normal} value={birthDate} onChangeText={handleBirthDateChange} keyboardType="number-pad" maxLength={10} />
               </Field>
               <Field label="전화번호">
                 <TextInput style={styles.input} placeholder="전화번호" placeholderTextColor={colors.light.line.normal} value={phoneNumber} onChangeText={handlePhoneChange} keyboardType="phone-pad" />
