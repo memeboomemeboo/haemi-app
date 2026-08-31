@@ -104,14 +104,14 @@ export default function ProfileEditScreen() {
     const filename = asset.fileName ?? `profile-${Date.now()}.${contentType.split('/')[1] ?? 'jpg'}`;
     setUploading(true);
     try {
+      const blob = await (await fetch(asset.uri)).blob();
       const upload = await myPageService.requestProfileImageUpload({
         originalFilename: filename,
         contentType,
-        declaredSizeBytes: asset.fileSize,
+        declaredSizeBytes: asset.fileSize ?? blob.size,
       });
       if (!upload.duplicate) {
         if (!upload.presignedUrl) throw new Error('Missing upload URL');
-        const blob = await (await fetch(asset.uri)).blob();
         const putResponse = await fetch(upload.presignedUrl, {
           method: 'PUT',
           headers: { 'Content-Type': contentType },
@@ -220,7 +220,7 @@ export default function ProfileEditScreen() {
           <Pressable style={styles.save} onPress={save} disabled={saving || uploading}>{saving ? <ActivityIndicator color={colors.light.background.normal} /> : <Text style={styles.saveText}>저장</Text>}</Pressable>
         </ScrollView>
       </SafeAreaView>
-      <BottomNavigation activeTab="Setting" tabs={['Home', 'Album', 'Report', 'Setting']} />
+      <BottomNavigation activeTab="Setting" />
     </View>
   );
 }

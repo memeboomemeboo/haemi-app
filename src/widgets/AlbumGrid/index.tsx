@@ -17,8 +17,8 @@ export const AlbumGrid = ({ items, onItemPress }: AlbumGridProps) => {
   return (
     <View style={styles.grid}>
       {(items ?? []).map((item) => {
-        const hasAnswer = Boolean(item.conversation?.answer);
-        const meta = [item.location, item.date ?? item.year].filter(Boolean).join(' · ');
+        const hasAnswer = item.responded ?? Boolean(item.conversation?.answer);
+        const meta = [item.location, item.year].filter(Boolean).join(' · ');
         return (
           <Pressable key={item.id} style={styles.card} onPress={() => onItemPress?.(item)}>
             <View style={styles.photoFrame}>

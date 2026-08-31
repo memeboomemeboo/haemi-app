@@ -1,10 +1,12 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 
 import { BottomNavigation } from '@/shared/ui';
 import {
   ARROW_XML,
+  CIRCLE_CHECK_XML,
+  CIRCLE_EMPTY_XML,
   DROPDOWN_XML,
   GRAPH_XML,
   RING_XML,
@@ -12,15 +14,17 @@ import {
 import {
   CAREGIVER_COLORS,
   CAREGIVER_HOME_COPY,
-  CAREGIVER_PATIENTS,
-  CAREGIVER_RECORDS,
-  CAREGIVER_TASKS,
-  WEEKLY_ACTIVITY_DAYS,
   WEEKLY_ACTIVITY_LEGEND,
-  type CaregiverPatient,
-  type CaregiverTask,
+  type CaregiverRecord,
+  type WeeklyActivityDay,
 } from '@/pages/CaregiverHome/constants';
-import { useCaregiverHome } from '@/pages/CaregiverHome/model/useCaregiverHome';
+import {
+  useCaregiverHome,
+  type CaregiverTaskWithStatus,
+} from '@/pages/CaregiverHome/model/useCaregiverHome';
+import type { Href } from 'expo-router';
+
+type ElderOption = { elderId: string; label: string };
 
 const {
   fill: FILL,
@@ -37,12 +41,25 @@ const {
 
 export default function CaregiverHomeScreen() {
   const {
+    condition,
+    conditionMeta,
+    elderOptions,
+    greetingTitle,
+    hasElders,
+    isError,
+    isLoading,
     isPatientDropdownOpen,
     openTask,
+    records,
+    recordsError,
+    recordsLoading,
+    refetch,
     screenWidth,
-    selectPatient,
-    selectedPatient,
+    selectElder,
+    selectedElderLabel,
+    tasks,
     togglePatientDropdown,
+    weeklyDays,
   } = useCaregiverHome();
 
   return (
@@ -53,15 +70,41 @@ export default function CaregiverHomeScreen() {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          <GreetingSection />
-          <ConditionSection
-            isPatientDropdownOpen={isPatientDropdownOpen}
-            onPatientSelect={selectPatient}
-            onPatientToggle={togglePatientDropdown}
-            selectedPatient={selectedPatient}
-          />
-          <TaskSection onTaskPress={openTask} />
-          <RecordSection />
+          <GreetingSection greetingTitle={greetingTitle} />
+
+          {isLoading ? (
+            <ActivityIndicator style={styles.loader} color={ORANGE} size="large" />
+          ) : isError ? (
+            <View style={styles.stateBox}>
+              <Text style={styles.stateText}>홈 정보를 불러오지 못했어요.</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={refetch}
+                style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.retryText}>다시 시도</Text>
+              </Pressable>
+            </View>
+          ) : !hasElders ? (
+            <View style={styles.stateBox}>
+              <Text style={styles.stateText}>돌봄 중인 어르신이 없어요.</Text>
+            </View>
+          ) : (
+            <>
+              <ConditionSection
+                condition={condition}
+                conditionMeta={conditionMeta}
+                elderOptions={elderOptions}
+                isPatientDropdownOpen={isPatientDropdownOpen}
+                onPatientSelect={selectElder}
+                onPatientToggle={togglePatientDropdown}
+                selectedElderLabel={selectedElderLabel}
+                weeklyDays={weeklyDays}
+              />
+              <TaskSection tasks={tasks} onTaskPress={openTask} />
+              <RecordSection isError={recordsError} isLoading={recordsLoading} records={records} />
+            </>
+          )}
         </ScrollView>
       </SafeAreaView>
 
@@ -70,25 +113,33 @@ export default function CaregiverHomeScreen() {
   );
 }
 
-function GreetingSection() {
+function GreetingSection({ greetingTitle }: { greetingTitle: string }) {
   return (
     <View style={styles.greeting}>
-      <Text style={styles.greetingTitle}>{CAREGIVER_HOME_COPY.greetingTitle}</Text>
+      <Text style={styles.greetingTitle}>{greetingTitle}</Text>
       <Text style={styles.greetingSub}>{CAREGIVER_HOME_COPY.greetingSubtitle}</Text>
     </View>
   );
 }
 
 function ConditionSection({
+  condition,
+  conditionMeta,
+  elderOptions,
   isPatientDropdownOpen,
   onPatientSelect,
   onPatientToggle,
-  selectedPatient,
+  selectedElderLabel,
+  weeklyDays,
 }: {
+  condition: { title: string; label: string };
+  conditionMeta: string;
+  elderOptions: ElderOption[];
   isPatientDropdownOpen: boolean;
-  onPatientSelect: (patient: CaregiverPatient) => void;
+  onPatientSelect: (elderId: string) => void;
   onPatientToggle: () => void;
-  selectedPatient: string;
+  selectedElderLabel: string;
+  weeklyDays: WeeklyActivityDay[];
 }) {
   return (
     <View style={styles.conditionWrap}>
@@ -96,23 +147,24 @@ function ConditionSection({
         <View style={styles.conditionTop}>
           <View style={styles.conditionInfo}>
             <View style={styles.conditionTitleRow}>
-              <Text style={styles.conditionTitle}>{CAREGIVER_HOME_COPY.conditionTitle}</Text>
+              <Text style={styles.conditionTitle}>{condition.title}</Text>
               <PatientSelector
+                elderOptions={elderOptions}
                 isOpen={isPatientDropdownOpen}
                 onSelect={onPatientSelect}
                 onToggle={onPatientToggle}
-                selectedPatient={selectedPatient}
+                selectedElderLabel={selectedElderLabel}
               />
             </View>
-            <Text style={styles.conditionMeta}>{CAREGIVER_HOME_COPY.conditionMeta}</Text>
+            <Text style={styles.conditionMeta}>{conditionMeta}</Text>
           </View>
           <View style={styles.graphWrap}>
             <SvgXml xml={GRAPH_XML} width={60} height={60} />
-            <Text style={styles.graphLabel}>{CAREGIVER_HOME_COPY.conditionLabel}</Text>
+            <Text style={styles.graphLabel}>{condition.label}</Text>
           </View>
         </View>
 
-        <WeeklyActivityChart />
+        <WeeklyActivityChart weeklyDays={weeklyDays} />
       </View>
 
       <WeeklyActivityLegend />
@@ -121,15 +173,17 @@ function ConditionSection({
 }
 
 function PatientSelector({
+  elderOptions,
   isOpen,
   onSelect,
   onToggle,
-  selectedPatient,
+  selectedElderLabel,
 }: {
+  elderOptions: ElderOption[];
   isOpen: boolean;
-  onSelect: (patient: CaregiverPatient) => void;
+  onSelect: (elderId: string) => void;
   onToggle: () => void;
-  selectedPatient: string;
+  selectedElderLabel: string;
 }) {
   return (
     <View style={styles.patientAnchor}>
@@ -139,24 +193,24 @@ function PatientSelector({
         style={styles.patientBadge}
         onPress={onToggle}
       >
-        <Text style={styles.patientBadgeText}>{selectedPatient}</Text>
+        <Text style={styles.patientBadgeText}>{selectedElderLabel}</Text>
         <SvgXml xml={DROPDOWN_XML} width={10.2} height={10.2} />
       </Pressable>
 
       {isOpen && (
         <View style={styles.patientDropdown}>
-          {CAREGIVER_PATIENTS.map((patient, index) => (
+          {elderOptions.map((option, index) => (
             <Pressable
-              key={patient}
+              key={option.elderId}
               accessibilityRole="button"
               style={[
                 styles.patientOption,
-                patient === selectedPatient && styles.patientOptionActive,
+                option.label === selectedElderLabel && styles.patientOptionActive,
                 index === 0 && styles.patientOptionTop,
               ]}
-              onPress={() => onSelect(patient)}
+              onPress={() => onSelect(option.elderId)}
             >
-              <Text style={styles.patientOptionText}>{patient}</Text>
+              <Text style={styles.patientOptionText}>{option.label}</Text>
             </Pressable>
           ))}
         </View>
@@ -165,12 +219,12 @@ function PatientSelector({
   );
 }
 
-function WeeklyActivityChart() {
+function WeeklyActivityChart({ weeklyDays }: { weeklyDays: WeeklyActivityDay[] }) {
   return (
     <View style={styles.chart}>
       <View style={styles.chartBars}>
-        {WEEKLY_ACTIVITY_DAYS.map((day) => (
-          <View key={day.label} style={styles.barColumn}>
+        {weeklyDays.map((day, dayIndex) => (
+          <View key={`${day.label}-${dayIndex}`} style={styles.barColumn}>
             <View style={styles.bar}>
               {day.segments.map((segment, index) => (
                 <View
@@ -186,8 +240,8 @@ function WeeklyActivityChart() {
         ))}
       </View>
       <View style={styles.chartLabels}>
-        {WEEKLY_ACTIVITY_DAYS.map((day) => (
-          <Text key={day.label} style={[styles.dayLabel, { color: day.color }]}>
+        {weeklyDays.map((day, dayIndex) => (
+          <Text key={`${day.label}-${dayIndex}`} style={[styles.dayLabel, { color: day.color }]}>
             {day.label}
           </Text>
         ))}
@@ -209,12 +263,18 @@ function WeeklyActivityLegend() {
   );
 }
 
-function TaskSection({ onTaskPress }: { onTaskPress: (href: CaregiverTask['href']) => void }) {
+function TaskSection({
+  onTaskPress,
+  tasks,
+}: {
+  onTaskPress: (href: Href) => void;
+  tasks: CaregiverTaskWithStatus[];
+}) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{CAREGIVER_HOME_COPY.todoTitle}</Text>
       <View style={styles.taskRow}>
-        {CAREGIVER_TASKS.map((task) => (
+        {tasks.map((task) => (
           <TaskCard key={task.label} task={task} onPress={onTaskPress} />
         ))}
       </View>
@@ -226,8 +286,8 @@ function TaskCard({
   onPress,
   task,
 }: {
-  onPress: (href: CaregiverTask['href']) => void;
-  task: CaregiverTask;
+  onPress: (href: Href) => void;
+  task: CaregiverTaskWithStatus;
 }) {
   return (
     <Pressable
@@ -240,7 +300,12 @@ function TaskCard({
       ]}
       onPress={() => onPress(task.href)}
     >
-      <SvgXml style={styles.taskCircle} xml={task.statusXml} width={22} height={22} />
+      <SvgXml
+        style={styles.taskCircle}
+        xml={task.completed ? CIRCLE_CHECK_XML : CIRCLE_EMPTY_XML}
+        width={22}
+        height={22}
+      />
       <View style={styles.taskBody}>
         <SvgXml xml={task.iconXml} width={42} height={42} />
         <Text style={styles.taskLabel}>{task.label}</Text>
@@ -249,7 +314,15 @@ function TaskCard({
   );
 }
 
-function RecordSection() {
+function RecordSection({
+  isError,
+  isLoading,
+  records,
+}: {
+  isError: boolean;
+  isLoading: boolean;
+  records: CaregiverRecord[];
+}) {
   return (
     <View style={styles.section}>
       <View style={styles.recordHeader}>
@@ -260,18 +333,26 @@ function RecordSection() {
         </Pressable>
       </View>
       <View style={styles.recordCard}>
-        {CAREGIVER_RECORDS.map((record) => (
-          <View key={record.title} style={styles.recordRow}>
-            <SvgXml xml={RING_XML} width={16} height={16} />
-            <View style={styles.recordText}>
-              <View style={styles.recordTitleRow}>
-                <Text style={styles.recordTitle}>{record.title}</Text>
-                <Text style={styles.recordTime}>{record.time}</Text>
+        {isLoading ? (
+          <ActivityIndicator color={ORANGE} />
+        ) : isError ? (
+          <Text style={styles.recordEmptyText}>기록을 불러오지 못했어요.</Text>
+        ) : records.length === 0 ? (
+          <Text style={styles.recordEmptyText}>아직 오늘의 기록이 없어요.</Text>
+        ) : (
+          records.map((record, index) => (
+            <View key={`${record.title}-${index}`} style={styles.recordRow}>
+              <SvgXml xml={RING_XML} width={16} height={16} />
+              <View style={styles.recordText}>
+                <View style={styles.recordTitleRow}>
+                  <Text style={styles.recordTitle}>{record.title}</Text>
+                  {record.time ? <Text style={styles.recordTime}>{record.time}</Text> : null}
+                </View>
+                {record.detail ? <Text style={styles.recordDetail}>{record.detail}</Text> : null}
               </View>
-              <Text style={styles.recordDetail}>{record.detail}</Text>
             </View>
-          </View>
-        ))}
+          ))
+        )}
       </View>
     </View>
   );
@@ -296,6 +377,34 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingBottom: 120,
     gap: 38,
+  },
+  loader: {
+    marginTop: 40,
+  },
+  stateBox: {
+    marginTop: 40,
+    alignItems: 'center',
+    gap: 16,
+  },
+  stateText: {
+    color: TEXT_ASSISTIVE,
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '500',
+    letterSpacing: -0.28,
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 84,
+    backgroundColor: ORANGE_SOFT,
+  },
+  retryText: {
+    color: ORANGE_DEEP,
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '600',
+    letterSpacing: -0.28,
   },
   greeting: {
     gap: 8,
@@ -553,6 +662,14 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     paddingHorizontal: 20,
     gap: 24,
+  },
+  recordEmptyText: {
+    color: TEXT_ASSISTIVE,
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '500',
+    letterSpacing: -0.28,
+    textAlign: 'center',
   },
   recordRow: {
     flexDirection: 'row',

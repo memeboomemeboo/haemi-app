@@ -69,7 +69,7 @@ export default function MyPageScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
-      <BottomNavigation activeTab="Setting" tabs={['Home', 'Album', 'Report', 'Setting']} />
+      <BottomNavigation activeTab="Setting" />
     </View>
   );
 }

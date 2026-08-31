@@ -2,7 +2,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { useEffect } from 'react';
 import CaregiverHomeScreen from '@/pages/CaregiverHome';
 import ElderHomeScreen from '@/pages/ElderHome';
-import AuthStack from '@/widgets/AuthStack';
+import AuthStack from '@/pages/Auth/AuthStack';
 import { useUserGroup } from '@/entities/user';
 import { useUserContext } from '@/shared/context/UserContext';
 import { colors } from '@/shared/constants';

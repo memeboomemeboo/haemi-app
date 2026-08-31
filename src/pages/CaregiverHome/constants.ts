@@ -1,6 +1,7 @@
 import type { Href } from 'expo-router';
 
-import { CALENDAR_XML, CIRCLE_CHECK_XML, CIRCLE_EMPTY_XML, HEART_XML } from '@/pages/CaregiverHome/assets';
+import { CALENDAR_XML, HEART_XML } from '@/pages/CaregiverHome/assets';
+import type { GuardianCondition } from '@/shared/types/guardian-home';
 
 export type ActivitySegment = {
   color: string;
@@ -23,12 +24,14 @@ export type CaregiverTask = {
   accessibilityLabel: string;
   backgroundColor: string;
   iconXml: string;
-  statusXml: string;
   href: Href;
+  /** 완료 여부를 challenge의 어느 필드에서 읽을지 */
+  completionKey: 'greetingCompleted' | 'memoryCompleted';
 };
 
 export type CaregiverRecord = {
   title: string;
+  /** 서버 occurredAt에서 포맷한 시각. API에 없으면 표시하지 않는다. */
   time: string;
   detail: string;
 };
@@ -36,24 +39,27 @@ export type CaregiverRecord = {
 export const CAREGIVER_HOME_MAX_WIDTH = 402;
 
 export const CAREGIVER_HOME_ROUTES = {
+  dailyMessage: '/daily-message-guardian',
   familyMemories: '/family-memories',
   memoryRegister: '/memory-register',
 } as const satisfies Record<string, Href>;
 
+/** 화면에 고정으로 노출되는 문구 (동적 데이터는 훅에서 조합한다). */
 export const CAREGIVER_HOME_COPY = {
-  greetingTitle: '승아님, 안녕하세요',
-  greetingSubtitle: '어머니와의 소중한 추억을 함께 만들어가요.',
-  conditionTitle: '오늘 컨디션 좋아요',
-  conditionMeta: '마지막 접속 1시간 전',
-  conditionLabel: '양호',
+  greetingSubtitle: '소중한 추억을 함께 만들어가요.',
   todoTitle: '오늘의 할일',
   recordTitle: '오늘의 기록',
   recordMore: '자세히 보기',
 } as const;
 
-export const CAREGIVER_PATIENTS = ['박영호 님', '이순자 님'] as const;
+/** 3색 컨디션 → 카드 제목·요약 라벨. 판정 데이터가 없으면 null 키를 쓴다. */
+export const CONDITION_COPY: Record<GuardianCondition, { title: string; label: string }> = {
+  GOOD: { title: '오늘 컨디션 좋아요', label: '양호' },
+  CAUTION: { title: '오늘 컨디션 주의가 필요해요', label: '주의' },
+  OBSERVE: { title: '오늘 관찰이 필요해요', label: '관찰' },
+};
 
-export type CaregiverPatient = (typeof CAREGIVER_PATIENTS)[number];
+export const CONDITION_COPY_EMPTY = { title: '컨디션 정보가 아직 없어요', label: '-' } as const;
 
 export const CAREGIVER_COLORS = {
   orange: '#fd6941',
@@ -84,96 +90,41 @@ export const WEEKLY_ACTIVITY_LEGEND: LegendItem[] = [
   { label: '인지 훈련', color: SEGMENT_COLORS.training },
 ];
 
-export const WEEKLY_ACTIVITY_DAYS: WeeklyActivityDay[] = [
-  {
-    label: '일',
-    color: CAREGIVER_COLORS.error,
-    segments: [
-      { color: SEGMENT_COLORS.training, height: 8 },
-      { color: SEGMENT_COLORS.word, height: 9 },
-      { color: SEGMENT_COLORS.album, height: 9 },
-      { color: SEGMENT_COLORS.answer, height: 8 },
-    ],
-  },
-  {
-    label: '월',
-    color: CAREGIVER_COLORS.lineNormal,
-    segments: [
-      { color: SEGMENT_COLORS.training, height: 8 },
-      { color: SEGMENT_COLORS.word, height: 8 },
-      { color: SEGMENT_COLORS.album, height: 7 },
-    ],
-  },
-  {
-    label: '화',
-    color: CAREGIVER_COLORS.lineNormal,
-    segments: [{ color: SEGMENT_COLORS.training, height: 4 }],
-  },
-  {
-    label: '수',
-    color: CAREGIVER_COLORS.lineNormal,
-    segments: [{ color: SEGMENT_COLORS.training, height: 4 }],
-  },
-  {
-    label: '목',
-    color: CAREGIVER_COLORS.lineNormal,
-    segments: [
-      { color: SEGMENT_COLORS.training, height: 7 },
-      { color: SEGMENT_COLORS.word, height: 5 },
-    ],
-  },
-  {
-    label: '금',
-    color: CAREGIVER_COLORS.lineNormal,
-    segments: [
-      { color: SEGMENT_COLORS.training, height: 7 },
-      { color: SEGMENT_COLORS.word, height: 5 },
-    ],
-  },
-  {
-    label: '토',
-    color: CAREGIVER_COLORS.blue,
-    segments: [
-      { color: SEGMENT_COLORS.training, height: 8 },
-      { color: SEGMENT_COLORS.word, height: 8 },
-      { color: SEGMENT_COLORS.album, height: 7 },
-    ],
-  },
-];
+/** 주간 스택 막대에서 활동 종류별 세그먼트 높이(아래→위 순서로 쌓는다). */
+export const SEGMENT_SPEC = [
+  { key: 'training', color: SEGMENT_COLORS.training, height: 8 },
+  { key: 'greetingRead', color: SEGMENT_COLORS.word, height: 8 },
+  { key: 'memoryViewed', color: SEGMENT_COLORS.album, height: 9 },
+  { key: 'replied', color: SEGMENT_COLORS.answer, height: 8 },
+] as const;
 
-export const CAREGIVER_RECORDS: CaregiverRecord[] = [
-  {
-    title: '인지 활동 완료',
-    time: '오전 9:20',
-    detail: '기억력 게임 5분 · 정답률 80%',
-  },
-  {
-    title: '음성 메세지 도착',
-    time: '오전 11:05',
-    detail: '“밥 잘 먹었다"',
-  },
-  {
-    title: '추억 앨범 확인',
-    time: '오후 2:40',
-    detail: '올려주신 사진 3장을 보셨어요',
-  },
-];
+/** 서버 DayOfWeek(MONDAY…) → 요일 한 글자 */
+export const DAY_OF_WEEK_LABEL: Record<string, string> = {
+  MONDAY: '월',
+  TUESDAY: '화',
+  WEDNESDAY: '수',
+  THURSDAY: '목',
+  FRIDAY: '금',
+  SATURDAY: '토',
+  SUNDAY: '일',
+};
 
+/** 오늘 할 일 카드. 완료 상태(statusXml)는 challenge 응답에서 결정한다. */
 export const CAREGIVER_TASKS: CaregiverTask[] = [
   {
     label: '오늘의 한마디',
     accessibilityLabel: '오늘의 한마디',
     backgroundColor: '#f5f5f5',
     iconXml: HEART_XML,
-    statusXml: CIRCLE_EMPTY_XML,
-    href: CAREGIVER_HOME_ROUTES.familyMemories,
+    href: CAREGIVER_HOME_ROUTES.dailyMessage,
+    completionKey: 'greetingCompleted',
   },
   {
     label: '추억 등록',
     accessibilityLabel: '추억 등록',
     backgroundColor: CAREGIVER_COLORS.orangeSoft,
     iconXml: CALENDAR_XML,
-    statusXml: CIRCLE_CHECK_XML,
     href: CAREGIVER_HOME_ROUTES.memoryRegister,
+    completionKey: 'memoryCompleted',
   },
 ];

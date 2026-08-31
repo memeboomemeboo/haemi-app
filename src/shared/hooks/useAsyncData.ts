@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface AsyncDataState<T> {
   data: T | null;
@@ -28,33 +28,40 @@ export function useAsyncData<T>(
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  // 진행 중인 요청을 식별하는 시퀀스. 최신 요청의 결과만 상태에 반영해
+  // 늦게 도착한 이전 요청(예: 어르신 빠른 전환)이 화면을 덮어쓰지 않게 한다.
+  const requestIdRef = useRef(0);
+
   const load = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     setIsLoading(true);
     setError(null);
     try {
       const result = await fetcher();
+      if (requestId !== requestIdRef.current) return;
       setData(result);
       options?.onSuccess?.(result);
     } catch (e) {
+      if (requestId !== requestIdRef.current) return;
       const error = e instanceof Error ? e : new Error(String(e));
       setError(error);
       options?.onError?.(error);
     } finally {
-      setIsLoading(false);
+      if (requestId === requestIdRef.current) {
+        setIsLoading(false);
+      }
     }
   }, [fetcher, options]);
 
   useEffect(() => {
-    let isMounted = true;
-
     void Promise.resolve().then(() => {
-      if (isMounted) {
-        void load();
-      }
+      void load();
     });
 
     return () => {
-      isMounted = false;
+      // 언마운트/재실행 시 진행 중 요청을 무효화한다.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      requestIdRef.current++;
     };
   }, [load]);
 

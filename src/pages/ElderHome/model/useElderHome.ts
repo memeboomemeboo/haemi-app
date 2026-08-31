@@ -1,36 +1,18 @@
-import { useRouter } from 'expo-router';
-import { useCallback } from 'react';
-
+import { elderInboxService } from '@/shared/api';
 import { getElderHome } from '@/shared/api/elderHome';
 import { useAsyncData } from '@/shared/hooks';
 
 export function useElderHome() {
-  const router = useRouter();
-
   const { data, isLoading, isError, refetch } = useAsyncData(getElderHome);
+  const { data: inbox } = useAsyncData(elderInboxService.getInbox);
 
-  const taskStatus = data
-    ? {
-        greetingCompleted: data.greeting.totalToday > data.greeting.unread,
-        trainingCompleted: data.training.completedToday,
-        memoryCompleted:
-          data.recentMemories.length > 0 && data.recentMemories.every((m) => m.responded),
-      }
-    : undefined;
-
-  const handleTaskPress = useCallback(
-    (index: number) => {
-      if (index === 1) router.push('/quiz');
-    },
-    [router],
-  );
+  const unreadInboxCount = inbox?.filter((item) => !item.read).length ?? 0;
 
   return {
     homeData: data,
+    unreadInboxCount,
     isLoading,
     isError,
-    taskStatus,
-    handleTaskPress,
     refetch,
   };
 }

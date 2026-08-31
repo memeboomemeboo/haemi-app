@@ -743,7 +743,7 @@ export default function MemoryRegisterScreen() {
         </View>
       </View>
 
-      <BottomNavigation activeTab="Memory" />
+      <BottomNavigation activeTab="Album" />
 
       <Modal transparent visible={isVoiceMenuOpen} animationType="none" onRequestClose={closeVoiceMenu}>
         <View style={styles.voiceMenuLayer}>
