@@ -30,4 +30,6 @@ export {
   PlayTriangle,
   Backspace,
   Close,
+  Mic,
+  Waveform,
 } from './icons-components';

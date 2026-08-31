@@ -14,4 +14,5 @@ export { default as MyPage } from './MyPage';
 export { default as ProfileEdit } from './ProfileEdit';
 export { default as MyFamily } from './MyFamily';
 export { default as ElderRegister } from './ElderRegister';
+export { default as DailyMessage } from './DailyMessage';
 export { default as FamilyCreate } from './FamilyCreate';

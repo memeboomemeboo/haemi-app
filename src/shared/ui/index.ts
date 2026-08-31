@@ -34,6 +34,8 @@ export {
   PlayTriangle,
   Backspace,
   Close,
+  Mic,
+  Waveform,
   type IconName,
   type IconProps,
   type IllustrationName,

@@ -49,6 +49,9 @@ export const ICON_SVG_MAP = {
 
   PlayTriangle: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 4.5L19 12L7 19.5V4.5Z" fill="currentColor"/></svg>`,
 
+  Mic: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 15C13.6569 15 15 13.6569 15 12V6C15 4.34315 13.6569 3 12 3C10.3431 3 9 4.34315 9 6V12C9 13.6569 10.3431 15 12 15Z" fill="currentColor"/><path d="M18.3 12C18.3 15.4794 15.4794 18.3 12 18.3C8.52061 18.3 5.7 15.4794 5.7 12H4.2C4.2 16.0783 7.29401 19.4383 11.25 19.8556V21.75H8.5V23.25H15.5V21.75H12.75V19.8556C16.706 19.4383 19.8 16.0783 19.8 12H18.3Z" fill="currentColor"/></svg>`,
+  Waveform: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="9" width="3" height="6" rx="1.5" fill="currentColor"/><rect x="7.5" y="5" width="3" height="14" rx="1.5" fill="currentColor"/><rect x="14" y="2" width="3" height="20" rx="1.5" fill="currentColor"/><rect x="20" y="7" width="3" height="10" rx="1.5" fill="currentColor"/></svg>`,
+
   Backspace: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.5 5H21a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H8.5a1 1 0 0 1-.77-.36l-6-7a1 1 0 0 1 0-1.28l6-7A1 1 0 0 1 8.5 5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 10L18 14M18 10L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`,
   Close: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
 

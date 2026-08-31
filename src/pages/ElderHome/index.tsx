@@ -59,6 +59,14 @@ export default function ElderHomeScreen() {
           </View>
         )}
 
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/daily-message')}
+          style={({ pressed }) => [styles.dailyMessageButton, pressed && styles.actionButtonPressed]}
+        >
+          <Text style={styles.dailyMessageButtonText}>하루 한마디 전하기</Text>
+        </Pressable>
+
         <View style={styles.actions}>
           <Pressable
             accessibilityRole="button"
@@ -150,6 +158,21 @@ const styles = StyleSheet.create({
     color: light.primary,
     marginTop: -8,
     marginBottom: 12,
+  },
+  dailyMessageButton: {
+    height: 69,
+    borderRadius: 15,
+    backgroundColor: light.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  dailyMessageButtonText: {
+    fontSize: 28,
+    fontWeight: '600',
+    lineHeight: 36.4,
+    letterSpacing: -0.56,
+    color: light.background.normal,
   },
   actions: {
     flexDirection: 'row',
