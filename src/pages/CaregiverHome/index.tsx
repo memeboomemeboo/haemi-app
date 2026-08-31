@@ -12,7 +12,6 @@ import {
   RING_XML,
 } from '@/pages/CaregiverHome/assets';
 import {
-  CAREGIVER_COLORS,
   CAREGIVER_HOME_COPY,
   WEEKLY_ACTIVITY_LEGEND,
   type CaregiverRecord,
@@ -22,22 +21,21 @@ import {
   useCaregiverHome,
   type CaregiverTaskWithStatus,
 } from '@/pages/CaregiverHome/model/useCaregiverHome';
+import { colors } from '@/shared/constants';
 import type { Href } from 'expo-router';
 
 type ElderOption = { elderId: string; label: string };
 
-const {
-  fill: FILL,
-  lineNormal: LINE_NORMAL,
-  orange: ORANGE,
-  orangeDeep: ORANGE_DEEP,
-  orangeLine: ORANGE_LINE,
-  orangeSoft: ORANGE_SOFT,
-  text: TEXT,
-  textAssistive: TEXT_ASSISTIVE,
-  textMuted: TEXT_MUTED,
-  white: WHITE,
-} = CAREGIVER_COLORS;
+const ORANGE = colors.light.primary;
+const ORANGE_DEEP = colors.light.primary;
+const ORANGE_LINE = colors.palette.orange[90];
+const ORANGE_SOFT = colors.palette.orange[97];
+const TEXT = colors.light.label.neutral;
+const TEXT_ASSISTIVE = colors.light.label.assistive;
+const TEXT_MUTED = colors.light.label.alternative;
+const LINE_NORMAL = colors.light.line.normal;
+const FILL = colors.light.fill.normal;
+const WHITE = colors.light.background.normal;
 
 export default function CaregiverHomeScreen() {
   const {
@@ -146,8 +144,13 @@ function ConditionSection({
       <View style={styles.conditionCard}>
         <View style={styles.conditionTop}>
           <View style={styles.conditionInfo}>
-            <View style={styles.conditionTitleRow}>
-              <Text style={styles.conditionTitle}>{condition.title}</Text>
+            <Text numberOfLines={2} style={styles.conditionTitle}>
+              {condition.title}
+            </Text>
+            <View style={styles.conditionMetaRow}>
+              <Text numberOfLines={1} style={styles.conditionMeta}>
+                {conditionMeta}
+              </Text>
               <PatientSelector
                 elderOptions={elderOptions}
                 isOpen={isPatientDropdownOpen}
@@ -156,7 +159,6 @@ function ConditionSection({
                 selectedElderLabel={selectedElderLabel}
               />
             </View>
-            <Text style={styles.conditionMeta}>{conditionMeta}</Text>
           </View>
           <View style={styles.graphWrap}>
             <SvgXml xml={GRAPH_XML} width={60} height={60} />
@@ -445,14 +447,17 @@ const styles = StyleSheet.create({
   },
   conditionInfo: {
     flex: 1,
-    gap: 5,
+    minWidth: 0,
+    marginRight: 8,
+    gap: 2,
   },
-  conditionTitleRow: {
+  conditionMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 6,
   },
   conditionTitle: {
+    flexShrink: 1,
     color: TEXT,
     fontSize: 20,
     lineHeight: 26,
@@ -479,6 +484,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.24,
   },
   conditionMeta: {
+    flexShrink: 1,
     color: TEXT_MUTED,
     fontSize: 12,
     lineHeight: 16,
@@ -486,6 +492,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.24,
   },
   graphWrap: {
+    flexShrink: 0,
     width: 60,
     height: 60,
     alignItems: 'center',
@@ -560,6 +567,7 @@ const styles = StyleSheet.create({
   },
   patientAnchor: {
     position: 'relative',
+    flexShrink: 0,
     alignItems: 'center',
     zIndex: 40,
   },

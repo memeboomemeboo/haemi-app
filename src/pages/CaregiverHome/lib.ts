@@ -1,5 +1,4 @@
 import {
-  CAREGIVER_COLORS,
   CONDITION_COPY,
   CONDITION_COPY_EMPTY,
   DAY_OF_WEEK_LABEL,
@@ -7,6 +6,7 @@ import {
   type CaregiverRecord,
   type WeeklyActivityDay,
 } from '@/pages/CaregiverHome/constants';
+import { colors } from '@/shared/constants';
 import type {
   ActivityItem,
   DayActivity,
@@ -41,10 +41,10 @@ export function lastLoginMeta(lastLoginAt: string | null, now: number = Date.now
 
 /** 요일 라벨 색: 오늘=주황, 일요일=빨강, 토요일=파랑, 그 외=회색. */
 function dayLabelColor(day: DayActivity, todayIso: string): string {
-  if (day.date === todayIso) return CAREGIVER_COLORS.orange;
-  if (day.dayOfWeek === 'SUNDAY') return CAREGIVER_COLORS.error;
-  if (day.dayOfWeek === 'SATURDAY') return CAREGIVER_COLORS.blue;
-  return CAREGIVER_COLORS.lineNormal;
+  if (day.date === todayIso) return colors.light.primary;
+  if (day.dayOfWeek === 'SUNDAY') return colors.status.error;
+  if (day.dayOfWeek === 'SATURDAY') return colors.palette.blue[60];
+  return colors.light.line.normal;
 }
 
 /** 7일 활동 → 스택 막대 세그먼트. 완료한 활동 종류만 아래에서 위로 쌓는다. */

@@ -1,6 +1,7 @@
 import type { Href } from 'expo-router';
 
 import { CALENDAR_XML, HEART_XML } from '@/pages/CaregiverHome/assets';
+import { colors } from '@/shared/constants';
 import type { GuardianCondition } from '@/shared/types/guardian-home';
 
 export type ActivitySegment = {
@@ -61,26 +62,11 @@ export const CONDITION_COPY: Record<GuardianCondition, { title: string; label: s
 
 export const CONDITION_COPY_EMPTY = { title: '컨디션 정보가 아직 없어요', label: '-' } as const;
 
-export const CAREGIVER_COLORS = {
-  orange: '#fd6941',
-  orangeDeep: '#fd6035',
-  orangeSoft: '#fff3f0',
-  orangeLine: '#fed7cd',
-  text: '#3c3e3f',
-  textMuted: '#5a5c5d',
-  textAssistive: '#76787a',
-  lineNormal: '#c1c2c3',
-  fill: '#f7f7f7',
-  error: '#ee2a2b',
-  blue: '#38a9fa',
-  white: '#ffffff',
-} as const;
-
 export const SEGMENT_COLORS = {
-  answer: CAREGIVER_COLORS.error,
-  album: CAREGIVER_COLORS.orange,
-  word: '#fd8768',
-  training: CAREGIVER_COLORS.orangeLine,
+  answer: colors.status.error,
+  album: colors.light.primary,
+  word: colors.palette.red[70],
+  training: colors.palette.orange[90],
 } as const;
 
 export const WEEKLY_ACTIVITY_LEGEND: LegendItem[] = [
@@ -114,7 +100,7 @@ export const CAREGIVER_TASKS: CaregiverTask[] = [
   {
     label: '오늘의 한마디',
     accessibilityLabel: '오늘의 한마디',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.palette.neutral[95],
     iconXml: HEART_XML,
     href: CAREGIVER_HOME_ROUTES.dailyMessage,
     completionKey: 'greetingCompleted',
@@ -122,7 +108,7 @@ export const CAREGIVER_TASKS: CaregiverTask[] = [
   {
     label: '추억 등록',
     accessibilityLabel: '추억 등록',
-    backgroundColor: CAREGIVER_COLORS.orangeSoft,
+    backgroundColor: colors.palette.orange[97],
     iconXml: CALENDAR_XML,
     href: CAREGIVER_HOME_ROUTES.memoryRegister,
     completionKey: 'memoryCompleted',

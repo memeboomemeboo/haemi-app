@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
 
 import {
@@ -35,6 +35,8 @@ export function useCaregiverHome() {
 
   const profileState = useAsyncData(fetchGuardianName);
   const homeState = useAsyncData(getGuardianHome);
+  const refetchProfile = profileState.refetch;
+  const refetchHome = homeState.refetch;
 
   const elders = useMemo(() => homeState.data?.elders ?? [], [homeState.data]);
 
@@ -53,6 +55,29 @@ export function useCaregiverHome() {
   }, [selectedElderId]);
 
   const activitiesState = useAsyncData(fetchActivities);
+  const refetchActivities = activitiesState.refetch;
+
+  const refetchAll = useCallback(async (): Promise<void> => {
+    await Promise.all([refetchProfile(), refetchHome(), refetchActivities()]);
+  }, [refetchActivities, refetchHome, refetchProfile]);
+
+  // 최초 진입은 useAsyncData가 조회한다. 다른 화면에서 돌아온 경우에만
+  // 완료 상태와 오늘 기록을 함께 갱신한다.
+  const hasFocusedRef = useRef(false);
+  const refetchAllRef = useRef(refetchAll);
+  useEffect(() => {
+    refetchAllRef.current = refetchAll;
+  }, [refetchAll]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocusedRef.current) {
+        hasFocusedRef.current = true;
+        return;
+      }
+      void refetchAllRef.current();
+    }, []),
+  );
 
   const selectedElder = useMemo(
     () => elders.find((e) => e.elderId === selectedElderId) ?? null,
@@ -120,7 +145,7 @@ export function useCaregiverHome() {
     // 상태
     isLoading: homeState.isLoading,
     isError: homeState.isError,
-    refetch: homeState.refetch,
+    refetch: refetchAll,
     recordsLoading: activitiesState.isLoading,
     recordsError: activitiesState.isError,
     hasElders: elders.length > 0,
