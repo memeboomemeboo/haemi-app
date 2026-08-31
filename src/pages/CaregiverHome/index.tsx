@@ -65,7 +65,7 @@ export default function CaregiverHomeScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      <BottomNavigation activeTab="Home" />
+      <BottomNavigation activeTab="Home" tabs={['Home', 'Album', 'Report', 'Setting']} />
     </View>
   );
 }

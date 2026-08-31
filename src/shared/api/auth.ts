@@ -62,8 +62,9 @@ export const authService = {
     return response.data;
   },
 
-  async loginElderWithPin(data: ElderPinLoginRequest): Promise<ElderPinLoginResponse> {
-    const response = await post<SwaggerApiResponse<ElderPinLoginResponse>>('/auth/elders/login', data, {
+  async loginElderWithPin(data: ElderPinLoginRequest | string): Promise<ElderPinLoginResponse> {
+    const request = typeof data === 'string' ? { pin: data } : data;
+    const response = await post<SwaggerApiResponse<ElderPinLoginResponse>>('/auth/elders/login', request, {
       skipAuth: true,
     });
     return response.data;
@@ -71,13 +72,6 @@ export const authService = {
 
   async loginWithPassword(data: PasswordLoginRequest): Promise<TokenResponse> {
     const response = await post<SwaggerApiResponse<TokenResponse>>('/auth/login', data, {
-      skipAuth: true,
-    });
-    return response.data;
-  },
-
-  async loginElderWithPin(pin: string): Promise<{ accessToken: string }> {
-    const response = await post<SwaggerApiResponse<{ accessToken: string }>>('/auth/elders/login', { pin }, {
       skipAuth: true,
     });
     return response.data;

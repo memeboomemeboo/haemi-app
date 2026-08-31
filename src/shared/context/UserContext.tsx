@@ -4,8 +4,8 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { getAuthToken, authService, setOnUnauthorizedCallback } from '@/shared/api';
-import { initializeTestToken } from '@/shared/lib/auth';
 import { getRoleFromToken } from '@/shared/lib';
+import { initializeTestToken } from '@/shared/lib/auth';
 import type { UserRole, Relation, Group } from '@/shared/types';
 
 interface UserContextType {
@@ -47,13 +47,31 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const savedRole = await authService.getStoredRole();
           if (savedRole) {
             setRoleState(savedRole);
-          } else {
-            const tokenRole = getRoleFromToken(savedToken);
-            if (tokenRole) {
-              setRoleState(tokenRole);
-              await authService.setStoredRole(tokenRole);
-            } else if (__DEV__) {
-              console.warn('Failed to parse role from saved token');
+            return;
+          }
+
+          // 저장된 role이 없는 기존 설치는 토큰의 role 클레임으로 먼저 복구한다.
+          // 어르신 토큰으로 보호자 전용 프로필 API를 호출해 로그아웃되는 것을 방지한다.
+          const tokenRole = getRoleFromToken(savedToken);
+          if (tokenRole) {
+            setRoleState(tokenRole);
+            await authService.setStoredRole(tokenRole);
+            return;
+          }
+
+          // role 클레임이 없는 레거시 보호자 토큰만 프로필 조회로 마이그레이션한다.
+          try {
+            const meResponse = await authService.getMe();
+            if (meResponse.success && meResponse.data) {
+              const hydratedRole = meResponse.data.role || null;
+              setRoleState(hydratedRole);
+              await authService.setStoredRole(hydratedRole);
+            }
+          } catch (error) {
+            // 토큰이 만료되었거나 유효하지 않음 - 로그아웃 처리
+            setTokenState(null);
+            if (__DEV__) {
+              console.warn('Failed to hydrate role during startup:', error);
             }
           }
         }
