@@ -21,6 +21,9 @@ export default function ElderHomeScreen() {
   const unrespondedMemoryCount =
     homeData?.recentMemories.filter((memory) => !memory.responded).length ?? 0;
   const latestMemoryTitle = homeData?.recentMemories[0]?.title;
+  const hasMemories = (homeData?.recentMemories.length ?? 0) > 0;
+  const hasNewMemory = unrespondedMemoryCount > 0;
+  const hasTodayMessage = (homeData?.greeting.totalToday ?? 0) > 0;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -71,22 +74,32 @@ export default function ElderHomeScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push('/album')}
-              style={({ pressed }) => [styles.notificationCard, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.notificationCard,
+                !hasMemories && styles.notificationCardEmpty,
+                pressed && styles.pressed,
+              ]}
             >
               <View style={styles.notificationIconCircle}>
                 <Mail size={24} color={colors.label.assistive} />
               </View>
               <View style={styles.notificationContent}>
                 <View style={styles.notificationTitleRow}>
-                  <Text style={styles.notificationTitle}>새 추억이 왔어요</Text>
-                  {unrespondedMemoryCount > 0 && (
+                  <Text style={styles.notificationTitle}>
+                    {hasNewMemory ? '새 추억이 왔어요' : hasMemories ? '추억 앨범을 확인해요' : '추억이 없어요'}
+                  </Text>
+                  {hasNewMemory && (
                     <View style={styles.badge}>
                       <Text style={styles.badgeText}>{unrespondedMemoryCount}</Text>
                     </View>
                   )}
                 </View>
                 <Text style={styles.notificationSubtitle} numberOfLines={1}>
-                  {latestMemoryTitle ?? '아직 도착한 추억이 없어요'}
+                  {hasNewMemory
+                    ? latestMemoryTitle
+                    : hasMemories
+                      ? '추억 앨범으로 기억을 돌아봐요'
+                      : '아직 추억 앨범이 채워지지 않았어요'}
                 </Text>
               </View>
             </Pressable>
@@ -94,17 +107,23 @@ export default function ElderHomeScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push('/album')}
-              style={({ pressed }) => [styles.notificationCard, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.notificationCard,
+                !hasTodayMessage && styles.notificationCardEmpty,
+                pressed && styles.pressed,
+              ]}
             >
               <View style={[styles.notificationIconCircle, styles.notificationIconCirclePrimary]}>
                 <Waveform size={20} color={colors.primary} />
               </View>
               <View style={styles.notificationContent}>
-                <Text style={styles.notificationTitle}>하루 한마디 도착</Text>
+                <Text style={styles.notificationTitle}>
+                  {hasTodayMessage ? '하루 한마디 도착' : '입력된 한마디가 없어요'}
+                </Text>
                 <Text style={styles.notificationSubtitle}>
-                  {homeData && homeData.greeting.totalToday > 0
-                    ? `가족이 보낸 메시지 ${homeData.greeting.unread}개`
-                    : '아직 도착한 메시지가 없어요'}
+                  {hasTodayMessage
+                    ? `가족이 보낸 메시지 ${homeData?.greeting.unread ?? 0}개`
+                    : '아직 음성 메시지가 오지 않았어요'}
                 </Text>
               </View>
             </Pressable>
@@ -233,6 +252,9 @@ const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
       shadowOpacity: 0.07,
       shadowRadius: 6,
       elevation: 2,
+    },
+    notificationCardEmpty: {
+      backgroundColor: colors.background.neutral,
     },
     notificationIconCircle: {
       width: 50,
