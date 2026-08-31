@@ -104,14 +104,14 @@ export default function ProfileEditScreen() {
     const filename = asset.fileName ?? `profile-${Date.now()}.${contentType.split('/')[1] ?? 'jpg'}`;
     setUploading(true);
     try {
+      const blob = await (await fetch(asset.uri)).blob();
       const upload = await myPageService.requestProfileImageUpload({
         originalFilename: filename,
         contentType,
-        declaredSizeBytes: asset.fileSize,
+        declaredSizeBytes: asset.fileSize ?? blob.size,
       });
       if (!upload.duplicate) {
         if (!upload.presignedUrl) throw new Error('Missing upload URL');
-        const blob = await (await fetch(asset.uri)).blob();
         const putResponse = await fetch(upload.presignedUrl, {
           method: 'PUT',
           headers: { 'Content-Type': contentType },

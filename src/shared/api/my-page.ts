@@ -108,7 +108,7 @@ export const myPageService = {
   async requestProfileImageUpload(data: {
     originalFilename: string;
     contentType: string;
-    declaredSizeBytes?: number;
+    declaredSizeBytes: number;
   }): Promise<RequestMediaUploadResponse> {
     return requestMediaUpload({ mediaType: 'PROFILE_IMAGE', ...data });
   },
