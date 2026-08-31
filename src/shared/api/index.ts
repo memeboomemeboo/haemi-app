@@ -44,6 +44,8 @@ export type {
   CreateGuardianMemoryRequest,
   UpdateGuardianMemoryRequest,
 } from './guardianMemory';
+export { guardianDailyCareService } from './guardianDailyCare';
+export type { DailyCareType, DailyCareSent, SendVoiceDailyCareRequest } from './guardianDailyCare';
 export { elderMemoryResponseService } from './elderMemoryResponse';
 export type {
   MemoryResponse,
