@@ -36,7 +36,12 @@ interface ElderSetupState {
  * 보호자가 어르신 계정을 등록(POST /guardian/elders)하며 정한 아이디·비밀번호를
  * 한 번 입력해 로그인하고, 아이디를 기기에 저장한다. 이후에는 PIN만으로 로그인한다.
  */
-export default function ElderSignupScreen() {
+interface ElderSignupScreenProps {
+  /** 라우트가 아니라 AuthStack 안에서 렌더될 때의 뒤로가기. 없으면 router.back(). */
+  onBack?: () => void;
+}
+
+export default function ElderSignupScreen({ onBack }: ElderSignupScreenProps = {}) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { setToken, setRole } = useUserContext();
@@ -168,7 +173,7 @@ export default function ElderSignupScreen() {
           </Pressable>
 
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => (onBack ? onBack() : router.back())}
             disabled={state.isLoading}
             style={({ pressed }) => [styles.secondaryButton, pressed && styles.secondaryButtonPressed]}
           >

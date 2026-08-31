@@ -8,9 +8,9 @@ import type { GuardianRegisterRequest } from '@/shared/types';
 
 export type GuardianSignupDraft = Omit<GuardianRegisterRequest, 'pin'>;
 
-interface SignupScreenProps { onContinue: (draft: GuardianSignupDraft) => void; onLoginPress: () => void; }
+interface SignupScreenProps { onContinue: (draft: GuardianSignupDraft) => void; onLoginPress: () => void; onElderSetupPress?: () => void; }
 
-export default function SignupScreen({ onContinue, onLoginPress }: SignupScreenProps) {
+export default function SignupScreen({ onContinue, onLoginPress, onElderSetupPress }: SignupScreenProps) {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [birthDate, setBirthDate] = useState('');
@@ -95,6 +95,7 @@ export default function SignupScreen({ onContinue, onLoginPress }: SignupScreenP
         {error ? <Text style={[styles.error, isUserIdAvailable && styles.success]}>{error}</Text> : null}
         <Pressable style={({ pressed }) => [styles.nextButton, !canSubmit && styles.nextButtonDisabled, pressed && styles.pressed]} onPress={handleSignup}><Text style={styles.nextText}>다음으로</Text></Pressable>
         <View style={styles.loginRow}><Text style={styles.loginGuide}>이미 계정이 있으신가요?</Text><Pressable onPress={onLoginPress}><Text style={styles.loginLink}>로그인</Text></Pressable></View>
+        {onElderSetupPress ? <View style={styles.loginRow}><Text style={styles.loginGuide}>어르신이신가요?</Text><Pressable onPress={onElderSetupPress}><Text style={styles.loginLink}>어르신 설정하기</Text></Pressable></View> : null}
       </ScrollView>
     </View>
   );

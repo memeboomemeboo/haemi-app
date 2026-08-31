@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import SignupScreen, { type GuardianSignupDraft } from '@/pages/Auth/SignupScreen';
 import ElderLoginScreen from '@/pages/ElderLogin';
+import ElderSignupScreen from '@/pages/ElderSignup';
 import { PinScreen, pinStorage } from '@/features/auth';
 import { authService, getErrorMessage } from '@/shared/api';
 import { useUserContext } from '@/shared/context/UserContext';
@@ -9,7 +10,7 @@ import { colors } from '@/shared/constants';
 import { getOrCreateDeviceId } from '@/shared/lib';
 import type { TokenResponse } from '@/shared/types';
 
-type AuthMode = 'loading' | 'signup' | 'pin-setup' | 'pin-login' | 'elder-login';
+type AuthMode = 'loading' | 'signup' | 'pin-setup' | 'pin-login' | 'elder-login' | 'elder-setup';
 export default function AuthStack() {
   const [mode, setMode] = useState<AuthMode>('loading');
   const [signupDraft, setSignupDraft] = useState<GuardianSignupDraft | null>(null);
@@ -64,8 +65,9 @@ export default function AuthStack() {
   }, [setRole, setToken]);
   if (mode === 'loading') return <View style={styles.loading}><ActivityIndicator color={colors.primary} /></View>;
   if (mode === 'elder-login') return <ElderLoginScreen />;
+  if (mode === 'elder-setup') return <ElderSignupScreen onBack={() => setMode('signup')} />;
   if (mode === 'pin-setup') return <PinScreen mode="setup" onComplete={finishSignup} onBackToSignup={() => { setSignupRegistered(false); setMode('signup'); }} />;
   if (mode === 'pin-login') return <PinScreen mode="login" onComplete={loginWithPin} onBackToSignup={() => setMode('signup')} />;
-  return <SignupScreen onContinue={(draft) => { setSignupDraft(draft); setSignupRegistered(false); setMode('pin-setup'); }} onLoginPress={() => setMode('pin-login')} />;
+  return <SignupScreen onContinue={(draft) => { setSignupDraft(draft); setSignupRegistered(false); setMode('pin-setup'); }} onLoginPress={() => setMode('pin-login')} onElderSetupPress={() => setMode('elder-setup')} />;
 }
 const styles = StyleSheet.create({ loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.light.background.normal } });
