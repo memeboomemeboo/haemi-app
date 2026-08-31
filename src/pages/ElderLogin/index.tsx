@@ -3,9 +3,13 @@ import { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useElderProfile, verifyElderPin } from '@/entities/elder';
+import { useElderProfile } from '@/entities/elder';
+import { authService } from '@/shared/api';
+import { pinStorage } from '@/features/auth';
+import { setAuthToken, setRefreshToken } from '@/shared/api/client';
+import { useUserContext } from '@/shared/context/UserContext';
 import { useTheme } from '@/shared/hooks';
-import { shuffleArray } from '@/shared/lib';
+import { getOrCreateDeviceId, shuffleArray } from '@/shared/lib';
 import { Backspace } from '@/shared/ui';
 
 const logoSource = require('../../../assets/images/haemi-logo.png');
@@ -30,9 +34,11 @@ export default function ElderLoginScreen() {
   const theme = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { profile } = useElderProfile();
+  const { setToken, setRole } = useUserContext();
 
   const [digits, setDigits] = useState(() => shuffleArray(DIGITS));
   const [pin, setPin] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const keypad = useMemo(() => buildKeypad(digits), [digits]);
 
@@ -42,14 +48,29 @@ export default function ElderLoginScreen() {
     }
     const nextPin = pin + digit;
     setPin(nextPin);
+    setErrorMessage(null);
 
     if (nextPin.length === PIN_LENGTH) {
-      const verified = await verifyElderPin(nextPin);
-      if (verified) {
+      try {
+        const loginId = await pinStorage.getElderLoginId();
+        if (!loginId) {
+          setErrorMessage('먼저 초기 설정이 필요합니다.');
+          setPin('');
+          setDigits(shuffleArray(DIGITS));
+          router.replace('/elder-signup' as Href);
+          return;
+        }
+        const deviceId = await getOrCreateDeviceId();
+        const tokens = await authService.loginWithPin({ loginId, pin: nextPin, deviceId });
+        await setAuthToken(tokens.accessToken);
+        await setRefreshToken(tokens.refreshToken);
+        setToken(tokens.accessToken);
+        setRole('ELDER');
         router.replace('/elder-home' as Href);
-      } else {
+      } catch {
         setPin('');
         setDigits(shuffleArray(DIGITS));
+        setErrorMessage('비밀번호가 올바르지 않아요.');
       }
     }
   };
@@ -76,6 +97,10 @@ export default function ElderLoginScreen() {
                 <View key={index} style={[styles.dot, index < pin.length && styles.dotFilled]} />
               ))}
             </View>
+
+            {errorMessage ? (
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            ) : null}
           </View>
 
           <View style={styles.divider} />
@@ -138,7 +163,7 @@ function KeypadButton({
   );
 }
 
-const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
+const createStyles = ({ colors, status }: ReturnType<typeof useTheme>) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -193,6 +218,12 @@ const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
     },
     dotFilled: {
       backgroundColor: colors.primary,
+    },
+    errorText: {
+      fontSize: 18,
+      fontWeight: '500',
+      color: status.error,
+      letterSpacing: -0.36,
     },
     divider: {
       height: 3,
