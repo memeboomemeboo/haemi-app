@@ -14,6 +14,8 @@ import type {
   GuardianRegisterRequest,
   GuardianRegisterResponse,
   PinLoginRequest,
+  ElderPinLoginRequest,
+  ElderPinLoginResponse,
   PasswordLoginRequest,
   LoginIdAvailabilityResponse,
   GuardianProfileResponse,
@@ -54,6 +56,13 @@ export const authService = {
 
   async loginWithPin(data: PinLoginRequest): Promise<TokenResponse> {
     const response = await post<SwaggerApiResponse<TokenResponse>>('/auth/login', data, {
+      skipAuth: true,
+    });
+    return response.data;
+  },
+
+  async loginElderWithPin(data: ElderPinLoginRequest): Promise<ElderPinLoginResponse> {
+    const response = await post<SwaggerApiResponse<ElderPinLoginResponse>>('/auth/elders/login', data, {
       skipAuth: true,
     });
     return response.data;

@@ -48,6 +48,14 @@ export interface PinLoginRequest {
   deviceId: string;
 }
 
+export interface ElderPinLoginRequest {
+  pin: string;
+}
+
+export interface ElderPinLoginResponse {
+  accessToken: string;
+}
+
 export interface PasswordLoginRequest {
   loginId: string;
   password: string;
