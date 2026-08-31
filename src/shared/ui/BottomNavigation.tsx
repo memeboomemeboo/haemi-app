@@ -76,6 +76,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, t
 
 const styles = StyleSheet.create({
   container: {
+    alignSelf: 'stretch',
     backgroundColor: '#ffffff',
     height: 103,
     shadowColor: '#000',
