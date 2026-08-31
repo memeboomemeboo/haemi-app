@@ -1,20 +1,26 @@
-import { ScrollView, StyleSheet, Text, View, Image, Pressable } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/shared/hooks';
+import { formatKoreanDate } from '@/shared/lib';
+import { BottomNavigation, Mail, Profile, Waveform } from '@/shared/ui';
 
-const PROFILE_ICON = 'https://www.figma.com/api/mcp/asset/c1ca85c6-9a42-43d2-be9d-1350bd51ad78.svg';
+import { useElderHome } from './model/useElderHome';
 
+/** Figma node 1408:5601 — 어르신 홈 */
 export default function ElderHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const { colors } = theme;
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { homeData, isLoading, isError, refetch } = useElderHome();
 
-  const userName = '순자님';
-  const currentDate = '9월 8일 화요일';
+  const unrespondedMemoryCount =
+    homeData?.recentMemories.filter((memory) => !memory.responded).length ?? 0;
+  const latestMemoryTitle = homeData?.recentMemories[0]?.title;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -23,73 +29,90 @@ export default function ElderHomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* 헤더: 이름 + 날짜 + 프로필 */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.headerName}>{userName}</Text>
-            <Text style={styles.headerDate}>{currentDate}</Text>
+            <Text style={styles.headerName}>어르신</Text>
+            <Text style={styles.headerDate}>{formatKoreanDate()}</Text>
           </View>
-          <Image
-            source={{ uri: PROFILE_ICON }}
-            style={styles.profileIcon}
-            resizeMode="contain"
-          />
+          <Profile size={53} color={colors.primary} />
         </View>
 
-        {/* 오늘의 인지 활동 카드 */}
         <View style={styles.activityCard}>
           <View style={styles.activityContent}>
             <Text style={styles.activityTitle}>오늘의 인지 활동</Text>
             <Text style={styles.activitySubtitle}>5분이면 충분해요. 오늘도 함께 해요!</Text>
           </View>
           <Pressable
+            accessibilityRole="button"
             onPress={() => router.push('/quiz')}
-            style={({ pressed }) => [
-              styles.activityButton,
-              pressed && styles.activityButtonPressed,
-            ]}
+            style={({ pressed }) => [styles.activityButton, pressed && styles.pressed]}
           >
             <Text style={styles.activityButtonText}>활동 시작하기</Text>
           </Pressable>
         </View>
 
-        {/* 새 추억이 왔어요 카드 */}
-        <Pressable
-          onPress={() => router.push('/album')}
-          style={({ pressed }) => [
-            styles.notificationCard,
-            pressed && styles.notificationCardPressed,
-          ]}
-        >
-          <View style={styles.notificationIcon} />
-          <View style={styles.notificationContent}>
-            <View style={styles.notificationTitleRow}>
-              <Text style={styles.notificationTitle}>새 추억이 왔어요</Text>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>1</Text>
+        {isLoading ? (
+          <View style={styles.loader}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : isError ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>데이터를 불러오지 못했어요.</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={refetch}
+              style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+            >
+              <Text style={styles.retryText}>다시 시도</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/album')}
+              style={({ pressed }) => [styles.notificationCard, pressed && styles.pressed]}
+            >
+              <View style={styles.notificationIconCircle}>
+                <Mail size={24} color={colors.label.assistive} />
               </View>
-            </View>
-            <Text style={styles.notificationSubtitle}>딸 정은님이 추억을 보냈어요</Text>
-          </View>
-        </Pressable>
+              <View style={styles.notificationContent}>
+                <View style={styles.notificationTitleRow}>
+                  <Text style={styles.notificationTitle}>새 추억이 왔어요</Text>
+                  {unrespondedMemoryCount > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{unrespondedMemoryCount}</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.notificationSubtitle} numberOfLines={1}>
+                  {latestMemoryTitle ?? '아직 도착한 추억이 없어요'}
+                </Text>
+              </View>
+            </Pressable>
 
-        {/* 하루 한마디 도착 카드 */}
-        <Pressable
-          onPress={() => router.push('/daily-message')}
-          style={({ pressed }) => [
-            styles.notificationCard,
-            pressed && styles.notificationCardPressed,
-          ]}
-        >
-          <View style={styles.notificationIcon} />
-          <View style={styles.notificationContent}>
-            <Text style={styles.notificationTitle}>하루 한마디 도착</Text>
-            <Text style={styles.notificationSubtitle}>
-              딸이 보낸 음성 메세지 · 00:24
-            </Text>
-          </View>
-        </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/album')}
+              style={({ pressed }) => [styles.notificationCard, pressed && styles.pressed]}
+            >
+              <View style={[styles.notificationIconCircle, styles.notificationIconCirclePrimary]}>
+                <Waveform size={20} color={colors.primary} />
+              </View>
+              <View style={styles.notificationContent}>
+                <Text style={styles.notificationTitle}>하루 한마디 도착</Text>
+                <Text style={styles.notificationSubtitle}>
+                  {homeData && homeData.greeting.totalToday > 0
+                    ? `가족이 보낸 메시지 ${homeData.greeting.unread}개`
+                    : '아직 도착한 메시지가 없어요'}
+                </Text>
+              </View>
+            </Pressable>
+          </>
+        )}
       </ScrollView>
+
+      <BottomNavigation activeTab="Home" />
     </View>
   );
 }
@@ -113,7 +136,6 @@ const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
-      marginBottom: 12,
     },
     headerLeft: {
       gap: 9,
@@ -131,11 +153,6 @@ const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
       color: colors.label.assistive,
       letterSpacing: -0.4,
       lineHeight: 26,
-      textAlign: 'center',
-    },
-    profileIcon: {
-      width: 53,
-      height: 53,
     },
     activityCard: {
       backgroundColor: '#fff3f0',
@@ -167,15 +184,42 @@ const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
       justifyContent: 'center',
       alignItems: 'center',
     },
-    activityButtonPressed: {
-      opacity: 0.8,
-    },
     activityButtonText: {
       fontSize: 18,
       fontWeight: '600',
       color: colors.background.normal,
       letterSpacing: -0.36,
       lineHeight: 23,
+    },
+    loader: {
+      height: 88,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    errorBox: {
+      height: 120,
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 16,
+    },
+    errorText: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: colors.label.alternative,
+    },
+    retryButton: {
+      paddingHorizontal: 24,
+      paddingVertical: 10,
+      borderRadius: 8,
+      backgroundColor: colors.primary,
+    },
+    retryText: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.background.normal,
+    },
+    pressed: {
+      opacity: 0.8,
     },
     notificationCard: {
       backgroundColor: colors.background.normal,
@@ -184,6 +228,7 @@ const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
       borderColor: colors.fill.neutral,
       padding: 23,
       flexDirection: 'row',
+      alignItems: 'center',
       gap: 22,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
@@ -191,14 +236,18 @@ const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
       shadowRadius: 6,
       elevation: 2,
     },
-    notificationCardPressed: {
-      opacity: 0.8,
-    },
-    notificationIcon: {
+    notificationIconCircle: {
       width: 50,
       height: 50,
       borderRadius: 25,
       backgroundColor: colors.background.neutral,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    notificationIconCirclePrimary: {
+      backgroundColor: '#fff3f0',
+      borderWidth: 1.087,
+      borderColor: colors.primary,
     },
     notificationContent: {
       flex: 1,
@@ -238,112 +287,3 @@ const createStyles = ({ colors }: ReturnType<typeof useTheme>) =>
       lineHeight: 21,
     },
   });
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: light.background.normal,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 16,
-    paddingBottom: 100,
-  },
-  header: {
-    marginBottom: 32,
-  },
-  welcome: {
-    marginBottom: 40,
-    alignItems: 'center',
-  },
-  welcomeText: {
-    fontSize: 28,
-    fontWeight: '600',
-    lineHeight: 36.4,
-    letterSpacing: -0.56,
-    color: light.label.neutral,
-    textAlign: 'center',
-  },
-  loader: {
-    height: 220,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorBox: {
-    height: 220,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-  },
-  errorText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: light.label.alternative,
-  },
-  retryButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: light.primary,
-  },
-  retryButtonPressed: {
-    opacity: 0.7,
-  },
-  retryText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: light.label.buttonText,
-  },
-  tasks: {
-    marginBottom: 24,
-  },
-  streak: {
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
-    color: light.primary,
-    marginTop: -8,
-    marginBottom: 12,
-  },
-  dailyMessageButton: {
-    height: 69,
-    borderRadius: 15,
-    backgroundColor: light.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  dailyMessageButtonText: {
-    fontSize: 28,
-    fontWeight: '600',
-    lineHeight: 36.4,
-    letterSpacing: -0.56,
-    color: light.background.normal,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  actionButton: {
-    flex: 1,
-    height: 69,
-    borderRadius: 15,
-    borderWidth: 1.5,
-    borderColor: light.line.alternative,
-    backgroundColor: light.background.alternative,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  actionButtonPressed: {
-    opacity: 0.7,
-  },
-  actionButtonText: {
-    fontSize: 28,
-    fontWeight: '600',
-    lineHeight: 36.4,
-    letterSpacing: -0.56,
-    color: light.label.alternative,
-  },
-});
