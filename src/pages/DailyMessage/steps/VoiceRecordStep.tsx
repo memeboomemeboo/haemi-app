@@ -78,11 +78,17 @@ export function VoiceRecordStep({ memoryId, onSent }: VoiceRecordStepProps) {
 
   const stopRecording = async () => {
     await audioRecorder.stop();
+    const uri = audioRecorder.uri;
+
     await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
     setIsRecording(false);
     setRecordingStartedAt(null);
-    setHasRecorded(true);
-    setRecordedUri(audioRecorder.uri);
+    setHasRecorded(uri !== null);
+    setRecordedUri(uri);
+
+    if (!uri) {
+      throw new Error('Recorded file URI is missing');
+    }
   };
 
   const handleMicPress = () => {
@@ -123,7 +129,7 @@ export function VoiceRecordStep({ memoryId, onSent }: VoiceRecordStepProps) {
     }
   };
 
-  const canSend = hasRecorded && !isRecording && !isSending;
+  const canSend = hasRecorded && recordedUri !== null && !isRecording && !isSending;
 
   return (
     <View style={styles.container}>
