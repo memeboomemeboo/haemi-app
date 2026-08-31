@@ -3,7 +3,7 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { getAuthToken, setOnUnauthorizedCallback } from '@/shared/api';
+import { authService, getAuthToken, setOnUnauthorizedCallback } from '@/shared/api';
 import { initializeTestToken } from '@/shared/lib/auth';
 import { getRoleFromToken } from '@/shared/lib';
 import type { UserRole, Relation, Group } from '@/shared/types';
@@ -44,12 +44,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // (보호자/어르신 모두 같은 경로로 복구되고, 프로필 조회 실패가 로그아웃을 유발하지 않는다)
         const savedToken = await getAuthToken();
         if (savedToken) {
-          const role = getRoleFromToken(savedToken);
-          if (role) {
-            setTokenState(savedToken);
-            setRoleState(role);
-          } else if (__DEV__) {
-            console.warn('Failed to parse role from saved token');
+          setTokenState(savedToken);
+          // 1) 저장된 role이 있으면 그대로 사용 (로그인 시 setStoredRole로 기록됨)
+          const savedRole = await authService.getStoredRole();
+          if (savedRole) {
+            setRoleState(savedRole);
+          } else {
+            // 2) 저장된 role이 없는 기존 설치는 토큰 자체에서 role을 읽어 마이그레이션한다
+            //    (보호자/어르신 모두 같은 경로로 복구되고, 서버 왕복 실패가 로그아웃을 유발하지 않는다)
+            const tokenRole = getRoleFromToken(savedToken);
+            if (tokenRole) {
+              setRoleState(tokenRole);
+              await authService.setStoredRole(tokenRole);
+            } else if (__DEV__) {
+              console.warn('Failed to parse role from saved token');
+            }
           }
         }
       } catch (error) {
@@ -85,6 +94,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const logout = useCallback(() => {
+    void authService.setStoredRole(null);
     setTokenState(null);
     setRoleState(null);
     setRelationState(null);

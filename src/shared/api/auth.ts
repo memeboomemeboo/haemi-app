@@ -2,7 +2,7 @@
  * 인증 API
  */
 
-import { post, get, setAuthToken as setClientToken, setRefreshToken as setClientRefreshToken } from './client';
+import { get, getAuthRole, post, setAuthRole, setAuthToken as setClientToken, setRefreshToken as setClientRefreshToken } from './client';
 import type {
   SignUpRequest,
   LoginRequest,
@@ -14,12 +14,15 @@ import type {
   GuardianRegisterRequest,
   GuardianRegisterResponse,
   PinLoginRequest,
+  ElderPinLoginRequest,
+  ElderPinLoginResponse,
   PasswordLoginRequest,
   LoginIdAvailabilityResponse,
   GuardianProfileResponse,
   SwaggerApiResponse,
   TokenResponse,
   ApiResponse,
+  UserRole,
 } from '@/shared/types';
 import { getOrCreateDeviceId } from '@/shared/lib';
 
@@ -54,6 +57,13 @@ export const authService = {
 
   async loginWithPin(data: PinLoginRequest): Promise<TokenResponse> {
     const response = await post<SwaggerApiResponse<TokenResponse>>('/auth/login', data, {
+      skipAuth: true,
+    });
+    return response.data;
+  },
+
+  async loginElderWithPin(data: ElderPinLoginRequest): Promise<ElderPinLoginResponse> {
+    const response = await post<SwaggerApiResponse<ElderPinLoginResponse>>('/auth/elders/login', data, {
       skipAuth: true,
     });
     return response.data;
@@ -98,6 +108,7 @@ export const authService = {
     } finally {
       await setClientToken(null);
       await setClientRefreshToken(null);
+      await setAuthRole(null);
     }
   },
 
@@ -135,6 +146,15 @@ export const authService = {
   async clearToken() {
     await setClientToken(null);
     await setClientRefreshToken(null);
+    await setAuthRole(null);
+  },
+
+  async setStoredRole(role: UserRole | null): Promise<void> {
+    await setAuthRole(role);
+  },
+
+  async getStoredRole(): Promise<UserRole | null> {
+    return getAuthRole();
   },
 
   async updateProfile(data: { name?: string; password?: string }): Promise<ApiResponse<AuthUser>> {
