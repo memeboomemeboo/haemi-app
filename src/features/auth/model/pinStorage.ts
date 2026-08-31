@@ -7,11 +7,13 @@ const ELDER_LOGIN_ID_KEY = 'haemi_elder_login_id';
 const webStorage = {
   getItem: (key: string) => Promise.resolve(localStorage.getItem(key)),
   setItem: (key: string, value: string) => { localStorage.setItem(key, value); return Promise.resolve(); },
+  removeItem: (key: string) => { localStorage.removeItem(key); return Promise.resolve(); },
 };
 
 const store = Platform.OS === 'web' ? webStorage : {
   getItem: (key: string) => SecureStore.getItemAsync(key),
   setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
+  removeItem: (key: string) => SecureStore.deleteItemAsync(key),
 };
 
 export const pinStorage = {
@@ -21,4 +23,5 @@ export const pinStorage = {
   hasElderLoginId: async (): Promise<boolean> => Boolean(await store.getItem(ELDER_LOGIN_ID_KEY)),
   saveElderLoginId: async (loginId: string): Promise<void> => { await store.setItem(ELDER_LOGIN_ID_KEY, loginId); },
   getElderLoginId: async (): Promise<string | null> => store.getItem(ELDER_LOGIN_ID_KEY),
+  clearElderLoginId: async (): Promise<void> => { await store.removeItem(ELDER_LOGIN_ID_KEY); },
 };

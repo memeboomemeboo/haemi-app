@@ -63,8 +63,14 @@ export default function AuthStack() {
     setRole('FAMILY');
     setToken(tokens.accessToken);
   }, [setRole, setToken]);
+  // 어르신 모드로 고정된 기기를 가족 로그인으로 되돌린다. 저장된 어르신 아이디를 지우지 않으면
+  // 다음 실행에서도 다시 어르신 화면으로 들어와 보호자가 로그인할 수 없다.
+  const leaveElderMode = useCallback(async () => {
+    await pinStorage.clearElderLoginId();
+    setMode((await pinStorage.hasLoginId()) ? 'pin-login' : 'signup');
+  }, []);
   if (mode === 'loading') return <View style={styles.loading}><ActivityIndicator color={colors.primary} /></View>;
-  if (mode === 'elder-login') return <ElderLoginScreen />;
+  if (mode === 'elder-login') return <ElderLoginScreen onGuardianLoginPress={leaveElderMode} />;
   if (mode === 'elder-setup') return <ElderSignupScreen onBack={() => setMode('signup')} />;
   if (mode === 'pin-setup') return <PinScreen mode="setup" onComplete={finishSignup} onBackToSignup={() => { setSignupRegistered(false); setMode('signup'); }} />;
   if (mode === 'pin-login') return <PinScreen mode="login" onComplete={loginWithPin} onBackToSignup={() => setMode('signup')} />;

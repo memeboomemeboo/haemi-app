@@ -12,4 +12,7 @@ export const pinStorage = {
     localStorage.setItem(ELDER_LOGIN_ID_KEY, loginId);
   },
   getElderLoginId: async (): Promise<string | null> => localStorage.getItem(ELDER_LOGIN_ID_KEY),
+  clearElderLoginId: async (): Promise<void> => {
+    localStorage.removeItem(ELDER_LOGIN_ID_KEY);
+  },
 };
