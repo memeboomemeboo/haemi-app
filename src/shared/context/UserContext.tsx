@@ -60,7 +60,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // 토큰이 만료되었거나 유효하지 않음 - 로그아웃 처리
             setTokenState(null);
             if (__DEV__) {
-              console.warn('Failed to hydrate user:', error);
+              console.warn('Failed to hydrate role during startup:', error);
             }
           }
         }
