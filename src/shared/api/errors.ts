@@ -89,6 +89,7 @@ const ERROR_MESSAGE_MAP: Record<string, string> = {
   // 서버 에러
   'INTERNAL_SERVER_ERROR': '서버 오류가 발생했습니다. 나중에 다시 시도해주세요.',
   'SERVICE_UNAVAILABLE': '서비스를 이용할 수 없습니다. 잠시 후 다시 시도해주세요.',
+  'TRAINING_MATERIAL_UNAVAILABLE': '인지 훈련에 필요한 사진 자료를 준비하고 있습니다.',
 };
 
 export const getErrorMessage = (error: unknown): string => {

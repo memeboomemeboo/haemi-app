@@ -86,7 +86,13 @@ const requestTrainingSession = async (): Promise<TrainingSession> => {
 
       // 오늘 훈련을 이미 마친 사용자에게 서버가 충돌을 반환하는 경우에는
       // Swagger가 제공하는 결과 조회 API로 완료 화면을 복구한다.
-      return getTrainingSessionResult();
+      try {
+        return await getTrainingSessionResult();
+      } catch (resultError) {
+        throw resultError instanceof ApiError && resultError.statusCode === 404
+          ? retryError
+          : resultError;
+      }
     }
   }
 };

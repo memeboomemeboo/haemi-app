@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { getErrorMessage } from '@/shared/api';
+import { ApiError, getErrorMessage } from '@/shared/api';
 import {
   completeCurrentTrainingQuestion,
   enterTrainingSession,
@@ -9,10 +9,15 @@ import {
   type TrainingSession,
 } from '@/shared/api/quiz';
 
-export type QuizMode = 'loading' | 'active' | 'completed' | 'error';
+export type QuizMode = 'loading' | 'active' | 'completed' | 'preparing' | 'error';
 export type QuizAnswerValue = string;
 
 const EMPTY_OPTIONS = ['확인했어요'];
+const TRAINING_MATERIAL_UNAVAILABLE = 'TRAINING_MATERIAL_UNAVAILABLE';
+
+interface UseQuizOptions {
+  enabled?: boolean;
+}
 
 function toQuizQuestion(question: TrainingQuestion): QuizQuestion {
   const options = question.options && question.options.length > 0 ? question.options : EMPTY_OPTIONS;
@@ -28,7 +33,11 @@ function toQuizQuestion(question: TrainingQuestion): QuizQuestion {
   };
 }
 
-export const useQuiz = () => {
+function isTrainingMaterialUnavailable(error: unknown): boolean {
+  return error instanceof ApiError && error.code === TRAINING_MATERIAL_UNAVAILABLE;
+}
+
+export const useQuiz = ({ enabled = true }: UseQuizOptions = {}) => {
   const [session, setSession] = useState<TrainingSession | null>(null);
   const [pendingSession, setPendingSession] = useState<TrainingSession | null>(null);
   const [mode, setMode] = useState<QuizMode>('loading');
@@ -38,6 +47,10 @@ export const useQuiz = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!enabled) {
+      return undefined;
+    }
+
     let isMounted = true;
 
     const loadInitialSession = async () => {
@@ -56,7 +69,7 @@ export const useQuiz = () => {
         }
 
         setSession(null);
-        setMode('error');
+        setMode(isTrainingMaterialUnavailable(caught) ? 'preparing' : 'error');
         setErrorMessage(getErrorMessage(caught));
       }
     };
@@ -66,9 +79,13 @@ export const useQuiz = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [enabled]);
 
   const retry = useCallback(async () => {
+    if (!enabled) {
+      return;
+    }
+
     setMode('loading');
     setSelectedAnswer(null);
     setPendingSession(null);
@@ -81,10 +98,10 @@ export const useQuiz = () => {
       setMode(trainingSession.status === 'COMPLETED' ? 'completed' : 'active');
     } catch (caught) {
       setSession(null);
-      setMode('error');
+      setMode(isTrainingMaterialUnavailable(caught) ? 'preparing' : 'error');
       setErrorMessage(getErrorMessage(caught));
     }
-  }, []);
+  }, [enabled]);
 
   const question = session?.currentQuestion ? toQuizQuestion(session.currentQuestion) : null;
   const answerOptions = question?.options ?? EMPTY_OPTIONS;
