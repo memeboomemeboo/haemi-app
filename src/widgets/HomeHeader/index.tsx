@@ -69,22 +69,6 @@ export const HomeHeader = ({
 
   return (
     <View style={[styles.header, style]}>
-      <Image source={logoSource} style={styles.logo} resizeMode="contain" />
-      <View style={styles.headerIcons}>
-        <Pressable onPress={onAlarmPress} hitSlop={8}>
-          <Alarm size={22} color="#dadbdc" />
-        </Pressable>
-        {showSetting && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="설정 메뉴"
-            onPress={toggleSettingsMenu}
-            hitSlop={8}
-          >
-            <Setting size={24} color="#dadbdc" />
-          </Pressable>
-        )}
-      </View>
       {showSetting && isSettingsMenuOpen && (
         <View style={styles.settingsDropdown}>
           <Pressable

@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 
 import { BottomNavigation } from '@/shared/ui';
+import { HomeHeader } from '@/widgets/HomeHeader';
 import {
   ARROW_XML,
   CIRCLE_CHECK_XML,
@@ -63,6 +64,9 @@ export default function CaregiverHomeScreen() {
   return (
     <View style={styles.outer}>
       <SafeAreaView edges={['top']} style={[styles.phone, { width: screenWidth }]}>
+        <View style={styles.headerContainer}>
+          <HomeHeader showSetting={false} />
+        </View>
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
@@ -376,7 +380,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 21,
-    paddingTop: 50,
+    paddingTop: 20,
     paddingBottom: 120,
     gap: 38,
   },
@@ -407,6 +411,10 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: '600',
     letterSpacing: -0.28,
+  },
+  headerContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
   },
   greeting: {
     gap: 8,
