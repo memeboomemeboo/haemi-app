@@ -268,9 +268,13 @@ const LanguageAnswer = ({
 
   useEffect(
     () => () => {
-      if (recorder.isRecording) void recorder.stop().catch(() => undefined);
+      try {
+        if (isRecording) void recorder.stop().catch(() => undefined);
+      } catch {
+        // native object may already be deallocated on unmount
+      }
     },
-    [recorder],
+    [isRecording, recorder],
   );
 
   const toggleRecording = async () => {
