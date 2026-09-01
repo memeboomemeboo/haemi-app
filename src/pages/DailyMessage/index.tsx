@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useTheme } from '@/shared/hooks';
+import { useAndroidBackHandler, useTheme } from '@/shared/hooks';
 import { BackHeader } from '@/shared/ui';
 import { MethodSelectStep, type DailyMessageMethod } from './steps/MethodSelectStep';
 import { VoiceRecordStep } from './steps/VoiceRecordStep';
@@ -40,12 +40,24 @@ export default function DailyMessageScreen() {
   const handlePhotoCancelled = useCallback(() => setStep('method'), []);
 
   const handleBack = useCallback(() => {
+    if (step === 'done') {
+      router.replace('/elder-home');
+      return;
+    }
+
     if (step === 'method') {
       router.back();
       return;
     }
     setStep('method');
   }, [router, step]);
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      handleBack();
+      return true;
+    }, [handleBack]),
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background.normal }]}>

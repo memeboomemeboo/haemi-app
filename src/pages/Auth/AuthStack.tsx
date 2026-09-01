@@ -4,6 +4,7 @@ import RoleSelectScreen from '@/pages/RoleSelect';
 import { ElderPinScreen, PinScreen, pinStorage } from '@/features/auth';
 import { authService, getErrorMessage } from '@/shared/api';
 import { useUserContext } from '@/shared/context/UserContext';
+import { useAndroidBackHandler } from '@/shared/hooks';
 import { getOrCreateDeviceId, getRoleFromToken } from '@/shared/lib';
 import type { TokenResponse } from '@/shared/types';
 
@@ -13,6 +14,29 @@ export default function AuthStack() {
   const [signupDraft, setSignupDraft] = useState<GuardianSignupDraft | null>(null);
   const [isSignupRegistered, setSignupRegistered] = useState(false);
   const { setToken, setRole } = useUserContext();
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      if (mode === 'guardian-pin' || mode === 'elder-pin') {
+        setMode('role-select');
+        return true;
+      }
+
+      if (mode === 'signup') {
+        setMode('guardian-pin');
+        return true;
+      }
+
+      if (mode === 'pin-setup') {
+        setSignupRegistered(false);
+        setMode('signup');
+        return true;
+      }
+
+      return false;
+    }, [mode]),
+  );
+
   const finishSignup = useCallback(async (pin: string) => {
     if (!signupDraft) throw new Error('회원가입 정보가 없습니다.');
     if (!isSignupRegistered) {

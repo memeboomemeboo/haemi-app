@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { colors, spacing, typography } from '@/shared/constants';
 import {
   Alert,
@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { authService, myPageService } from '@/shared/api';
 import type { RegisterElderRequest } from '@/shared/api';
 import { PinScreen } from '@/features/auth';
+import { useAndroidBackHandler } from '@/shared/hooks';
 import { Arrow, BottomNavigation } from '@/shared/ui';
 
 type Gender = 'MALE' | 'FEMALE';
@@ -35,6 +36,17 @@ export default function ElderRegisterScreen() {
   const [isIdAvailable, setIsIdAvailable] = useState(false);
   const [preparingPin, setPreparingPin] = useState(false);
   const [registerDraft, setRegisterDraft] = useState<ElderRegisterDraft | null>(null);
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      if (!registerDraft) {
+        return false;
+      }
+
+      setRegisterDraft(null);
+      return true;
+    }, [registerDraft]),
+  );
 
   const handlePhoneChange = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 11);
