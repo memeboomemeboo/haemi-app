@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { colors } from '@/shared/constants';
 import { groupService, getErrorMessage } from '@/shared/api';
-import { useToast } from '@/shared/hooks';
+import { useAndroidBackHandler, useToast } from '@/shared/hooks';
 import { useUserContext } from '@/shared/context/UserContext';
 import type { Relation, NotificationPreference, CreateGroupRequest, CreateInvitationRequest } from '@/shared/types';
 
@@ -38,6 +38,13 @@ export default function GroupCreateScreen() {
     notificationPreference: 'ALL',
   });
   const [copied, setCopied] = useState(false);
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/');
+      return true;
+    }, [router]),
+  );
 
   // 그룹이 생성되면 자동으로 홈으로 이동
   useEffect(() => {

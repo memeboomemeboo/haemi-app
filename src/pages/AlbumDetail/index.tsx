@@ -1,10 +1,10 @@
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAlbumDetail } from '@/entities/album';
-import { useTheme } from '@/shared/hooks';
+import { useAndroidBackHandler, useTheme } from '@/shared/hooks';
 import { Arrow, BottomNavigation, More } from '@/shared/ui';
 import { AlbumConversation } from '@/widgets/AlbumConversation';
 import { AlbumDetailPhotos } from '@/widgets/AlbumDetailPhotos';
@@ -19,6 +19,13 @@ export default function AlbumDetailScreen({ id }: AlbumDetailScreenProps) {
   const theme = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { item, isLoading } = useAlbumDetail(id);
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/album');
+      return true;
+    }, [router]),
+  );
 
   return (
     <View style={styles.container}>

@@ -5,6 +5,7 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { myPageService, type FamilyDetailResponse } from '@/shared/api';
+import { useAndroidBackHandler } from '@/shared/hooks';
 import { BottomNavigation, Profile, Arrow } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 
@@ -17,6 +18,13 @@ export default function MyFamilyScreen() {
       .then(setFamily)
       .catch(() => { setFamily(null); Alert.alert('불러오기 실패', '가족 정보를 불러오지 못했어요.'); });
   }, []));
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/my-page' as Href);
+      return true;
+    }, [router]),
+  );
 
   const elderNames = family?.elders.map((elder) => elder.name).join(' · ') ?? '';
   const members = family ? [

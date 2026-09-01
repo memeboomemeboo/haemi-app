@@ -1,7 +1,10 @@
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback } from 'react';
+import { useRouter } from 'expo-router';
 
 import { Arrow, BottomNavigation, Profile } from '@/shared/ui';
 import { colors } from '@/shared/constants/tokens';
+import { useAndroidBackHandler } from '@/shared/hooks';
 import {
   ELDER_STATUS_MAP,
   REPORT_COLORS,
@@ -17,7 +20,15 @@ const light = colors.light;
 const palette = colors.palette;
 
 export default function ReportScreen() {
+  const router = useRouter();
   const { fixedTopPaddingTop, openReportDetail, elders, isLoading, isError, refetch } = useReport();
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/');
+      return true;
+    }, [router]),
+  );
 
   return (
     <View style={styles.container}>

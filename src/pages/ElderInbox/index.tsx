@@ -1,11 +1,11 @@
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { elderInboxService, getAuthToken } from '@/shared/api';
-import { useAsyncData, useTheme } from '@/shared/hooks';
+import { useAndroidBackHandler, useAsyncData, useTheme } from '@/shared/hooks';
 import { BackHeader, Pause, PlayTriangle, Profile } from '@/shared/ui';
 
 const API_ROOT = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
@@ -46,6 +46,13 @@ export default function ElderInboxScreen() {
   const player = useAudioPlayer(null, { updateInterval: 100 });
   const status = useAudioPlayerStatus(player);
   const pendingAutoPlayIdRef = useRef<string | null>(null);
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/elder-home');
+      return true;
+    }, [router]),
+  );
 
   useEffect(() => {
     void getAuthToken().then(setAuthToken);

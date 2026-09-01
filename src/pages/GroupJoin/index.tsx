@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useState, useCallback } from 'react';
 import { colors } from '@/shared/constants';
 import { groupService, getErrorMessage } from '@/shared/api';
-import { useToast } from '@/shared/hooks';
+import { useAndroidBackHandler, useToast } from '@/shared/hooks';
 import { useUserContext } from '@/shared/context/UserContext';
 
 interface JoinErrorType {
@@ -39,6 +39,13 @@ export default function GroupJoinScreen() {
     joined: false,
     groupId: null,
   });
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/');
+      return true;
+    }, [router]),
+  );
 
   const handleJoinGroup = useCallback(async () => {
     const code = state.inviteCode.trim();

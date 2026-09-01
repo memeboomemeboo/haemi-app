@@ -8,8 +8,8 @@ import {
 } from 'expo-audio';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { Link } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { Link, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Modal,
@@ -44,6 +44,7 @@ import {
 } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 import { useUserContext } from '@/shared/context/UserContext';
+import { useAndroidBackHandler } from '@/shared/hooks';
 
 const ORANGE = '#fd6941';
 const ORANGE_LIGHT = '#ffad9c';
@@ -183,7 +184,15 @@ function mapRegisteredMemory(memory: FamilyMemoryItem): MemoryFeedItem {
 }
 
 export default function FamilyMemoriesScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/');
+      return true;
+    }, [router]),
+  );
 
   return (
     <View style={styles.container}>

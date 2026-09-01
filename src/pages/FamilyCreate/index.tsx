@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { colors, spacing, typography } from '@/shared/constants';
 import {
   ActivityIndicator,
@@ -16,6 +16,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Clipboard from 'expo-clipboard';
 
 import { myPageService } from '@/shared/api';
+import { useAndroidBackHandler } from '@/shared/hooks';
 import { Arrow, BottomNavigation, Profile } from '@/shared/ui';
 
 export default function FamilyCreateScreen() {
@@ -26,6 +27,13 @@ export default function FamilyCreateScreen() {
   const [familyId, setFamilyId] = useState<string>();
   const guardianCount = 1;
   const elderCount = 0;
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/my-page' as Href);
+      return true;
+    }, [router]),
+  );
 
   const generateCode = async () => {
     if (!familyName.trim()) {

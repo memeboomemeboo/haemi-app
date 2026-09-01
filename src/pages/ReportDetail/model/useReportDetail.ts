@@ -9,7 +9,7 @@ import {
   getSupportGuide,
   getWeeklyHighlight,
 } from '@/shared/api/report';
-import { useAsyncData } from '@/shared/hooks';
+import { useAndroidBackHandler, useAsyncData } from '@/shared/hooks';
 import { colors } from '@/shared/constants/tokens';
 import {
   AREA_STATUS_MAP,
@@ -56,6 +56,13 @@ export function useReportDetail() {
   const { data, isLoading, isError } = useAsyncData(fetchAll);
 
   const goBack = useCallback(() => router.back(), [router]);
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/report');
+      return true;
+    }, [router]),
+  );
 
   const layout = {
     contentPaddingBottom: Math.max(insets.bottom, 0) + 28,

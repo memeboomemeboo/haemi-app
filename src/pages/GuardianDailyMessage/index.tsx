@@ -19,7 +19,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { guardianDailyCareService, myPageService, uploadMediaFile } from '@/shared/api';
-import { useAsyncData, useTheme } from '@/shared/hooks';
+import { useAndroidBackHandler, useAsyncData, useTheme } from '@/shared/hooks';
 import { Arrow, Mic } from '@/shared/ui';
 
 const MEMO_MAX_LENGTH = 200;
@@ -80,6 +80,13 @@ export default function GuardianDailyMessageScreen() {
   const [recordedDuration, setRecordedDuration] = useState(0);
 
   const [isSending, setIsSending] = useState(false);
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/');
+      return true;
+    }, [router]),
+  );
 
   useEffect(() => {
     if (!isRecording || recordingStartedAt === null) return undefined;

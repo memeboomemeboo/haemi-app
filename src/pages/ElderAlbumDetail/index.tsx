@@ -1,9 +1,9 @@
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useTheme } from '@/shared/hooks';
+import { useAndroidBackHandler, useTheme } from '@/shared/hooks';
 import { BackHeader, Profile } from '@/shared/ui';
 import { useElderAlbum } from '@/pages/ElderAlbum/model/useElderAlbum';
 import { useElderAlbumDetail } from './model/useElderAlbumDetail';
@@ -36,6 +36,13 @@ export default function ElderAlbumDetailScreen({ id }: ElderAlbumDetailScreenPro
     const nextIndex = (currentIndex + 1) % memories.length;
     return memories[nextIndex].id === id ? null : memories[nextIndex].id;
   }, [memories, id]);
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/album');
+      return true;
+    }, [router]),
+  );
 
   const handleNextStory = () => {
     if (nextItemId) {

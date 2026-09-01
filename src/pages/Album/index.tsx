@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAlbumElders, useAlbumFilter, useAlbumItems } from '@/entities/album';
-import { useTheme } from '@/shared/hooks';
+import { useAndroidBackHandler, useTheme } from '@/shared/hooks';
 import { BottomNavigation, Fab } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 import { AlbumFilterTabs } from '@/widgets/AlbumFilterTabs';
@@ -26,6 +26,13 @@ export default function AlbumScreen() {
     useCallback(() => {
       refetch();
     }, [refetch]),
+  );
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/');
+      return true;
+    }, [router]),
   );
 
   const isEmpty = !isLoading && (items?.length ?? 0) === 0;

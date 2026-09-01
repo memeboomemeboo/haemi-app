@@ -6,7 +6,7 @@ import {
   useAudioRecorder,
 } from 'expo-audio';
 import { useRouter, type Href } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Arrow } from '@/shared/ui';
 import { uploadMediaFile } from '@/shared/api';
+import { useAndroidBackHandler } from '@/shared/hooks';
 
 import { COLORS, QUIZ_COMPLETE_IMAGE, QUIZ_FEEDBACK_CORRECT_IMAGE } from './constants';
 import { type QuizAnswerValue, useQuiz } from './model/useQuiz';
@@ -50,6 +51,13 @@ export default function QuizScreen() {
   const handleComplete = () => {
     router.replace('/elder-home' as Href);
   };
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/elder-home' as Href);
+      return true;
+    }, [router]),
+  );
 
   return (
     <View style={styles.container}>

@@ -1,12 +1,12 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { createAlbumItem, useAlbumElders } from '@/entities/album';
 import { uploadMediaFile } from '@/shared/api';
-import { useTheme } from '@/shared/hooks';
+import { useAndroidBackHandler, useTheme } from '@/shared/hooks';
 import { Arrow, BottomNavigation, Calendar, Picture, Plus } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 
@@ -31,6 +31,13 @@ export default function AlbumRegisterScreen() {
   const [isSaving, setIsSaving] = useState(false);
 
   const selectedElderId = elderId ?? elders?.[0]?.id ?? null;
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/album');
+      return true;
+    }, [router]),
+  );
 
   const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({

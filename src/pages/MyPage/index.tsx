@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authService, myPageService, type FamilyDetailResponse, type MyPageProfileResponse } from '@/shared/api';
 import { useUserContext } from '@/shared/context/UserContext';
+import { useAndroidBackHandler } from '@/shared/hooks';
 import { Arrow, BottomNavigation, Profile, Setting } from '@/shared/ui';
 import { HomeHeader } from '@/widgets/HomeHeader';
 
@@ -31,6 +32,13 @@ export default function MyPageScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/');
+      return true;
+    }, [router]),
+  );
 
   const handleLogout = () => Alert.alert('로그아웃', '로그아웃하시겠어요?', [
     { text: '취소', style: 'cancel' },

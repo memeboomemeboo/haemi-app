@@ -1,6 +1,6 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { colors, spacing, typography } from '@/shared/constants';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -22,6 +22,7 @@ import {
   type ElderCardResponse,
   type GuardianRole,
 } from '@/shared/api';
+import { useAndroidBackHandler } from '@/shared/hooks';
 import { Arrow, BottomNavigation, Calendar, Profile } from '@/shared/ui';
 
 const ROLES: { value: GuardianRole; label: string }[] = [
@@ -64,6 +65,13 @@ export default function ProfileEditScreen() {
       .catch(() => Alert.alert('불러오기 실패', '프로필 정보를 불러오지 못했어요.'))
       .finally(() => setLoading(false));
   }, []);
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/my-page');
+      return true;
+    }, [router]),
+  );
 
   const checkLoginId = async () => {
     const value = loginId.trim();

@@ -3,7 +3,7 @@ import { useCallback, useMemo, useRef } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useTheme } from '@/shared/hooks';
+import { useAndroidBackHandler, useTheme } from '@/shared/hooks';
 import { BackHeader } from '@/shared/ui';
 
 import { useElderAlbum } from './model/useElderAlbum';
@@ -33,6 +33,13 @@ export default function ElderAlbumScreen() {
         hasFocusedRef.current = true;
       }
     }, [refetch]),
+  );
+
+  useAndroidBackHandler(
+    useCallback(() => {
+      router.replace('/elder-home');
+      return true;
+    }, [router]),
   );
 
   return (
