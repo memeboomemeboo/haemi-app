@@ -188,19 +188,6 @@ export default function QuizScreen() {
                   오늘의 <Text style={styles.highlightText}>인지 훈련</Text>을{'\n'}
                   <Text style={styles.highlightText}>완료</Text>하셨어요!
                 </Text>
-                {result && (
-                  <View style={styles.resultCard}>
-                    <ResultItem
-                      label="함께한 시간"
-                      value={formatParticipationTime(result.participationSeconds)}
-                    />
-                    <View style={styles.resultDivider} />
-                    <ResultItem
-                      label="기억해낸 사진"
-                      value={`${result.delayedRecallSuccessCount}개`}
-                    />
-                  </View>
-                )}
                 {(result?.unlockedBadges.length ?? 0) > 0 && (
                   <View style={styles.badgeNotice}>
                     <Text style={styles.badgeEmoji}>🏅</Text>
