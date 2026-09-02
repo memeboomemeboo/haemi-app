@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Arrow } from '@/shared/ui';
 import { uploadMediaFile } from '@/shared/api';
+import { useUserContext } from '@/shared/context/UserContext';
 import { useAndroidBackHandler } from '@/shared/hooks';
 
 import { COLORS, QUIZ_COMPLETE_IMAGE, QUIZ_FEEDBACK_CORRECT_IMAGE } from './constants';
@@ -27,6 +28,8 @@ import { type QuizAnswerValue, useQuiz } from './model/useQuiz';
 
 export default function QuizScreen() {
   const router = useRouter();
+  const { isHydrating, token } = useUserContext();
+  const quizEnabled = Boolean(token) && !isHydrating;
   const {
     answerMode,
     answerOptions,
@@ -45,8 +48,14 @@ export default function QuizScreen() {
     result,
     selectedAnswer,
     total,
-  } = useQuiz();
+  } = useQuiz({ enabled: quizEnabled });
   const [textAnswer, setTextAnswer] = useState('');
+
+  useEffect(() => {
+    if (!isHydrating && !token) {
+      router.replace('/' as Href);
+    }
+  }, [isHydrating, router, token]);
 
   const handleComplete = () => {
     router.replace('/elder-home' as Href);
@@ -81,6 +90,14 @@ export default function QuizScreen() {
             <View style={styles.loading}>
               <Text style={styles.loadingText}>문제를 준비하고 있어요...</Text>
             </View>
+          ) : mode === 'preparing' ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorTitle}>인지 훈련을 준비하고 있어요</Text>
+              <Text style={styles.errorText}>
+                {errorMessage ?? '인지 훈련에 필요한 사진 자료를 준비하고 있습니다.'}
+              </Text>
+              <RetryButton label="다시 확인" onPress={retry} />
+            </View>
           ) : mode === 'error' ? (
             <View style={styles.errorBox}>
               <Text style={styles.errorTitle}>인지 훈련을 시작할 수 없어요</Text>
@@ -101,7 +118,7 @@ export default function QuizScreen() {
                   </Text>
                   {question.imageKey && (
                     <Image
-                      source={resolveQuestionImage(question.imageKey)}
+                      source={resolveQuestionImage(question.imageKey, token)}
                       style={styles.questionImage}
                       contentFit="cover"
                     />
@@ -171,19 +188,6 @@ export default function QuizScreen() {
                   오늘의 <Text style={styles.highlightText}>인지 훈련</Text>을{'\n'}
                   <Text style={styles.highlightText}>완료</Text>하셨어요!
                 </Text>
-                {result && (
-                  <View style={styles.resultCard}>
-                    <ResultItem
-                      label="함께한 시간"
-                      value={formatParticipationTime(result.participationSeconds)}
-                    />
-                    <View style={styles.resultDivider} />
-                    <ResultItem
-                      label="기억해낸 사진"
-                      value={`${result.delayedRecallSuccessCount}개`}
-                    />
-                  </View>
-                )}
                 {(result?.unlockedBadges.length ?? 0) > 0 && (
                   <View style={styles.badgeNotice}>
                     <Text style={styles.badgeEmoji}>🏅</Text>
@@ -202,11 +206,23 @@ export default function QuizScreen() {
 }
 
 const sampleQuestionImage = require('../../../assets/images/album-sample.png');
+const API_ROOT = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
 
-const resolveQuestionImage = (imageKey: string) =>
-  imageKey.startsWith('http') || imageKey.startsWith('file')
-    ? { uri: imageKey }
-    : sampleQuestionImage;
+const resolveQuestionImage = (imageKey: string, authToken: string | null) => {
+  if (/^https?:\/\//.test(imageKey) || imageKey.startsWith('file')) {
+    return { uri: imageKey };
+  }
+
+  if (!API_ROOT) {
+    return sampleQuestionImage;
+  }
+
+  const uri = imageKey.startsWith('/')
+    ? `${API_ROOT}${imageKey}`
+    : `${API_ROOT}/api/v1/media/${encodeURIComponent(imageKey)}`;
+
+  return authToken ? { uri, headers: { Authorization: `Bearer ${authToken}` } } : { uri };
+};
 
 const formatParticipationTime = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
@@ -252,9 +268,13 @@ const LanguageAnswer = ({
 
   useEffect(
     () => () => {
-      if (recorder.isRecording) void recorder.stop().catch(() => undefined);
+      try {
+        if (isRecording) void recorder.stop().catch(() => undefined);
+      } catch {
+        // native object may already be deallocated on unmount
+      }
     },
-    [recorder],
+    [isRecording, recorder],
   );
 
   const toggleRecording = async () => {
@@ -290,7 +310,7 @@ const LanguageAnswer = ({
       setIsUploading(true);
       const upload = await uploadMediaFile({
         uri: recordedUri,
-        mediaType: 'RESPONSE_VOICE',
+        mediaType: 'TRAINING_VOICE_ANSWER',
         filename: `training-${Date.now()}.m4a`,
         contentType: 'audio/mp4',
         durationSeconds: Math.max(1, recordingSeconds),
@@ -511,13 +531,17 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 80,
   },
   loadingText: {
+    width: '100%',
     color: COLORS.textAssistive,
-    fontSize: 20,
-    fontWeight: '500',
-    lineHeight: 26,
-    letterSpacing: -0.4,
+    fontSize: 30,
+    fontWeight: '700',
+    lineHeight: 40,
+    letterSpacing: -0.6,
+    textAlign: 'center',
   },
   content: {
     flex: 1,
@@ -728,8 +752,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   completeContent: {
+    flex: 1,
+    width: '100%',
     alignItems: 'center',
-    paddingTop: 56,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 28,
   },
   completeImage: {
     width: 150,
@@ -737,6 +765,8 @@ const styles = StyleSheet.create({
     marginBottom: 44,
   },
   completeText: {
+    width: '100%',
+    maxWidth: 360,
     color: COLORS.text,
     fontSize: 28,
     fontWeight: '600',

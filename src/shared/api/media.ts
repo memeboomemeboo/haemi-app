@@ -5,6 +5,8 @@ import type { SwaggerApiResponse } from '@/shared/types';
 export type MediaType =
   | 'MEMORY_IMAGE'
   | 'PROFILE_IMAGE'
+  | 'TRAINING_VOICE_ANSWER'
+  | 'GREETING_VOICE'
   | 'RESPONSE_VOICE'
   | 'RESPONSE_IMAGE'
   | 'ELDER_RESPONSE_VOICE'

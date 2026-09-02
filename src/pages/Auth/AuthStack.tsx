@@ -79,6 +79,7 @@ export default function AuthStack() {
   const loginElderWithPin = useCallback(async (pin: string) => {
     const tokens = await authService.loginElderWithPin({ pin });
     await authService.setToken(tokens.accessToken);
+    await authService.setRefreshToken(null);
     await authService.setStoredRole('ELDER');
     setRole('ELDER');
     setToken(tokens.accessToken);
